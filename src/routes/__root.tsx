@@ -12,6 +12,8 @@ import { z } from 'zod'
 import { useAuthStore } from '@/stores/auth-store'
 import { requirePrivilege } from '@/lib/privilege-guard'
 import { ReportsTable } from '@/features/reports/components/reports-table'
+import { ClientsTable } from '@/features/clients/components/clients-table'
+import { ClientsForm } from '@/features/clients/components/clients-form'
 
 // Root route
 const rootRoute = createRootRoute({
@@ -28,6 +30,7 @@ function SidebarNav() {
 
   const navItems = [
     { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Clients', path: '/clients', menu: 'Client' },
     { label: 'Reports', path: '/reports', menu: 'Field Report' },
   ]
 
@@ -263,12 +266,97 @@ const reportsRoute = createRoute({
   ),
 })
 
+// Clients route
+function ClientsPage() {
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Clients</h2>
+        <p className="text-muted-foreground">
+          Manage client information and settings
+        </p>
+      </div>
+      <ClientsTable />
+    </div>
+  )
+}
+
+const clientsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/clients',
+  beforeLoad: () => {
+    // Require authentication
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) {
+      window.location.href = '/login'
+      return
+    }
+    // Require Client View privilege
+    requirePrivilege('Client', 'View')
+  },
+  component: () => (
+    <AuthLayout>
+      <ClientsPage />
+    </AuthLayout>
+  ),
+})
+
+// Clients New route
+function ClientsNewPage() {
+  return (
+    <AuthLayout>
+      <ClientsForm mode="create" />
+    </AuthLayout>
+  )
+}
+
+const clientsNewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/clients/new',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) {
+      window.location.href = '/login'
+      return
+    }
+    requirePrivilege('Client', 'Add')
+  },
+  component: () => <ClientsNewPage />,
+})
+
+// Clients Edit route
+function ClientsEditPage() {
+  const params = clientsEditRoute.useParams()
+  return (
+    <AuthLayout>
+      <ClientsForm mode="edit" clientId={Number.parseInt(params.id, 10)} />
+    </AuthLayout>
+  )
+}
+
+const clientsEditRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/clients/$id/edit',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) {
+      window.location.href = '/login'
+      return
+    }
+    requirePrivilege('Client', 'Edit')
+  },
+  component: () => <ClientsEditPage />,
+})
+
 // Build route tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   dashboardRoute,
   reportsRoute,
+  clientsRoute,
+  clientsNewRoute,
+  clientsEditRoute,
 ])
 
 // Create and export router

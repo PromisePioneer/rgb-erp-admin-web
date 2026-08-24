@@ -10,4 +10,34 @@ export default defineConfig({
       '@': import.meta.dirname + '/src',
     },
   },
+  server: {
+    port: 5173,
+    host: true,
+    proxy: {
+      // Proxy API requests to Laravel backend for development
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy Sanctum CSRF cookie endpoint
+      '/sanctum': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy logout endpoint (web route)
+      '/logout': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy login endpoint (web route)
+      '/login': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })

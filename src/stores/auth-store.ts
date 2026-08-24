@@ -45,7 +45,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try {
-          await apiClient.post('/logout')
+          await apiClient.post('/api/admin/logout')
         } finally {
           set({ user: null, privileges: [], isAuthenticated: false })
         }
