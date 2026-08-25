@@ -1,0 +1,216 @@
+/**
+ * Topbar Component
+ * Header with breadcrumbs, user menu, and notifications
+ */
+import { useState, useCallback, useEffect } from 'react'
+import { useLocation } from '@tanstack/react-router'
+import {
+  Bell,
+  User,
+  LogOut,
+  ChevronDown,
+  PanelLeftClose,
+} from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
+import { useCompanyStore } from '@/stores/company-store'
+import { SidebarToggle } from './sidebar'
+import { AsyncSelect, type SelectOption } from '@/components/async-select'
+import { companyApi } from '@/features/companies/api/companies-api'
+
+// Get page title from path
+function getPageTitle(path: string): string {
+  const titles: Record<string, string> = {
+    '/dashboard': 'Dashboard',
+    '/clients': 'Clients',
+    '/client-types': 'Client Types',
+    '/banks': 'Banks',
+    '/positions': 'Positions',
+    '/documents': 'Documents',
+    '/employees': 'Employees',
+    '/employee-placements': 'Employee Placements',
+    '/attendance': 'Attendance',
+    '/schedules': 'Work Schedule',
+    '/shifts': 'Shifts',
+    '/bank-accounts': 'Bank Accounts',
+    '/salary-components': 'Salary Components',
+    '/petty-cash': 'Petty Cash',
+    '/invoices': 'Invoices',
+    '/payroll': 'Payroll',
+    '/finance/journal': 'Journal',
+    '/finance/ledger': 'Ledger',
+    '/finance/balance-sheet': 'Balance Sheet',
+    '/finance/profit-loss': 'Profit & Loss',
+    '/warehouses': 'Warehouses',
+    '/product-categories': 'Product Categories',
+    '/products': 'Products',
+    '/assets': 'Assets',
+    '/purchase-requests': 'Purchase Requests',
+    '/purchase-orders': 'Purchase Orders',
+    '/receptions': 'Receptions',
+    '/stock-opnames': 'Stock Opname',
+    '/projects': 'Projects',
+    '/face-enrollments': 'Face Enrollment',
+    '/reports': 'Field Reports',
+    '/panic-alerts': 'Panic Alert',
+    '/news': 'News',
+    '/approvals': 'Approvals',
+    '/approval-flows': 'Approval Flows',
+    '/patrol-report': 'Patrol Report',
+    '/checkpoints': 'Checkpoints',
+    '/users': 'Users',
+    '/departments': 'Departments',
+    '/roles': 'Roles',
+    '/settings': 'Settings',
+  }
+
+  // Check exact match first
+  if (titles[path]) return titles[path]
+
+  // Check parent paths
+  for (const [key, title] of Object.entries(titles)) {
+    if (path.startsWith(key)) return title
+  }
+
+  return 'Admin Panel'
+}
+
+interface TopbarProps {
+  onCollapse?: () => void
+}
+
+export function Topbar({ onCollapse }: TopbarProps) {
+  const { user, logout } = useAuthStore()
+  const { currentCompany, switchCompany, fetchCompanies } = useCompanyStore()
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const location = useLocation()
+  const pageTitle = getPageTitle(location.pathname)
+
+  // Fetch companies on mount
+  useEffect(() => {
+    fetchCompanies()
+  }, [fetchCompanies])
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      window.location.href = '/login'
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
+  }
+
+  // Load companies for select
+  const loadCompanies = useCallback(async (search: string): Promise<SelectOption[]> => {
+    try {
+      const response = await companyApi.getSelectOptions({ q: search })
+      return response.map((company) => ({
+        value: company.id,
+        label: company.name,
+      }))
+    } catch {
+      return []
+    }
+  }, [])
+
+  // Handle company change
+  const handleCompanyChange = async (value: number | string | null) => {
+    if (!value) return
+    try {
+      await switchCompany(Number(value))
+      // Reload the page to refresh all data with new company context
+      window.location.reload()
+    } catch (error) {
+      console.error('Failed to switch company:', error)
+    }
+  }
+
+  return (
+    <header className="sticky top-0 z-20 h-16 bg-card/80 backdrop-blur-md border-b border-border flex items-center gap-3 px-4">
+      {/* Mobile menu toggle */}
+      <SidebarToggle />
+
+      {/* Collapse button - desktop only */}
+      {onCollapse && (
+        <button
+          onClick={onCollapse}
+          className="hidden lg:flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+          title="Collapse sidebar"
+        >
+          <PanelLeftClose className="h-5 w-5 rotate-180" />
+        </button>
+      )}
+
+      {/* Page title */}
+      <h1 className="font-bold text-lg text-foreground">{pageTitle}</h1>
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Right side actions */}
+      <div className="flex items-center gap-2">
+        {/* Company Selector */}
+        <div className="w-[200px]">
+          <AsyncSelect
+            value={currentCompany?.id ?? null}
+            onChange={handleCompanyChange}
+            loadOptions={loadCompanies}
+            placeholder="Select Company"
+          />
+        </div>
+
+        {/* Notifications placeholder */}
+        <button className="relative p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+          <Bell className="h-5 w-5" />
+        </button>
+
+        {/* User menu */}
+        <div className="relative" data-state={userMenuOpen ? 'open' : 'closed'}>
+          <button
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-md hover:bg-accent transition-colors"
+          >
+            <span className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground font-bold text-sm">
+              {(user?.name || 'U').charAt(0).toUpperCase()}
+            </span>
+            <span className="hidden sm:flex items-center gap-2">
+              <span className="text-left leading-tight">
+                <span className="block text-sm font-semibold text-foreground">
+                  {user?.name || 'User'}
+                </span>
+                <span className="block text-[11px] text-muted-foreground">
+                  Staff
+                </span>
+              </span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </span>
+          </button>
+
+          {/* Dropdown */}
+          {userMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+              <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden">
+                <div className="py-1">
+                  <button
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    <User className="h-4 w-4" />
+                    Profile
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-destructive hover:bg-accent transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </header>
+  )
+}

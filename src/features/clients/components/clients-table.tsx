@@ -1,21 +1,11 @@
 /**
  * Clients Table Component
- * DataTable with shadcn Table, actions, and pagination
+ * Using standardized DataTable with navigation to page form
  */
-import { useEffect, useState } from 'react'
-import { format } from 'date-fns'
-import { Pencil, Trash2, Plus, CheckCircle, XCircle } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { useEffect, useState, useCallback } from 'react'
+import { Plus, Trash2, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { useNavigate } from '@tanstack/react-router'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,206 +16,228 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { useClientsStore } from '../store/clients-store'
 import { ClientsFilters } from './clients-filters'
+import type { Client } from '../types/clients.types'
 
 export function ClientsTable() {
-  const { items, isLoading, pagination, fetchClients, filters, remove, isSubmitting } =
-    useClientsStore()
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const navigate = useNavigate()
+  const {
+    items,
+    isLoading,
+    pagination,
+    fetchClients,
+    filters,
+    bulkDelete,
+    isSubmitting,
+  } = useClientsStore()
 
-  // Fetch clients on mount and when filters change
+  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  // Single source of truth for fetch - debounced, primitive dependencies
   useEffect(() => {
-    fetchClients(filters)
-  }, [fetchClients, filters])
+    const timer = setTimeout(() => {
+      fetchClients({ search: filters.search, client_type_id: filters.client_type_id, page: 1, per_page: 15 })
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [filters.search, filters.client_type_id])
 
-  const handlePageChange = (newPage: number) => {
+  // Reset selection when data changes
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const newSelection = new Set<number | string>()
+      prev.forEach((id) => {
+        if (items.some((item) => item.id === id)) {
+          newSelection.add(id)
+        }
+      })
+      return newSelection
+    })
+  }, [items])
+
+  const handlePageChange = useCallback((newPage: number) => {
     if (newPage < 1 || newPage > pagination.last_page) return
-    fetchClients({ ...filters, page: newPage })
-  }
+    fetchClients({ search: filters.search, client_type_id: filters.client_type_id, page: newPage, per_page: 15 })
+  }, [fetchClients, filters.search, filters.client_type_id, pagination.last_page])
 
-  const handleDelete = async () => {
-    if (deleteId === null) return
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    setIsDeleting(true)
     try {
-      await remove(deleteId)
-      setDeleteId(null)
+      await bulkDelete(Array.from(selectedIds).map(Number))
+      setSelectedIds(new Set())
+      setShowDeleteConfirm(false)
     } catch {
-      // Error is handled in store
+      // Error handled in store
+    } finally {
+      setIsDeleting(false)
     }
   }
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '-'
-    try {
-      return format(new Date(dateString), 'MMM dd, yyyy')
-    } catch {
-      return dateString
-    }
+  const handleAddNew = () => {
+    navigate({ to: '/clients/new' })
   }
 
-  const formatCurrency = (value: number | null) => {
-    if (value === null || value === undefined) return '-'
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-    }).format(value)
+  const handleEdit = (client: Client) => {
+    navigate({ to: '/clients/$id/edit', params: { id: String(client.id) } })
   }
 
-  const totalPages = Math.ceil(pagination.total / pagination.per_page) || 1
+  const handleViewAreas = (client: Client) => {
+    navigate({ to: '/areas', search: { client_id: client.id, client_name: client.name } })
+  }
+
+  // Define columns
+  const columns: DataTableColumn<Client>[] = [
+    {
+      accessorKey: 'code',
+      header: 'Code',
+      cell: (row) => (
+        <span className="font-mono text-sm text-muted-foreground">
+          {row.code ?? '-'}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'name',
+      header: 'Name',
+      cell: (row) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            handleEdit(row)
+          }}
+          className="font-medium text-primary hover:underline text-left cursor-pointer"
+        >
+          {row.name}
+        </button>
+      ),
+    },
+    {
+      accessorKey: 'client_type_name',
+      header: 'Type',
+    },
+    {
+      accessorKey: 'email',
+      header: 'Email',
+      cell: (row) => (
+        <span className="text-muted-foreground">
+          {row.email ?? '-'}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'address',
+      header: 'Address',
+      cell: (row) => (
+        <span className="max-w-[200px] truncate block" title={row.address ?? ''}>
+          {row.address ?? '-'}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'area_count',
+      header: 'Areas',
+      cell: (row) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            handleViewAreas(row)
+          }}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-sm font-medium"
+        >
+          <MapPin className="h-3 w-3" />
+          {row.area_count}
+        </button>
+      ),
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: (row) => (
+        <span
+          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+            row.status === 1
+              ? 'bg-green-100 text-green-800'
+              : 'bg-red-100 text-red-800'
+          }`}
+        >
+          {row.status === 1 ? 'Aktif' : 'Tidak Aktif'}
+        </span>
+      ),
+    },
+  ]
+
+  // Bulk actions
+  const bulkActions = (
+    <div className="flex gap-2">
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={() => setShowDeleteConfirm(true)}
+        disabled={selectedIds.size === 0}
+      >
+        <Trash2 className="h-4 w-4 mr-1" />
+        Delete Selected
+      </Button>
+    </div>
+  )
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <ClientsFilters />
-        <Link to="/clients/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-1" />
-            Add Client
-          </Button>
-        </Link>
+        <Button onClick={handleAddNew}>
+          <Plus className="h-4 w-4 mr-1" />
+          Add Client
+        </Button>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[50px]">ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Address</TableHead>
-              <TableHead className="text-right">Service Price</TableHead>
-              <TableHead>Expired Date</TableHead>
-              <TableHead className="w-[100px]">Status</TableHead>
-              <TableHead className="w-[120px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
-                  <div className="flex items-center justify-center">
-                    <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : items.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
-                  <div className="text-muted-foreground">
-                    <p className="text-lg font-medium mb-1">No clients found</p>
-                    <p className="text-sm">
-                      Try adjusting your filters or add a new client
-                    </p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              items.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.id}</TableCell>
-                  <TableCell className="font-medium">{client.name}</TableCell>
-                  <TableCell>{client.client_type_name ?? '-'}</TableCell>
-                  <TableCell>{client.phone ?? '-'}</TableCell>
-                  <TableCell className="max-w-[200px] truncate" title={client.address ?? ''}>
-                    {client.address ?? '-'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(client.service_price)}
-                  </TableCell>
-                  <TableCell>{formatDate(client.expired_date)}</TableCell>
-                  <TableCell>
-                    {client.status === 1 ? (
-                      <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Active
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="bg-gray-400 hover:bg-gray-500">
-                        <XCircle className="h-3 w-3 mr-1" />
-                        Inactive
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="flex gap-1">
-                    <Link to="/clients/$id/edit" params={{ id: client.id.toString() }}>
-                      <Button variant="ghost" size="icon">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <AlertDialog
-                      open={deleteId === client.id}
-                      onOpenChange={(open: boolean) => !open && setDeleteId(null)}
-                    >
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteId(client.id)}
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Client</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete <strong>{client.name}</strong>? This
-                            action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={handleDelete}
-                            disabled={isSubmitting}
-                            className="bg-red-500 hover:bg-red-600"
-                          >
-                            {isSubmitting && deleteId === client.id
-                              ? 'Deleting...'
-                              : 'Delete'}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {/* Click to edit hint */}
+      <p className="text-xs text-muted-foreground">
+        Klik pada nama untuk mengedit data, klik jumlah area untuk mengelola area
+      </p>
 
-      {/* Pagination */}
-      {pagination.total > 0 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {(pagination.current_page - 1) * pagination.per_page + 1} to{' '}
-            {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of{' '}
-            {pagination.total} results
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handlePageChange(pagination.current_page - 1)}
-              disabled={pagination.current_page <= 1}
+      <DataTable
+        columns={columns}
+        data={items}
+        pagination={pagination}
+        isLoading={isLoading}
+        onPageChange={handlePageChange}
+        emptyMessage="No clients found"
+        enableRowSelection
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+        bulkActions={bulkActions}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Hapus</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus {selectedIds.size} client yang dipilih? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteConfirm(false)}>
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isDeleting || isSubmitting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Prev
-            </Button>
-            <span className="text-sm">
-              Page {pagination.current_page} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handlePageChange(pagination.current_page + 1)}
-              disabled={pagination.current_page >= totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+              {isDeleting ? 'Menghapus...' : 'Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

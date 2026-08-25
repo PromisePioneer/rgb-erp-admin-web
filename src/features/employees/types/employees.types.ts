@@ -1,0 +1,201 @@
+/**
+ * Employee Type Definitions
+ * API endpoint: /api/admin/employees
+ */
+
+export interface Employee {
+  id: number
+  company_id: number | null
+  company_name: string | null
+  position_id: number | null
+  position_name: string | null
+  province_id: number | null
+  province_name: string | null
+  code: string
+  name: string
+  phone: string | null
+  status: number
+  created_at: string
+  updated_at: string
+}
+
+export interface EmployeeDetail extends Employee {
+  position_id: number | null
+  position_name: string | null
+  province_id: number | null
+  province_name: string | null
+  birth_date: string | null
+  birth_place: string | null
+  address: string | null
+  address2: string | null
+  religion: string | null
+  id_card: string | null
+  blood_type: string | null
+  height: number | null
+  weight: number | null
+  marital_status: string | null
+  marriage_date: string | null
+  divorced_date: string | null
+  father_name: string | null
+  mother_name: string | null
+  parent_address: string | null
+  parent_phone: string | null
+  father_occupation: string | null
+  mother_occupation: string | null
+  spouse_name: string | null
+  spouse_birth_date: string | null
+  spouse_birth_place: string | null
+  spouse_education: string | null
+  spouse_occupation: string | null
+  housing_status: string | null
+  base_salary: number | null
+  ptkp_status: string | null
+  join_date: string | null
+  bpjs_health: boolean | null
+  bpjs_employment: boolean | null
+  drive_license_type: string | null
+  drive_license_number: string | null
+  children: EmployeeChild[]
+  siblings: EmployeeSibling[]
+  educations: EmployeeEducation[]
+  trainings: EmployeeTraining[]
+  languages: EmployeeLanguage[]
+}
+
+export interface EmployeeChild {
+  name: string
+  birth_date: string | null
+  birth_place: string | null
+  education: string | null
+}
+
+export interface EmployeeSibling {
+  type: string
+  name: string
+  age: number | null
+  education: string | null
+  job: string | null
+}
+
+export interface EmployeeEducation {
+  from: number | null
+  to: number | null
+  school: string
+  city: string | null
+  cert: boolean
+}
+
+export interface EmployeeTraining {
+  course: string
+  duration: string | null
+  location: string | null
+}
+
+export interface EmployeeLanguage {
+  name: string
+  written: string | null
+  spoken: string | null
+  notes: string | null
+}
+
+export interface EmployeesFilters {
+  search?: string
+  company_id?: number
+  status?: number
+  page?: number
+  per_page?: number
+}
+
+export interface EmployeesPagination {
+  current_page: number
+  per_page: number
+  total: number
+  last_page: number
+}
+
+export interface ApiResponse<T> {
+  success: boolean
+  data: T
+  meta?: EmployeesPagination
+  message?: string
+}
+
+export interface CreateEmployeePayload {
+  company_id?: number | null
+  position_id?: number | null
+  province_id?: number | null
+  code: string
+  name: string
+  phone?: string | null
+  birth_date?: string | null
+  birth_place?: string | null
+  address?: string | null
+  address2?: string | null
+  religion?: string | null
+  id_card?: string | null
+  blood_type?: string | null
+  height?: number | null
+  weight?: number | null
+  marital_status?: string | null
+  marriage_date?: string | null
+  divorced_date?: string | null
+  father_name?: string | null
+  mother_name?: string | null
+  parent_address?: string | null
+  parent_phone?: string | null
+  father_occupation?: string | null
+  mother_occupation?: string | null
+  spouse_name?: string | null
+  spouse_birth_date?: string | null
+  spouse_birth_place?: string | null
+  spouse_education?: string | null
+  spouse_occupation?: string | null
+  housing_status?: string | null
+  base_salary?: number | null
+  ptkp_status?: string | null
+  join_date?: string | null
+  bpjs_health?: boolean | null
+  bpjs_employment?: boolean | null
+  drive_license_type?: string | null
+  drive_license_number?: string | null
+  status: number
+  // Dynamic arrays
+  children_name?: string[]
+  children_birth_date?: string[]
+  children_birth_place?: string[]
+  children_education?: string[]
+  sibling_type?: string[]
+  sibling_name?: string[]
+  sibling_age?: number[]
+  sibling_education?: string[]
+  sibling_job?: string[]
+  education_from?: number[]
+  education_to?: number[]
+  education_school?: string[]
+  education_city?: string[]
+  education_certificate?: boolean[]
+  training_course?: string[]
+  training_duration?: string[]
+  training_location?: string[]
+  language_name?: string[]
+  language_written?: string[]
+  language_spoken?: string[]
+  language_notes?: string[]
+}
+
+export interface UpdateEmployeePayload extends CreateEmployeePayload {}
+
+/**
+ * Response from GET /api/admin/employees/next-code
+ * Returns the next available employee code for a given province
+ */
+export interface NextCodeResponse {
+  success: boolean
+  data: {
+    code: string
+    province_id: number
+    province_latin_code: string
+    province_romawi_code: string
+    sequence: number
+  }
+}
