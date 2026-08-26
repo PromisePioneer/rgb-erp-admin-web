@@ -17,9 +17,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
-import { useEmployeesStore } from '../store/employees-store'
+import { useEmployeesStore } from '@/features/employees'
 import { EmployeesFilters } from './employees-filters'
-import type { Employee } from '../types/employees.types'
+import type { Employee } from '@/features/employees'
 
 export function EmployeesTable() {
   const navigate = useNavigate()
@@ -114,9 +114,16 @@ export function EmployeesTable() {
       accessorKey: 'company_name',
       header: 'Company',
       cell: (row) => (
-        <span className="text-muted-foreground">
-          {row.company_name ?? '-'}
-        </span>
+          <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleRowClick(row)
+              }}
+              className="font-medium text-primary hover:underline text-left cursor-pointer"
+          >
+            {row.company_name}
+          </button>
       ),
     },
     {

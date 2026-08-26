@@ -16,10 +16,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
-import { EmployeePlacementsFormModal } from './employee-placements-form-modal'
-import { useEmployeePlacementsStore } from '../store/employee-placements-store'
+import { EmployeePlacementsFormModal } from '@/features/employee-placements'
+import { useEmployeePlacementsStore } from '@/features/employee-placements'
 import { EmployeePlacementsFilters } from './employee-placements-filters'
-import type { EmployeePlacement } from '../types/employee-placements.types'
+import type { EmployeePlacement } from '@/features/employee-placements'
 
 export function EmployeePlacementsTable() {
   const {
@@ -130,7 +130,7 @@ export function EmployeePlacementsTable() {
       accessorKey: 'client_name',
       header: 'Klien',
       cell: (row) => (
-        <span className="max-w-[200px] truncate block" title={row.client_name}>
+        <span className="max-w-50 truncate block" title={row.client_name}>
           {row.client_name}
         </span>
       ),

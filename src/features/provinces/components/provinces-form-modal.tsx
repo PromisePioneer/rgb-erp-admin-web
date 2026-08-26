@@ -3,7 +3,7 @@
  */
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { Save, Trash2 } from 'lucide-react'
+import { Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -13,7 +13,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useProvincesStore } from '../store/provinces-store'
-import type { Province } from '../types/provinces.types'
 
 interface ProvincesFormModalProps {
   open: boolean

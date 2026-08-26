@@ -10,7 +10,7 @@ import type {
   EmployeesFilters,
   CreateEmployeePayload,
   UpdateEmployeePayload,
-  NextCodeResponse,
+  EmployeeCodeResponse,
 } from '../types/employees.types'
 
 export const employeesApi = {
@@ -85,12 +85,20 @@ export const employeesApi = {
   },
 
   /**
-   * Get next available employee code for a province
-   * GET /api/admin/employees/next-code?province_id=xxx
+   * Generate employee code for a province, company, and year
+   * GET /api/admin/employees/generate-code?province_id=xxx&company_id=yyy&join_year=2023
+   *
+   * Format: {COMPANY}-86.{PROVINCE_CODE}.{YEAR}.{SEQUENCE}
+   * - RGB company uses latin_code (BPS code)
+   * - RBM company uses romawi_code
    */
-  getNextCode: async (provinceId: number) => {
-    const { data } = await apiClient.get<NextCodeResponse>('/admin/employees/next-code', {
-      params: { province_id: provinceId },
+  generateCode: async (provinceId: number, companyId?: number, joinYear?: number) => {
+    const { data } = await apiClient.get<EmployeeCodeResponse>('/admin/employees/generate-code', {
+      params: {
+        province_id: provinceId,
+        ...(companyId && { company_id: companyId }),
+        ...(joinYear && { join_year: joinYear }),
+      },
     })
     return data
   },

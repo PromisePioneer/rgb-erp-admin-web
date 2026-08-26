@@ -186,16 +186,22 @@ export interface CreateEmployeePayload {
 export interface UpdateEmployeePayload extends CreateEmployeePayload {}
 
 /**
- * Response from GET /api/admin/employees/next-code
- * Returns the next available employee code for a given province
+ * Response from GET /api/admin/employees/generate-code
+ * Returns the next available employee code for a given province, company, and year
+ *
+ * Format: {COMPANY}-86.{PROVINCE_CODE}.{YEAR}.{SEQUENCE}
+ * - RGB company uses latin_code (BPS code): "RGB-86.32.23.00001"
+ * - RBM company uses romawi_code: "RBM-86.XII.25.00001"
  */
-export interface NextCodeResponse {
+export interface EmployeeCodeResponse {
   success: boolean
   data: {
-    code: string
     province_id: number
-    province_latin_code: string
-    province_romawi_code: string
-    sequence: number
+    province_name: string
+    romawi_code: string
+    latin_code: string
+    company_code: string
+    join_year: number
+    next_code: string
   }
 }

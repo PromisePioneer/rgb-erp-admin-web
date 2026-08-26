@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 // Column definition type
 export interface DataTableColumn<T> {
   accessorKey?: keyof T
+  id?: string
   header: string
   cell?: (row: T) => ReactNode
   className?: string

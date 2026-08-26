@@ -5,7 +5,7 @@
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useClientTypesStore } from '../store/client-types-store'
+import { useClientTypesStore } from '@/features/client-types'
 
 export function ClientTypesFilters() {
   const { filters, setFilters, resetFilters } =
@@ -33,14 +33,14 @@ export function ClientTypesFilters() {
         placeholder="Search by name..."
         value={filters.search ?? ''}
         onChange={handleSearchChange}
-        className="w-[250px]"
+        className="w-62.5"
       />
 
       {/* Status Filter */}
       <select
         value={filters.status ?? ''}
         onChange={handleStatusChange}
-        className="flex h-11 w-[150px] rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="flex h-11 w-37.5 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <option value="">All Status</option>
         <option value={1}>Active</option>

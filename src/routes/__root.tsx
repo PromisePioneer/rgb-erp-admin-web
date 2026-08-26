@@ -37,6 +37,17 @@ import { EmployeePlacementsTable } from '@/features/employee-placements'
 import { AreasTable } from '@/features/areas'
 import { PossTable } from '@/features/poss'
 import { ProvincesTable } from '@/features/provinces'
+import { AttendancesTable } from '@/features/attendances'
+import { SchedulesTable } from '@/features/schedules'
+import { BankAccountsTable } from '@/features/bank-accounts'
+import { PettyCashTable } from '@/features/petty-cash'
+import { InvoicesTable } from '@/features/invoices'
+import {
+  JournalTable,
+  LedgerView,
+  BalanceSheetView,
+  ProfitLossView,
+} from '@/features/finance'
 
 // Root route
 const rootRoute = createRootRoute({
@@ -673,11 +684,51 @@ const usePossRoute = createRoute({
   component: PossPage,
 })
 
-// Attendance
-const attendanceRoute = createPlaceholderRoute('/attendance', 'Attendance', 'Attendance')
+// Attendance - Full migration (READ-ONLY with recap)
+function AttendancePage() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Attendance</h2>
+        <p className="text-muted-foreground">View and manage employee attendance records</p>
+      </div>
+      <AttendancesTable />
+    </AuthLayout>
+  )
+}
+const attendanceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/attendance',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Attendance', 'View')
+  },
+  component: AttendancePage,
+})
 
-// Work Schedule
-const schedulesRoute = createPlaceholderRoute('/schedules', 'Work Schedule', 'Work Schedule')
+// Schedules - Full migration
+function SchedulesPage() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Schedules</h2>
+        <p className="text-muted-foreground">Manage employee work schedules and attendance locations</p>
+      </div>
+      <SchedulesTable />
+    </AuthLayout>
+  )
+}
+const schedulesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/schedules',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Work Schedule', 'View')
+  },
+  component: SchedulesPage,
+})
 
 // Shifts
 function ShiftsPage() {
@@ -703,16 +754,26 @@ const shiftsRoute = createRoute({
 })
 
 // Bank Accounts
-const bankAccountsRoute = createPlaceholderRoute('/bank-accounts', 'Bank Accounts', 'Bank Account')
-const bankAccountsNewRoute = createRoute({
-  getParentRoute: () => rootRoute, path: '/bank-accounts/new',
-  beforeLoad: () => { const { isAuthenticated } = useAuthStore.getState(); if (!isAuthenticated) { window.location.href = '/login'; return } requirePrivilegeInBeforeLoad('Bank Account', 'Add') },
-  component: () => <AuthLayout><Placeholder title="Add Bank Account" /></AuthLayout>,
-})
-const bankAccountsEditRoute = createRoute({
-  getParentRoute: () => rootRoute, path: '/bank-accounts/$id/edit',
-  beforeLoad: () => { const { isAuthenticated } = useAuthStore.getState(); if (!isAuthenticated) { window.location.href = '/login'; return } requirePrivilegeInBeforeLoad('Bank Account', 'Edit') },
-  component: () => <AuthLayout><Placeholder title="Edit Bank Account" /></AuthLayout>,
+function BankAccountsPage() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Bank Accounts</h2>
+        <p className="text-muted-foreground">Manage bank account information</p>
+      </div>
+      <BankAccountsTable />
+    </AuthLayout>
+  )
+}
+const bankAccountsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/bank-accounts',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Bank Account', 'View')
+  },
+  component: BankAccountsPage,
 })
 
 // Salary Components
@@ -739,10 +800,50 @@ const salaryComponentsRoute = createRoute({
 })
 
 // Petty Cash
-const pettyCashRoute = createPlaceholderRoute('/petty-cash', 'Petty Cash', 'Petty Cash')
+function PettyCashPage() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Petty Cash</h2>
+        <p className="text-muted-foreground">Manage petty cash records</p>
+      </div>
+      <PettyCashTable />
+    </AuthLayout>
+  )
+}
+const pettyCashRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/petty-cash',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Petty Cash', 'View')
+  },
+  component: PettyCashPage,
+})
 
 // Invoices
-const invoicesRoute = createPlaceholderRoute('/invoices', 'Invoices', 'Invoice')
+function InvoicesPage() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Invoices</h2>
+        <p className="text-muted-foreground">Manage client invoices</p>
+      </div>
+      <InvoicesTable />
+    </AuthLayout>
+  )
+}
+const invoicesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/invoices',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Invoice', 'View')
+  },
+  component: InvoicesPage,
+})
 
 // Payroll
 const payrollRoute = createPlaceholderRoute('/payroll', 'Payroll', 'Payroll')
@@ -950,11 +1051,97 @@ const settingsRoute = createRoute({
   component: SettingsPage,
 })
 
-// Finance Reports
-const financeJournalRoute = createPlaceholderRoute('/finance/journal', 'Journal', 'Finance Report')
-const financeLedgerRoute = createPlaceholderRoute('/finance/ledger', 'Ledger', 'Finance Report')
-const financeBalanceSheetRoute = createPlaceholderRoute('/finance/balance-sheet', 'Balance Sheet', 'Finance Report')
-const financeProfitLossRoute = createPlaceholderRoute('/finance/profit-loss', 'Profit & Loss', 'Finance Report')
+// Finance Reports - Journal
+function FinanceJournalPage() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">General Journal</h2>
+        <p className="text-muted-foreground">All posted journal entries</p>
+      </div>
+      <JournalTable />
+    </AuthLayout>
+  )
+}
+const financeJournalRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/finance/journal',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Finance Report', 'View')
+  },
+  component: FinanceJournalPage,
+})
+
+// Finance Reports - Ledger
+function FinanceLedgerPage() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Ledger</h2>
+        <p className="text-muted-foreground">Account ledger with transactions</p>
+      </div>
+      <LedgerView />
+    </AuthLayout>
+  )
+}
+const financeLedgerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/finance/ledger',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Finance Report', 'View')
+  },
+  component: FinanceLedgerPage,
+})
+
+// Finance Reports - Balance Sheet
+function FinanceBalanceSheetPage() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Balance Sheet</h2>
+        <p className="text-muted-foreground">Financial position as of a date</p>
+      </div>
+      <BalanceSheetView />
+    </AuthLayout>
+  )
+}
+const financeBalanceSheetRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/finance/balance-sheet',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Finance Report', 'View')
+  },
+  component: FinanceBalanceSheetPage,
+})
+
+// Finance Reports - Profit & Loss
+function FinanceProfitLossPage() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Profit & Loss</h2>
+        <p className="text-muted-foreground">Income and expenses over a period</p>
+      </div>
+      <ProfitLossView />
+    </AuthLayout>
+  )
+}
+const financeProfitLossRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/finance/profit-loss',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Finance Report', 'View')
+  },
+  component: FinanceProfitLossPage,
+})
 
 // Build route tree
 const routeTree = rootRoute.addChildren([
@@ -985,7 +1172,7 @@ const routeTree = rootRoute.addChildren([
   usePossRoute,
   attendanceRoute,
   schedulesRoute,
-  bankAccountsRoute, bankAccountsNewRoute, bankAccountsEditRoute,
+  bankAccountsRoute,
   pettyCashRoute,
   invoicesRoute,
   payrollRoute,

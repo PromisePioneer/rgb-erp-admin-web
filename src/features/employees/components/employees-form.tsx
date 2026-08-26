@@ -43,7 +43,7 @@ export function EmployeesForm() {
   const [languages, setLanguages] = useState<Array<{ name: string; written: string; spoken: string; notes: string }>>([])
 
   // Employee code generation
-  const { code: generatedCode, isLoading: isGeneratingCode, error: codeError, generateCode, clearCode } = useEmployeeCode({
+  const { code: _generatedCode, isLoading: isGeneratingCode, error: codeError, generateCode, clearCode } = useEmployeeCode({
     onCodeGenerated: (code) => {
       if (code) {
         form.setValue('code', code, { shouldValidate: true })
@@ -278,16 +278,57 @@ export function EmployeesForm() {
     }))
   }
 
+  // Helper to get join year from join_date
+  const getJoinYear = (): number | undefined => {
+    const joinDate = form.getValues('join_date')
+    if (joinDate) {
+      const date = new Date(joinDate)
+      if (!isNaN(date.getTime())) {
+        return date.getFullYear()
+      }
+    }
+    return undefined
+  }
+
   // Handle province selection change - generate employee code
   const handleProvinceChange = async (value: number | string | null) => {
     const provinceId = value ? Number(value) : null
     form.setValue('province_id', provinceId as number | null | undefined, { shouldValidate: true })
 
     if (provinceId) {
-      await generateCode(provinceId)
+      // Get company_id and join_year from form values
+      const companyId = form.getValues('company_id')
+      const joinYear = getJoinYear()
+      await generateCode(provinceId, companyId ?? undefined, joinYear)
     } else {
       clearCode()
       form.setValue('code', '', { shouldValidate: true })
+    }
+  }
+
+  // Handle company selection change - regenerate employee code if province is selected
+  const handleCompanyChange = async (value: number | string | null) => {
+    const companyId = value ? Number(value) : null
+    form.setValue('company_id', companyId as number | null | undefined, { shouldValidate: true })
+
+    // Regenerate code if province is already selected
+    const provinceId = form.getValues('province_id')
+    if (provinceId) {
+      const joinYear = getJoinYear()
+      await generateCode(provinceId, companyId ?? undefined, joinYear)
+    }
+  }
+
+  // Handle join date change - regenerate employee code if province is selected
+  const handleJoinDateChange = async (value: string) => {
+    form.setValue('join_date', value, { shouldValidate: true })
+
+    // Regenerate code if province is already selected
+    const provinceId = form.getValues('province_id')
+    if (provinceId) {
+      const companyId = form.getValues('company_id')
+      const joinYear = getJoinYear()
+      await generateCode(provinceId, companyId ?? undefined, joinYear)
     }
   }
 
@@ -354,7 +395,7 @@ export function EmployeesForm() {
               <label className="text-sm font-medium">Company</label>
               <AsyncSelect
                 value={form.watch('company_id') ?? null}
-                onChange={(value) => form.setValue('company_id', value as number | null | undefined, { shouldValidate: true })}
+                onChange={handleCompanyChange}
                 loadOptions={loadCompanies}
                 placeholder="Select company..."
                 className="w-full"
@@ -477,7 +518,11 @@ export function EmployeesForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Join Date</label>
-              <Input type="date" {...form.register('join_date')} />
+              <Input
+                type="date"
+                {...form.register('join_date')}
+                onChange={(e) => handleJoinDateChange(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">

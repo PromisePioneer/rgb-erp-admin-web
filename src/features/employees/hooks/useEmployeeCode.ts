@@ -1,6 +1,11 @@
 /**
  * useEmployeeCode Hook
- * Handles automatic employee code generation based on province selection
+ * Handles automatic employee code generation based on province, company, and join year
+ *
+ * Format: {COMPANY}-86.{PROVINCE_CODE}.{YEAR}.{SEQUENCE}
+ * - RGB company: uses latin_code (BPS code, e.g., "32" for Jawa Barat)
+ * - RBM company: uses romawi_code (e.g., "XII" for Jawa Barat)
+ * - YEAR: 2-digit year from join_date (e.g., "23" for 2023)
  */
 import { useState, useCallback } from 'react'
 import { employeesApi } from '../api/employees-api'
@@ -13,7 +18,7 @@ interface UseEmployeeCodeReturn {
   code: string
   isLoading: boolean
   error: string | null
-  generateCode: (provinceId: number) => Promise<string | null>
+  generateCode: (provinceId: number, companyId?: number, joinYear?: number) => Promise<string | null>
   clearCode: () => void
 }
 
@@ -22,7 +27,7 @@ export function useEmployeeCode(options: UseEmployeeCodeOptions = {}): UseEmploy
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const generateCode = useCallback(async (provinceId: number): Promise<string | null> => {
+  const generateCode = useCallback(async (provinceId: number, companyId?: number, joinYear?: number): Promise<string | null> => {
     if (!provinceId) {
       setCode('')
       setError(null)
@@ -34,8 +39,8 @@ export function useEmployeeCode(options: UseEmployeeCodeOptions = {}): UseEmploy
     setError(null)
 
     try {
-      const response = await employeesApi.getNextCode(provinceId)
-      const generatedCode = response.data.code
+      const response = await employeesApi.generateCode(provinceId, companyId, joinYear)
+      const generatedCode = response.data.next_code
       setCode(generatedCode)
       options.onCodeGenerated?.(generatedCode)
       return generatedCode
