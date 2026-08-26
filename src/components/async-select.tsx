@@ -69,15 +69,23 @@ export function AsyncSelect({
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [search, debounceMs, fetchOptions])
 
+  // Load initial options when dropdown opens (only first time)
+  const [hasLoadedInitial, setHasLoadedInitial] = useState(false)
+
   useEffect(() => {
-    if (isOpen && options.length === 0) fetchOptions('')
-  }, [isOpen])
+    if (isOpen && !hasLoadedInitial) {
+      fetchOptions('')
+      setHasLoadedInitial(true)
+    }
+  }, [isOpen, hasLoadedInitial])
 
   useEffect(() => {
     if (value !== null && value !== undefined) {
       const found = options.find(opt => opt.value === value)
-      if (found) setSelectedOption(found)
-      else {
+      if (found) {
+        setSelectedOption(found)
+      } else if (!isLoading) {
+        // Load options to find the selected value
         loadOptions('').then(opts => {
           const f = opts.find(o => o.value === value)
           if (f) setSelectedOption(f)
@@ -86,14 +94,32 @@ export function AsyncSelect({
     } else {
       setSelectedOption(null)
     }
-  }, [value, options])
+  }, [value, isLoading])
 
   const updatePosition = useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect()
+      // Calculate position relative to viewport
+      const scrollTop = window.scrollY || document.documentElement.scrollTop
+      const scrollLeft = window.scrollX || document.documentElement.scrollLeft
+
+      // Calculate optimal position (prefer below, but show above if near bottom)
+      const dropdownHeight = 280 // approximate max dropdown height
+      const spaceBelow = window.innerHeight - rect.bottom
+      const spaceAbove = rect.top
+
+      let top: number
+      if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+        // Show above if not enough space below
+        top = rect.top + scrollTop - dropdownHeight - 4
+      } else {
+        // Show below (default)
+        top = rect.bottom + scrollTop + 4
+      }
+
       setDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
+        top,
+        left: rect.left + scrollLeft,
         width: rect.width,
       })
     }
@@ -177,11 +203,12 @@ export function AsyncSelect({
 
           {/* Dropdown */}
           <div
-            className="fixed z-[9999] bg-background border rounded-md shadow-lg animate-in fade-in-0 zoom-in-95 duration-100"
+            className="fixed z-[9999] bg-background border rounded-md shadow-lg animate-in fade-in-0 zoom-in-95 duration-100 max-w-[calc(100vw-16px)]"
             style={{
-              top: dropdownPosition.top,
-              left: dropdownPosition.left,
+              top: Math.max(8, Math.min(dropdownPosition.top, window.innerHeight - 280 - 8)),
+              left: Math.max(8, Math.min(dropdownPosition.left, window.innerWidth - dropdownPosition.width - 8)),
               width: dropdownPosition.width,
+              maxHeight: '280px',
             }}
           >
             {/* Search Header */}

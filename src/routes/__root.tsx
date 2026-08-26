@@ -33,7 +33,6 @@ import { WarehousesTable } from '@/features/warehouses'
 import { ProductCategoriesTable } from '@/features/product-categories'
 import { SalaryComponentsTable } from '@/features/salary-components'
 import { EmployeesTable, EmployeesForm } from '@/features/employees'
-import { EmployeePlacementsTable } from '@/features/employee-placements'
 import { AreasTable } from '@/features/areas'
 import { PossTable } from '@/features/poss'
 import { ProvincesTable } from '@/features/provinces'
@@ -48,6 +47,7 @@ import {
   BalanceSheetView,
   ProfitLossView,
 } from '@/features/finance'
+import { PayrollTable } from '@/features/payroll'
 
 // Root route
 const rootRoute = createRootRoute({
@@ -531,29 +531,6 @@ const employeesEditRoute = createRoute({
   component: EmployeesEditPage,
 })
 
-// Employee Placements - Modal form pattern (like clients)
-function EmployeePlacementsPage() {
-  return (
-    <AuthLayout>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Employee Placements</h2>
-        <p className="text-muted-foreground">Manage employee placement assignments</p>
-      </div>
-      <EmployeePlacementsTable />
-    </AuthLayout>
-  )
-}
-const employeePlacementsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/employee-placements',
-  beforeLoad: () => {
-    const { isAuthenticated } = useAuthStore.getState()
-    if (!isAuthenticated) { window.location.href = '/login'; return }
-    requirePrivilegeInBeforeLoad('Employee Placement', 'View')
-  },
-  component: EmployeePlacementsPage,
-})
-
 // Areas - can be filtered by client_id from query params
 function AreasPage() {
   const navigate = useNavigate()
@@ -846,7 +823,27 @@ const invoicesRoute = createRoute({
 })
 
 // Payroll
-const payrollRoute = createPlaceholderRoute('/payroll', 'Payroll', 'Payroll')
+function PayrollPage() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Payroll</h2>
+        <p className="text-muted-foreground">Attendance-based salary · BPJS · PPh21 (TER) · THR</p>
+      </div>
+      <PayrollTable />
+    </AuthLayout>
+  )
+}
+const payrollRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/payroll',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Payroll', 'View')
+  },
+  component: PayrollPage,
+})
 
 // Warehouses
 function WarehousesPage() {
@@ -1167,7 +1164,6 @@ const routeTree = rootRoute.addChildren([
   // Placeholder routes
   usersRoute,
   employeesRoute, employeesNewRoute, employeesEditRoute,
-  employeePlacementsRoute,
   useAreasRoute,
   usePossRoute,
   attendanceRoute,

@@ -3,8 +3,9 @@
  * Using standardized DataTable with row selection
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Trash2, UserPlus } from 'lucide-react'
+import { Trash2, UserPlus, CreditCard } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -20,6 +21,7 @@ import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { useEmployeesStore } from '@/features/employees'
 import { EmployeesFilters } from './employees-filters'
 import type { Employee } from '@/features/employees'
+import { apiClient } from '@/lib/api-client'
 
 export function EmployeesTable() {
   const navigate = useNavigate()
@@ -85,8 +87,33 @@ export function EmployeesTable() {
     navigate({ to: '/employees/$id/edit', params: { id: String(employee.id) } })
   }
 
+  const handleGenerateIdCard = (employee: Employee) => {
+    // Open in new tab or download directly
+    window.open(`/api/admin/employees/${employee.id}/id-card`, '_blank')
+  }
+
   // Define columns
   const columns: DataTableColumn<Employee>[] = [
+    {
+      accessorKey: 'photo',
+      header: 'Photo',
+      cell: (row) => {
+        const photoUrl = row.photo ? `/storage/${row.photo}` : null
+        return photoUrl ? (
+          <img
+            src={photoUrl}
+            alt={row.name}
+            className="h-10 w-10 rounded-full object-cover"
+            onError={(e) => {
+              // Hide broken image and show initial instead
+              const target = e.target as HTMLImageElement
+              target.style.display = 'none'
+              target.nextElementSibling?.classList.remove('hidden')
+            }}
+          />
+        ) : null
+      },
+    },
     {
       accessorKey: 'code',
       header: 'Code',
@@ -136,6 +163,33 @@ export function EmployeesTable() {
       ),
     },
     {
+      accessorKey: 'client_name',
+      header: 'Client',
+      cell: (row) => (
+        <span className="text-muted-foreground">
+          {row.client_name ?? '-'}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'area_name',
+      header: 'Area',
+      cell: (row) => (
+        <span className="text-muted-foreground">
+          {row.area_name ?? '-'}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'pos_name',
+      header: 'POS',
+      cell: (row) => (
+        <span className="text-muted-foreground">
+          {row.pos_name ?? '-'}
+        </span>
+      ),
+    },
+    {
       accessorKey: 'phone',
       header: 'Phone',
       cell: (row) => (
@@ -157,6 +211,23 @@ export function EmployeesTable() {
         >
           {row.status === 1 ? 'Active' : 'Inactive'}
         </span>
+      ),
+    },
+    {
+      accessorKey: 'actions',
+      header: 'Actions',
+      cell: (row) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation()
+            handleGenerateIdCard(row)
+          }}
+        >
+          <CreditCard className="h-4 w-4 mr-1" />
+          ID Card
+        </Button>
       ),
     },
   ]

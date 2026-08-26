@@ -13,7 +13,14 @@ export interface Employee {
   province_name: string | null
   code: string
   name: string
+  photo: string | null
   phone: string | null
+  client_id: number | null
+  client_name: string | null
+  area_id: number | null
+  area_name: string | null
+  pos_id: number | null
+  pos_name: string | null
   status: number
   created_at: string
   updated_at: string
@@ -24,6 +31,7 @@ export interface EmployeeDetail extends Employee {
   position_name: string | null
   province_id: number | null
   province_name: string | null
+  photo: string | null
   birth_date: string | null
   birth_place: string | null
   address: string | null
@@ -55,11 +63,14 @@ export interface EmployeeDetail extends Employee {
   bpjs_employment: boolean | null
   drive_license_type: string | null
   drive_license_number: string | null
+  client_id: number | null
+  client_name: string | null
   children: EmployeeChild[]
   siblings: EmployeeSibling[]
   educations: EmployeeEducation[]
   trainings: EmployeeTraining[]
   languages: EmployeeLanguage[]
+  social_activities: EmployeeSocialActivity[]
 }
 
 export interface EmployeeChild {
@@ -98,6 +109,14 @@ export interface EmployeeLanguage {
   notes: string | null
 }
 
+export interface EmployeeSocialActivity {
+  id?: number
+  organization_name: string
+  year: string
+  position: string
+  notes: string
+}
+
 export interface EmployeesFilters {
   search?: string
   company_id?: number
@@ -124,7 +143,11 @@ export interface CreateEmployeePayload {
   company_id?: number | null
   position_id?: number | null
   province_id?: number | null
+  client_id?: number | null
+  area_id?: number | null
+  pos_id?: number | null
   code: string
+  photo?: File | null
   name: string
   phone?: string | null
   birth_date?: string | null
@@ -181,6 +204,11 @@ export interface CreateEmployeePayload {
   language_written?: string[]
   language_spoken?: string[]
   language_notes?: string[]
+  // Social activity fields
+  social_activity_organization?: string[]
+  social_activity_year?: string[]
+  social_activity_position?: string[]
+  social_activity_notes?: string[]
 }
 
 export interface UpdateEmployeePayload extends CreateEmployeePayload {}

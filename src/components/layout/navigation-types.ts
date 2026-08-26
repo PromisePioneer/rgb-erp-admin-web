@@ -39,7 +39,6 @@ export const navigationSections: NavSection[] = [
     label: 'human_resources',
     items: [
       { label: 'Employees', path: '/employees', menu: 'Employee', icon: 'users' },
-      { label: 'Employee Placements', path: '/employee-placements', menu: 'Employee Placement', icon: 'map-pin' },
       { label: 'Attendance', path: '/attendance', menu: 'Attendance', icon: 'clock' },
       { label: 'Work Schedule', path: '/schedules', menu: 'Work Schedule', icon: 'calendar-days' },
       { label: 'Shifts', path: '/shifts', menu: 'Shift', icon: 'clock' },

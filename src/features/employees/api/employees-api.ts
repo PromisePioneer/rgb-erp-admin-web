@@ -39,16 +39,55 @@ export const employeesApi = {
    * POST /api/admin/employees
    */
   create: async (payload: CreateEmployeePayload) => {
-    const { data } = await apiClient.post<ApiResponse<Employee>>('/admin/employees', payload)
+    // Use FormData for file uploads
+    const formData = new FormData()
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          value.forEach((item) => formData.append(`${key}[]`, String(item)))
+        } else if (value instanceof File) {
+          formData.append(key, value)
+        } else {
+          formData.append(key, String(value))
+        }
+      }
+    })
+
+    const { data } = await apiClient.post<ApiResponse<Employee>>('/admin/employees', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
     return data
   },
 
   /**
    * Update existing employee
-   * PUT /api/admin/employees/:id
+   * POST /api/admin/employees/:id with _method=PUT for Laravel FormData
    */
   update: async (id: number, payload: UpdateEmployeePayload) => {
-    const { data } = await apiClient.put<ApiResponse<Employee>>(`/admin/employees/${id}`, payload)
+    // Use FormData for file uploads
+    const formData = new FormData()
+    // Laravel method spoofing
+    formData.append('_method', 'PUT')
+
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          value.forEach((item) => formData.append(`${key}[]`, String(item)))
+        } else if (value instanceof File) {
+          formData.append(key, value)
+        } else {
+          formData.append(key, String(value))
+        }
+      }
+    })
+
+    const { data } = await apiClient.post<ApiResponse<Employee>>(`/admin/employees/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
     return data
   },
 
@@ -79,6 +118,18 @@ export const employeesApi = {
   getSelectOptions: async (params?: { q?: string; company_id?: number; selected?: number }) => {
     const { data } = await apiClient.get<ApiResponse<{ id: number; name: string; text: string }[]>>(
       '/admin/employees/select-options',
+      { params }
+    )
+    return data
+  },
+
+  /**
+   * Get select options for clients dropdown
+   * GET /api/admin/employees/clients/select-options
+   */
+  getClientsSelectOptions: async (params?: { q?: string; selected?: number }) => {
+    const { data } = await apiClient.get<ApiResponse<{ id: number; name: string; text: string }[]>>(
+      '/admin/employees/clients/select-options',
       { params }
     )
     return data
