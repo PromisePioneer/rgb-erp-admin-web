@@ -4,16 +4,15 @@ import { Plus, Trash2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { apiClient } from '@/lib/api-client'
 import { useJournalStore, type JournalEntry, type JournalEntryFormData } from '../store/journal-store'
 
 interface JournalLineForm {
-  account_id: number
+  account_id: number | null
   debit: number
   credit: number
-  account_name?: string
 }
 
 interface JournalFormModalProps {
@@ -24,62 +23,45 @@ interface JournalFormModalProps {
 
 export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalProps) {
   const { createEntry, updateEntry, isSubmitting } = useJournalStore()
-  const [accounts, setAccounts] = useState<any[]>([])
-  const [loadingAccounts, setLoadingAccounts] = useState(false)
 
   const [date, setDate] = useState('')
   const [reference, setReference] = useState('')
   const [description, setDescription] = useState('')
   const [lines, setLines] = useState<JournalLineForm[]>([
-    { account_id: 0, debit: 0, credit: 0 },
-    { account_id: 0, debit: 0, credit: 0 },
+    { account_id: null, debit: 0, credit: 0 },
+    { account_id: null, debit: 0, credit: 0 },
   ])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const isEditMode = !!editEntry
 
-  // Fetch accounts
+  // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      setLoadingAccounts(true)
-      apiClient.get('/admin/accounts?per_page=100')
-        .then(res => {
-          // Filter only non-header accounts
-          const accountList = (res.data.data || []).filter((a: any) => !a.is_header)
-          setAccounts(accountList)
-        })
-        .catch(console.error)
-        .finally(() => setLoadingAccounts(false))
+      if (editEntry) {
+        setDate(editEntry.date.split('T')[0])
+        setReference(editEntry.reference || '')
+        setDescription(editEntry.description)
+        setLines(editEntry.lines.map(l => ({
+          account_id: l.account_id,
+          debit: l.debit || 0,
+          credit: l.credit || 0,
+        })))
+      } else {
+        setDate(new Date().toISOString().split('T')[0])
+        setReference('')
+        setDescription('')
+        setLines([
+          { account_id: null, debit: 0, credit: 0 },
+          { account_id: null, debit: 0, credit: 0 },
+        ])
+      }
+      setErrors({})
     }
-  }, [open])
-
-  // Initialize form for edit
-  useEffect(() => {
-    if (editEntry) {
-      setDate(editEntry.date.split('T')[0])
-      setReference(editEntry.reference || '')
-      setDescription(editEntry.description)
-      setLines(editEntry.lines.map(l => ({
-        account_id: l.account_id,
-        debit: l.debit || 0,
-        credit: l.credit || 0,
-        account_name: l.account?.name,
-      })))
-    } else {
-      // Reset for new entry
-      setDate(new Date().toISOString().split('T')[0])
-      setReference('')
-      setDescription('')
-      setLines([
-        { account_id: 0, debit: 0, credit: 0 },
-        { account_id: 0, debit: 0, credit: 0 },
-      ])
-    }
-    setErrors({})
   }, [editEntry, open])
 
   const addLine = () => {
-    setLines([...lines, { account_id: 0, debit: 0, credit: 0 }])
+    setLines([...lines, { account_id: null, debit: 0, credit: 0 }])
   }
 
   const removeLine = (index: number) => {
@@ -104,7 +86,7 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
     if (!date) newErrors.date = 'Tanggal harus diisi'
     if (!description.trim()) newErrors.description = 'Keterangan harus diisi'
 
-    const validLines = lines.filter(l => l.account_id > 0 && (l.debit > 0 || l.credit > 0))
+    const validLines = lines.filter(l => l.account_id && (l.debit > 0 || l.credit > 0))
     if (validLines.length < 2) newErrors.lines = 'Minimal 2 baris dengan akun dan nominal'
 
     if (!isBalanced) newErrors.balance = 'Total Debit harus sama dengan Kredit'
@@ -117,9 +99,9 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
     if (!validate()) return
 
     const validLines = lines
-      .filter(l => l.account_id > 0 && (l.debit > 0 || l.credit > 0))
+      .filter(l => l.account_id && (l.debit > 0 || l.credit > 0))
       .map(l => ({
-        account_id: l.account_id,
+        account_id: l.account_id!,
         debit: l.debit || 0,
         credit: l.credit || 0,
       }))
@@ -141,6 +123,32 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
     } catch (e) {
       console.error('Failed to save:', e)
     }
+  }
+
+  // Load account options for async select
+  const loadAccountOptions = async (search: string): Promise<SelectOption[]> => {
+    try {
+      const params = new URLSearchParams()
+      params.set('per_page', '100')
+      if (search) params.set('search', search)
+
+      const { data } = await apiClient.get(`/admin/accounts?${params}`)
+      const accounts = (data.data || []).filter((a: any) => !a.is_header)
+
+      return accounts.map((acc: any) => ({
+        value: acc.id,
+        label: `${acc.code} - ${acc.name}`,
+      }))
+    } catch {
+      return []
+    }
+  }
+
+  // Get selected account option
+  const getSelectedAccount = (accountId: number | null): SelectOption | null => {
+    if (!accountId) return null
+    // This will be resolved by AsyncSelect component
+    return { value: accountId, label: 'Loading...' }
   }
 
   return (
@@ -212,29 +220,13 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
                   {lines.map((line, index) => (
                     <tr key={index} className="border-t">
                       <td className="px-3 py-2">
-                        <Select
-                          value={line.account_id ? String(line.account_id) : ''}
-                          onValueChange={v => {
-                            const acc = accounts.find(a => a.id === Number(v))
-                            updateLine(index, 'account_id', Number(v))
-                            updateLine(index, 'account_name', acc?.name)
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih akun..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {loadingAccounts ? (
-                              <div className="px-3 py-2 text-muted-foreground">Memuat...</div>
-                            ) : (
-                              accounts.map(acc => (
-                                <SelectItem key={acc.id} value={String(acc.id)}>
-                                  {acc.code} - {acc.name}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
+                        <AsyncSelect
+                          value={line.account_id}
+                          onChange={(value) => updateLine(index, 'account_id', value)}
+                          loadOptions={loadAccountOptions}
+                          placeholder="Cari akun..."
+                          defaultOption={line.account_id ? getSelectedAccount(line.account_id) : null}
+                        />
                       </td>
                       <td className="px-3 py-2">
                         <Input
