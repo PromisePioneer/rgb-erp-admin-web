@@ -600,12 +600,12 @@ export function EmployeesForm() {
                     <div className="mt-4 space-y-2">
                         <label className="text-sm font-medium">Address 1</label>
                         <textarea {...form.register('address')} placeholder="Street address"
-                                  className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input"/>
+                                  className="w-full min-h-20 px-3 py-2 text-sm rounded-md border border-input"/>
                     </div>
                     <div className="mt-4 space-y-2">
                         <label className="text-sm font-medium">Address 2</label>
                         <textarea {...form.register('address2')} placeholder="Street address"
-                                  className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input"/>
+                                  className="w-full min-h-20 px-3 py-2 text-sm rounded-md border border-input"/>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-2">
                         <div className="space-y-2">
