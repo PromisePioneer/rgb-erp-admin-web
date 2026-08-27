@@ -1,11 +1,11 @@
 "use client"
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { RefreshCw, TrendingDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { apiClient } from '@/lib/api-client'
+import { useFixedAssetsStore } from '../store/fixed-assets-store'
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -23,52 +23,22 @@ function formatDate(d: string) {
   })
 }
 
-interface FixedAsset {
-  id: number
-  code: string
-  name: string
-  category_name: string
-  purchase_date: string
-  purchase_cost: number
-  salvage_value: number
-  useful_life_years: number
-  depreciation_method: string
-  accumulated_depreciation: number
-  book_value: number
-  status: 'active' | 'disposed' | 'sold'
-}
-
-interface FixedAssetsData {
-  assets: FixedAsset[]
-  summary: {
-    total_cost: number
-    total_accumulated: number
-    total_book_value: number
-  }
-}
-
 export function FixedAssetsTable() {
-  const [data, setData] = useState<FixedAssetsData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState<string>('active')
+  const { assets, summary, isLoading, fetchAssets, setFilters, filters } = useFixedAssetsStore()
   const [search, setSearch] = useState('')
 
-  const fetchAssets = useCallback(async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      if (statusFilter !== 'all') params.set('status', statusFilter)
-      if (search) params.set('search', search)
-      const { data: res } = await apiClient.get(`/admin/fixed-assets?${params}`)
-      setData(res.data)
-    } catch (e) {
-      console.error('Failed to fetch assets:', e)
-    } finally {
-      setLoading(false)
-    }
-  }, [statusFilter, search])
+  useEffect(() => {
+    fetchAssets()
+  }, [fetchAssets])
 
-  useEffect(() => { fetchAssets() }, [fetchAssets])
+  const handleStatusChange = (value: string) => {
+    setFilters({ ...filters, status: value })
+  }
+
+  const handleSearch = (value: string) => {
+    setSearch(value)
+    setFilters({ ...filters, search: value })
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -83,6 +53,10 @@ export function FixedAssetsTable() {
     }
   }
 
+  // Safe access to summary
+  const safeSummary = summary || { total_cost: 0, total_accumulated: 0, total_book_value: 0 }
+  const safeAssets = Array.isArray(assets) ? assets : []
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -91,26 +65,26 @@ export function FixedAssetsTable() {
           <h2 className="text-xl font-bold">Aktiva Tetap</h2>
           <p className="text-sm text-muted-foreground">Fixed assets & depreciation</p>
         </div>
-        <Button variant="outline" onClick={fetchAssets} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+        <Button variant="outline" onClick={() => fetchAssets()} disabled={isLoading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
 
       {/* Summary Cards */}
-      {data && (
+      {!isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="border rounded-lg p-4 bg-blue-50">
             <p className="text-sm text-blue-600">Total Harga Perolehan</p>
-            {/*<p className="text-xl font-bold text-blue-700">{formatCurrency(data.summary.total_cost)}</p>*/}
+            <p className="text-xl font-bold text-blue-700">{formatCurrency(safeSummary.total_cost)}</p>
           </div>
           <div className="border rounded-lg p-4 bg-orange-50">
             <p className="text-sm text-orange-600">Total Akumulasi Penyusutan</p>
-            <p className="text-xl font-bold text-orange-700">{formatCurrency(data.summary.total_accumulated)}</p>
+            <p className="text-xl font-bold text-orange-700">{formatCurrency(safeSummary.total_accumulated)}</p>
           </div>
           <div className="border rounded-lg p-4 bg-green-50">
             <p className="text-sm text-green-600">Total Nilai Buku</p>
-            <p className="text-xl font-bold text-green-700">{formatCurrency(data.summary.total_book_value)}</p>
+            <p className="text-xl font-bold text-green-700">{formatCurrency(safeSummary.total_book_value)}</p>
           </div>
         </div>
       )}
@@ -120,10 +94,10 @@ export function FixedAssetsTable() {
         <Input
           placeholder="Cari aset..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => handleSearch(e.target.value)}
           className="max-w-xs"
         />
-        <Select value={statusFilter} onValueChange={v => v && setStatusFilter(v)}>
+        <Select value={filters.status || 'all'} onValueChange={v => v && handleStatusChange(v)}>
           <SelectTrigger className="w-32">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -152,31 +126,31 @@ export function FixedAssetsTable() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {isLoading ? (
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                   Memuat...
                 </td>
               </tr>
-            ) : !data || data.assets.length === 0 ? (
+            ) : safeAssets.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                   Tidak ada data aktiva tetap
                 </td>
               </tr>
             ) : (
-              data.assets.map(asset => (
+              safeAssets.map(asset => (
                 <tr key={asset.id} className="border-b hover:bg-muted/50">
                   <td className="px-4 py-3 font-mono text-xs">{asset.code}</td>
                   <td className="px-4 py-3 font-medium">{asset.name}</td>
                   <td className="px-4 py-3">{asset.category_name}</td>
                   <td className="px-4 py-3">{formatDate(asset.purchase_date)}</td>
-                  <td className="px-4 py-3 text-right font-mono">{formatCurrency(asset.purchase_cost)}</td>
+                  <td className="px-4 py-3 text-right font-mono">{formatCurrency(asset.purchase_cost || 0)}</td>
                   <td className="px-4 py-3 text-right font-mono text-orange-600">
-                    ({formatCurrency(asset.accumulated_depreciation)})
+                    ({formatCurrency(asset.accumulated_depreciation || 0)})
                   </td>
                   <td className="px-4 py-3 text-right font-mono font-medium text-green-600">
-                    {formatCurrency(asset.book_value)}
+                    {formatCurrency(asset.book_value || 0)}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {getStatusBadge(asset.status)}

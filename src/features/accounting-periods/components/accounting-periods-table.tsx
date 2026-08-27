@@ -1,66 +1,42 @@
 "use client"
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { RefreshCw, Lock, Unlock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
-import { apiClient } from '@/lib/api-client'
+import { useAccountingPeriodsStore, type AccountingPeriod } from '../store/accounting-periods-store'
 
-interface AccountingPeriod {
-  id: number
-  year: number
-  month: number
-  label: string
-  start_date: string
-  end_date: string
-  status: 'open' | 'closed' | 'locked'
-  closed_at: string | null
-  closed_by: number | null
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 
 export function AccountingPeriodsTable() {
-  const [periods, setPeriods] = useState<AccountingPeriod[]>([])
-  const [loading, setLoading] = useState(true)
-  const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const { items: periods, isLoading, isSubmitting, fetchPeriods, closePeriod, reopenPeriod } = useAccountingPeriodsStore()
   const [closePeriodId, setClosePeriodId] = useState<number | null>(null)
 
-  const fetchPeriods = useCallback(async () => {
-    setLoading(true)
-    try {
-      const { data: res } = await apiClient.get('/admin/accounting-periods')
-      setPeriods(res.data.data || [])
-    } catch (e) {
-      console.error('Failed to fetch periods:', e)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetchPeriods() }, [fetchPeriods])
+  useEffect(() => {
+    fetchPeriods()
+  }, [fetchPeriods])
 
   const handleClose = async () => {
     if (!closePeriodId) return
-    setActionLoading(closePeriodId)
     try {
-      await apiClient.post(`/admin/accounting-periods/${closePeriodId}/close`)
+      await closePeriod(closePeriodId)
       setClosePeriodId(null)
-      await fetchPeriods()
     } catch (e) {
       console.error('Failed to close period:', e)
-    } finally {
-      setActionLoading(null)
     }
   }
 
   const handleReopen = async (id: number) => {
-    setActionLoading(id)
     try {
-      await apiClient.post(`/admin/accounting-periods/${id}/reopen`)
-      await fetchPeriods()
+      await reopenPeriod(id)
     } catch (e) {
       console.error('Failed to reopen period:', e)
-    } finally {
-      setActionLoading(null)
     }
   }
 
@@ -77,13 +53,15 @@ export function AccountingPeriodsTable() {
     }
   }
 
-  const grouped = periods.reduce((acc, p) => {
-    if (!acc[p.year]) acc[p.year] = []
-    acc[p.year].push(p)
+  // Group by year and ensure it's an array
+  const safePeriods = Array.isArray(periods) ? periods : []
+  const grouped = safePeriods.reduce((acc: Record<number, AccountingPeriod[]>, p) => {
+    const year = p.year || new Date(p.start_date).getFullYear()
+    if (!acc[year]) acc[year] = []
+    acc[year].push(p)
     return acc
-  }, {} as Record<number, AccountingPeriod[]>)
-
-  const sortedYears = Object.keys(grouped).sort((a: string, b: string) => Number(b) - Number(a))
+  }, {})
+  const sortedYears = Object.keys(grouped).sort((a, b) => Number(b) - Number(a))
 
   return (
     <div className="space-y-6">
@@ -93,8 +71,8 @@ export function AccountingPeriodsTable() {
           <h2 className="text-xl font-bold">Periode Akuntansi</h2>
           <p className="text-sm text-muted-foreground">Kelola periode dan tutup buku</p>
         </div>
-        <Button variant="outline" onClick={fetchPeriods} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+        <Button variant="outline" onClick={() => fetchPeriods()} disabled={isLoading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
@@ -115,8 +93,10 @@ export function AccountingPeriodsTable() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="py-12 text-center text-muted-foreground">Memuat...</div>
+      ) : sortedYears.length === 0 ? (
+        <div className="py-12 text-center text-muted-foreground">Tidak ada data periode</div>
       ) : (
         <div className="space-y-8">
           {sortedYears.map(year => (
@@ -135,27 +115,19 @@ export function AccountingPeriodsTable() {
                   </tr>
                 </thead>
                 <tbody>
-                  {grouped[Number(year)].sort((a: AccountingPeriod, b: AccountingPeriod) => a.month - b.month).map((period: AccountingPeriod) => (
+                  {grouped[Number(year)].sort((a: AccountingPeriod, b: AccountingPeriod) => (a.month || 0) - (b.month || 0)).map((period: AccountingPeriod) => (
                     <tr key={period.id} className="border-b hover:bg-muted/50">
                       <td className="px-4 py-3 font-medium">
-                        {period.label}
+                        {period.label || `Bulan ${period.month}`}
                       </td>
                       <td className="px-4 py-3">
-                        {new Date(period.start_date).toLocaleDateString('id-ID', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
+                        {formatDate(period.start_date)}
                       </td>
                       <td className="px-4 py-3">
-                        {new Date(period.end_date).toLocaleDateString('id-ID', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
+                        {formatDate(period.end_date)}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {getStatusBadge(period.status)}
+                        {getStatusBadge(period.status || 'open')}
                       </td>
                       <td className="px-4 py-3 text-center">
                         {period.status === 'open' && (
@@ -163,7 +135,7 @@ export function AccountingPeriodsTable() {
                             variant="outline"
                             size="sm"
                             onClick={() => setClosePeriodId(period.id)}
-                            disabled={actionLoading === period.id}
+                            disabled={isSubmitting}
                           >
                             <Lock className="h-4 w-4 mr-2" />
                             Tutup
@@ -174,7 +146,7 @@ export function AccountingPeriodsTable() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleReopen(period.id)}
-                            disabled={actionLoading === period.id}
+                            disabled={isSubmitting}
                           >
                             <Unlock className="h-4 w-4 mr-2" />
                             Buka Kembali
@@ -209,7 +181,7 @@ export function AccountingPeriodsTable() {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setClosePeriodId(null)}>Batal</Button>
-            <Button onClick={handleClose} disabled={!!actionLoading}>
+            <Button onClick={handleClose} disabled={isSubmitting}>
               <Lock className="h-4 w-4 mr-2" />
               Ya, Tutup Periode
             </Button>

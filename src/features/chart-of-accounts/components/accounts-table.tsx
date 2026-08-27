@@ -1,11 +1,10 @@
 "use client"
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronRight, ChevronDown, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { apiClient } from '@/lib/api-client'
-import type { Account } from '../types/account.types'
+import { useAccountsStore, type Account } from '../store/accounts-store'
 
 const TYPE_COLORS: Record<string, string> = {
   asset: 'text-blue-600',
@@ -32,6 +31,8 @@ interface AccountRowProps {
 }
 
 function AccountRow({ account, level, expanded, onToggle, hasChildren }: AccountRowProps) {
+  const normalBalance = account.normal_balance || 'debit'
+
   return (
     <>
       <tr className="border-b hover:bg-muted/50 transition-colors">
@@ -54,8 +55,8 @@ function AccountRow({ account, level, expanded, onToggle, hasChildren }: Account
         <td className={`px-4 py-3 ${account.is_header ? 'font-medium' : ''}`}>
           {account.name}
         </td>
-        <td className={`px-4 py-3 capitalize ${TYPE_COLORS[account.type]}`}>
-          {TYPE_LABELS[account.type]}
+        <td className={`px-4 py-3 capitalize ${TYPE_COLORS[account.type] || ''}`}>
+          {TYPE_LABELS[account.type] || account.type}
         </td>
         <td className="px-4 py-3 text-center">
           <span className={`text-xs px-2 py-1 rounded ${
@@ -66,9 +67,9 @@ function AccountRow({ account, level, expanded, onToggle, hasChildren }: Account
         </td>
         <td className="px-4 py-3 text-center">
           <span className={`text-xs px-2 py-1 rounded ${
-            account.normal_balance === 'debit' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+            normalBalance === 'debit' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
           }`}>
-            {account.normal_balance ?? 0}
+            {normalBalance.toUpperCase()}
           </span>
         </td>
       </tr>
@@ -86,51 +87,21 @@ function AccountRow({ account, level, expanded, onToggle, hasChildren }: Account
   )
 }
 
-function buildTree(accounts: Account[]): Account[] {
-  const map = new Map<number, Account>()
-  const roots: Account[] = []
-
-  accounts.forEach(acc => {
-    map.set(acc.id, { ...acc, children: [] })
-  })
-
-  map.forEach(acc => {
-    if (acc.parent_id && map.has(acc.parent_id)) {
-      map.get(acc.parent_id)!.children!.push(acc)
-    } else if (!acc.parent_id) {
-      roots.push(acc)
-    }
-  })
-
-  const sort = (a: Account, b: Account) => a.code.localeCompare(b.code)
-  roots.sort(sort)
-  map.forEach(n => n.children?.sort(sort))
-  return roots
-}
-
 export function AccountsTable() {
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [loading, setLoading] = useState(true)
-  const [expanded, setExpanded] = useState<Set<number>>(new Set())
-  const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [search, setSearch] = useState('')
+  const { items, isLoading, fetchAccounts, setFilters, filters } = useAccountsStore()
+  const [expanded, setExpanded] = useState<Set<number>>(new Set([1, 2, 3, 4, 5])) // Default expanded
 
-  const fetchAccounts = useCallback(async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      if (typeFilter !== 'all') params.set('type', typeFilter)
-      if (search) params.set('search', search)
-      const { data } = await apiClient.get(`/admin/accounts?${params}`)
-      setAccounts(data.data || [])
-    } catch (e) {
-      console.error('Failed to fetch accounts:', e)
-    } finally {
-      setLoading(false)
-    }
-  }, [typeFilter, search])
+  useEffect(() => {
+    fetchAccounts()
+  }, [fetchAccounts])
 
-  useEffect(() => { fetchAccounts() }, [fetchAccounts])
+  const handleTypeChange = (value: string) => {
+    setFilters({ ...filters, type: value })
+  }
+
+  const handleSearch = (value: string) => {
+    setFilters({ ...filters, search: value })
+  }
 
   const toggle = (id: number) => {
     setExpanded(prev => {
@@ -141,19 +112,17 @@ export function AccountsTable() {
     })
   }
 
-  const tree = buildTree(accounts)
-
   return (
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex gap-4 items-center">
         <Input
           placeholder="Cari akun..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
+          defaultValue={filters.search}
+          onChange={e => handleSearch(e.target.value)}
           className="max-w-xs"
         />
-        <Select value={typeFilter} onValueChange={v => v && setTypeFilter(v)}>
+        <Select value={filters.type || 'all'} onValueChange={v => v && handleTypeChange(v)}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Tipe" />
           </SelectTrigger>
@@ -166,8 +135,8 @@ export function AccountsTable() {
             <SelectItem value="expense">Beban</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={fetchAccounts}>
-          <RefreshCw className="h-4 w-4 mr-2" />
+        <Button variant="outline" size="sm" onClick={() => fetchAccounts()}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
@@ -185,20 +154,20 @@ export function AccountsTable() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {isLoading ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                   Memuat...
                 </td>
               </tr>
-            ) : tree.length === 0 ? (
+            ) : items.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                   Tidak ada data akun
                 </td>
               </tr>
             ) : (
-              tree.map(acc => (
+              items.map(acc => (
                 <AccountRow
                   key={acc.id}
                   account={acc}
