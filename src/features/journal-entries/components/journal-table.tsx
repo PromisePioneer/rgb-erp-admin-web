@@ -1,12 +1,13 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { CheckCircle, XCircle, Trash2, RotateCcw, RefreshCw } from 'lucide-react'
+import { CheckCircle, XCircle, Trash2, RotateCcw, RefreshCw, Plus, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { useJournalStore, type JournalEntry } from '../store/journal-store'
+import { JournalFormModal } from './journal-form-modal'
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -36,6 +37,8 @@ export function JournalEntriesTable() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [formModalOpen, setFormModalOpen] = useState(false)
+  const [editEntry, setEditEntry] = useState<JournalEntry | null>(null)
 
   useEffect(() => {
     fetchEntries()
@@ -82,6 +85,21 @@ export function JournalEntriesTable() {
     }
   }
 
+  const handleEdit = (entry: JournalEntry) => {
+    setEditEntry(entry)
+    setFormModalOpen(true)
+  }
+
+  const handleAddNew = () => {
+    setEditEntry(null)
+    setFormModalOpen(true)
+  }
+
+  const handleModalClose = () => {
+    setFormModalOpen(false)
+    setEditEntry(null)
+  }
+
   // Ensure entries is an array
   const safeEntries = Array.isArray(entries) ? entries : []
   const totalDebit = safeEntries.reduce((sum, e) => sum + getEntryTotals(e).totalDebit, 0)
@@ -89,6 +107,15 @@ export function JournalEntriesTable() {
 
   return (
     <div className="space-y-4">
+      {/* Header with Add Button */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Daftar Jurnal Umum</h2>
+        <Button onClick={handleAddNew}>
+          <Plus className="h-4 w-4 mr-2" />
+          Tambah Jurnal
+        </Button>
+      </div>
+
       {/* Filters */}
       <div className="flex gap-4 items-center flex-wrap">
         <Select value={statusFilter} onValueChange={v => v && handleStatusChange(v)}>
@@ -150,6 +177,7 @@ export function JournalEntriesTable() {
             ) : (
               safeEntries.map(entry => {
                 const { totalDebit, totalCredit } = getEntryTotals(entry)
+                const isDraft = entry.status === 'draft'
                 return (
                   <tr key={entry.id} className="border-b hover:bg-muted/50">
                     <td className="px-4 py-3">{formatDate(entry.date)}</td>
@@ -172,17 +200,28 @@ export function JournalEntriesTable() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-1">
-                        {entry.status === 'draft' ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handlePost(entry.id)}
-                            disabled={isSubmitting}
-                            title="Post"
-                          >
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                          </Button>
-                        ) : (
+                        {isDraft && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(entry)}
+                              title="Edit"
+                            >
+                              <Pencil className="h-4 w-4 text-blue-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePost(entry.id)}
+                              disabled={isSubmitting}
+                              title="Post"
+                            >
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            </Button>
+                          </>
+                        )}
+                        {!isDraft && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -239,6 +278,13 @@ export function JournalEntriesTable() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add/Edit Modal */}
+      <JournalFormModal
+        open={formModalOpen}
+        onClose={handleModalClose}
+        editEntry={editEntry}
+      />
     </div>
   )
 }

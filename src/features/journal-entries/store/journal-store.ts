@@ -53,11 +53,24 @@ interface JournalState {
 
   // Actions
   fetchEntries: (filters?: JournalFilters) => Promise<void>
+  createEntry: (data: JournalEntryFormData) => Promise<JournalEntry>
+  updateEntry: (id: number, data: Partial<JournalEntryFormData>) => Promise<void>
   postEntry: (id: number) => Promise<void>
   unpostEntry: (id: number) => Promise<void>
   deleteEntry: (id: number) => Promise<void>
   setFilters: (filters: JournalFilters) => void
   clearError: () => void
+}
+
+export interface JournalEntryFormData {
+  date: string
+  reference?: string
+  description: string
+  lines: {
+    account_id: number
+    debit: number
+    credit: number
+  }[]
 }
 
 export const useJournalStore = create<JournalState>((set, get) => ({
@@ -92,6 +105,33 @@ export const useJournalStore = create<JournalState>((set, get) => ({
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch journal entries'
       set({ error: message, isLoading: false })
+    }
+  },
+
+  createEntry: async (formData: JournalEntryFormData) => {
+    set({ isSubmitting: true, error: null })
+    try {
+      const { data } = await apiClient.post('/admin/journal-entries', formData)
+      await get().fetchEntries()
+      set({ isSubmitting: false })
+      return data.data as JournalEntry
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create entry'
+      set({ error: message, isSubmitting: false })
+      throw error
+    }
+  },
+
+  updateEntry: async (id: number, formData: Partial<JournalEntryFormData>) => {
+    set({ isSubmitting: true, error: null })
+    try {
+      await apiClient.put(`/admin/journal-entries/${id}`, formData)
+      await get().fetchEntries()
+      set({ isSubmitting: false })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update entry'
+      set({ error: message, isSubmitting: false })
+      throw error
     }
   },
 
