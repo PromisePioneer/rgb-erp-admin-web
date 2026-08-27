@@ -144,13 +144,6 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
     }
   }
 
-  // Get selected account option
-  const getSelectedAccount = (accountId: number | null): SelectOption | null => {
-    if (!accountId) return null
-    // This will be resolved by AsyncSelect component
-    return { value: accountId, label: 'Loading...' }
-  }
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -225,7 +218,6 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
                           onChange={(value) => updateLine(index, 'account_id', value)}
                           loadOptions={loadAccountOptions}
                           placeholder="Cari akun..."
-                          defaultOption={line.account_id ? getSelectedAccount(line.account_id) : null}
                         />
                       </td>
                       <td className="px-3 py-2">
