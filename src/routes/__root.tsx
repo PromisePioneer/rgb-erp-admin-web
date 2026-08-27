@@ -48,6 +48,7 @@ import {
   ProfitLossView,
 } from '@/features/finance'
 import { PayrollTable } from '@/features/payroll'
+import { AccountsTable } from '@/features/accounts'
 
 // Root route
 const rootRoute = createRootRoute({
@@ -1140,6 +1141,252 @@ const financeProfitLossRoute = createRoute({
   component: FinanceProfitLossPage,
 })
 
+// Accounts
+function AccountsPage() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Chart of Accounts</h2>
+        <p className="text-muted-foreground">Manage accounting account codes and types</p>
+      </div>
+      <AccountsTable />
+    </AuthLayout>
+  )
+}
+const accountsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/accounts',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Account', 'View')
+  },
+  component: AccountsPage,
+})
+
+// ===== ACCOUNTING =====
+function ChartOfAccountsRoute() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Daftar Akun</h2>
+        <p className="text-muted-foreground">Chart of Accounts - Hierarchical</p>
+      </div>
+      <Placeholder title="Chart of Accounts" />
+    </AuthLayout>
+  )
+}
+const chartOfAccountsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/chart-of-accounts',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Chart of Account', 'View')
+  },
+  component: ChartOfAccountsRoute,
+})
+
+function JournalEntriesRoute() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Jurnal Umum</h2>
+        <p className="text-muted-foreground">Manual journal entries</p>
+      </div>
+      <Placeholder title="Journal Entries" />
+    </AuthLayout>
+  )
+}
+const journalEntriesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/journal-entries',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Journal Entry', 'View')
+  },
+  component: JournalEntriesRoute,
+})
+
+function FixedAssetsRoute() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Aktiva Tetap</h2>
+        <p className="text-muted-foreground">Fixed assets & depreciation</p>
+      </div>
+      <Placeholder title="Fixed Assets" />
+    </AuthLayout>
+  )
+}
+const fixedAssetsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/fixed-assets',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Fixed Asset', 'View')
+  },
+  component: FixedAssetsRoute,
+})
+
+function AccountingPeriodsRoute() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Periode Akuntansi</h2>
+        <p className="text-muted-foreground">Open/Close periods</p>
+      </div>
+      <Placeholder title="Accounting Periods" />
+    </AuthLayout>
+  )
+}
+const accountingPeriodsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/accounting-periods',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Accounting Period', 'View')
+  },
+  component: AccountingPeriodsRoute,
+})
+
+// ===== FINANCIAL REPORTS =====
+function TrialBalanceRoute() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Neraca Percobaan</h2>
+        <p className="text-muted-foreground">Trial Balance</p>
+      </div>
+      <Placeholder title="Trial Balance" />
+    </AuthLayout>
+  )
+}
+const trialBalanceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reports/trial-balance',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Financial Report', 'View')
+  },
+  component: TrialBalanceRoute,
+})
+
+function IncomeStatementRoute() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Laporan Laba Rugi</h2>
+        <p className="text-muted-foreground">Income Statement</p>
+      </div>
+      <Placeholder title="Income Statement" />
+    </AuthLayout>
+  )
+}
+const incomeStatementRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reports/income-statement',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Financial Report', 'View')
+  },
+  component: IncomeStatementRoute,
+})
+
+function BalanceSheetReportRoute() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Neraca / Laporan Posisi Keuangan</h2>
+        <p className="text-muted-foreground">Balance Sheet</p>
+      </div>
+      <Placeholder title="Balance Sheet" />
+    </AuthLayout>
+  )
+}
+const balanceSheetReportRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reports/balance-sheet',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Financial Report', 'View')
+  },
+  component: BalanceSheetReportRoute,
+})
+
+function CashFlowRoute() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Arus Kas</h2>
+        <p className="text-muted-foreground">Cash Flow Statement</p>
+      </div>
+      <Placeholder title="Cash Flow" />
+    </AuthLayout>
+  )
+}
+const cashFlowRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reports/cash-flow',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Financial Report', 'View')
+  },
+  component: CashFlowRoute,
+})
+
+function EquityStatementRoute() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Laporan Perubahan Modal</h2>
+        <p className="text-muted-foreground">Statement of Changes in Equity</p>
+      </div>
+      <Placeholder title="Equity Statement" />
+    </AuthLayout>
+  )
+}
+const equityStatementRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reports/equity-statement',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Financial Report', 'View')
+  },
+  component: EquityStatementRoute,
+})
+
+// ===== INVENTORY =====
+function StockCardRoute() {
+  return (
+    <AuthLayout>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Kartu Stok</h2>
+        <p className="text-muted-foreground">Stock movements (FIFO/Average)</p>
+      </div>
+      <Placeholder title="Stock Card" />
+    </AuthLayout>
+  )
+}
+const stockCardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/stock-card',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) { window.location.href = '/login'; return }
+    requirePrivilegeInBeforeLoad('Stock Card', 'View')
+  },
+  component: StockCardRoute,
+})
+
 // Build route tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -1191,6 +1438,18 @@ const routeTree = rootRoute.addChildren([
   financeLedgerRoute,
   financeBalanceSheetRoute,
   financeProfitLossRoute,
+  // Accounts
+  chartOfAccountsRoute,
+  journalEntriesRoute,
+  fixedAssetsRoute,
+  accountingPeriodsRoute,
+  trialBalanceRoute,
+  incomeStatementRoute,
+  balanceSheetReportRoute,
+  cashFlowRoute,
+  equityStatementRoute,
+  stockCardRoute,
+  accountsRoute,
 ])
 
 export const router = createRouter({ routeTree })

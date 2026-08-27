@@ -87,6 +87,11 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     'network': Network,
     'lock': Lock,
     'settings': Settings,
+    // New accounting icons
+    'building': Landmark,
+    'layout': LayoutDashboard,
+    'bar-chart': TrendingUp,
+    'calendar': CalendarDays,
 }
 
 function getLabel(section: NavSection, item?: NavItem, lang: string = 'en'): string {
