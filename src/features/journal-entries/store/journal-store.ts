@@ -100,7 +100,8 @@ export const useJournalStore = create<JournalState>((set, get) => ({
       params.set('per_page', '100')
 
       const { data } = await apiClient.get(`/admin/journal-entries?${params}`)
-      const entries: JournalEntry[] = data.data || []
+      // API returns: { success: true, data: { data: [...], meta: {...} } }
+      const entries: JournalEntry[] = data.data?.data || []
       set({ items: entries, isLoading: false })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch journal entries'
@@ -111,7 +112,8 @@ export const useJournalStore = create<JournalState>((set, get) => ({
   createEntry: async (formData: JournalEntryFormData) => {
     set({ isSubmitting: true, error: null })
     try {
-      const { data } = await apiClient.post('/admin/journal-entries', formData)
+      const payload = { ...formData, auto_post: false }
+      const { data } = await apiClient.post('/admin/journal-entries', payload)
       await get().fetchEntries()
       set({ isSubmitting: false })
       return data.data as JournalEntry

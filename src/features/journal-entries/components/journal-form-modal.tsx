@@ -1,18 +1,17 @@
 "use client"
-import { useEffect, useState } from 'react'
-import { Plus, Trash2, AlertCircle } from 'lucide-react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Plus, Trash2, AlertCircle, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
-import { AsyncSelect, type SelectOption } from '@/components/async-select'
+import { JournalAccountSelect, type SelectOption } from './journal-account-select'
 import { apiClient } from '@/lib/api-client'
 import { useJournalStore, type JournalEntry, type JournalEntryFormData } from '../store/journal-store'
 
 interface JournalLineForm {
   account_id: number | null
-  debit: number
-  credit: number
+  amount: string
 }
 
 interface JournalFormModalProps {
@@ -27,13 +26,34 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
   const [date, setDate] = useState('')
   const [reference, setReference] = useState('')
   const [description, setDescription] = useState('')
-  const [lines, setLines] = useState<JournalLineForm[]>([
-    { account_id: null, debit: 0, credit: 0 },
-    { account_id: null, debit: 0, credit: 0 },
+  const [debitLines, setDebitLines] = useState<JournalLineForm[]>([
+    { account_id: null, amount: '' },
+  ])
+  const [creditLines, setCreditLines] = useState<JournalLineForm[]>([
+    { account_id: null, amount: '' },
   ])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const isEditMode = !!editEntry
+
+  // Get selected account IDs from each side (for validation)
+  const selectedDebitIds = useMemo(() => {
+    return new Set(debitLines.map(l => l.account_id).filter(Boolean))
+  }, [debitLines])
+
+  const selectedCreditIds = useMemo(() => {
+    return new Set(creditLines.map(l => l.account_id).filter(Boolean))
+  }, [creditLines])
+
+  // Check for same account on both sides
+  const sameAccountError = useMemo(() => {
+    for (const id of selectedDebitIds) {
+      if (selectedCreditIds.has(id)) {
+        return `Akun tidak boleh muncul di kedua sisi (Debit & Kredit)`
+      }
+    }
+    return null
+  }, [selectedDebitIds, selectedCreditIds])
 
   // Reset form when modal opens
   useEffect(() => {
@@ -42,42 +62,84 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
         setDate(editEntry.date.split('T')[0])
         setReference(editEntry.reference || '')
         setDescription(editEntry.description)
-        setLines(editEntry.lines.map(l => ({
+
+        const debits = editEntry.lines.filter(l => l.debit > 0).map(l => ({
           account_id: l.account_id,
-          debit: l.debit || 0,
-          credit: l.credit || 0,
-        })))
+          amount: String(l.debit),
+        }))
+        const credits = editEntry.lines.filter(l => l.credit > 0).map(l => ({
+          account_id: l.account_id,
+          amount: String(l.credit),
+        }))
+
+        setDebitLines(debits.length > 0 ? debits : [{ account_id: null, amount: '' }])
+        setCreditLines(credits.length > 0 ? credits : [{ account_id: null, amount: '' }])
       } else {
         setDate(new Date().toISOString().split('T')[0])
         setReference('')
         setDescription('')
-        setLines([
-          { account_id: null, debit: 0, credit: 0 },
-          { account_id: null, debit: 0, credit: 0 },
-        ])
+        setDebitLines([{ account_id: null, amount: '' }])
+        setCreditLines([{ account_id: null, amount: '' }])
       }
       setErrors({})
     }
   }, [editEntry, open])
 
-  const addLine = () => {
-    setLines([...lines, { account_id: null, debit: 0, credit: 0 }])
+  // Debit lines handlers
+  const addDebitLine = () => {
+    setDebitLines([...debitLines, { account_id: null, amount: '' }])
   }
 
-  const removeLine = (index: number) => {
-    if (lines.length > 2) {
-      setLines(lines.filter((_, i) => i !== index))
+  const removeDebitLine = (index: number) => {
+    if (debitLines.length > 1) {
+      setDebitLines(debitLines.filter((_, i) => i !== index))
     }
   }
 
-  const updateLine = (index: number, field: keyof JournalLineForm, value: any) => {
-    const newLines = [...lines]
-    newLines[index] = { ...newLines[index], [field]: value }
-    setLines(newLines)
+  const updateDebitAccount = useCallback((index: number, value: number | string | null) => {
+    setDebitLines(prev => prev.map((line, i) =>
+      i === index ? { ...line, account_id: value as number | null } : line
+    ))
+  }, [])
+
+  const updateDebitAmount = useCallback((index: number, value: string) => {
+    const cleaned = value.replace(/[^0-9.]/g, '')
+    const parts = cleaned.split('.')
+    const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned
+    setDebitLines(prev => prev.map((line, i) =>
+      i === index ? { ...line, amount: formatted } : line
+    ))
+  }, [])
+
+  // Credit lines handlers
+  const addCreditLine = () => {
+    setCreditLines([...creditLines, { account_id: null, amount: '' }])
   }
 
-  const totalDebit = lines.reduce((sum, l) => sum + (l.debit || 0), 0)
-  const totalCredit = lines.reduce((sum, l) => sum + (l.credit || 0), 0)
+  const removeCreditLine = (index: number) => {
+    if (creditLines.length > 1) {
+      setCreditLines(creditLines.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateCreditAccount = useCallback((index: number, value: number | string | null) => {
+    setCreditLines(prev => prev.map((line, i) =>
+      i === index ? { ...line, account_id: value as number | null } : line
+    ))
+  }, [])
+
+  const updateCreditAmount = useCallback((index: number, value: string) => {
+    const cleaned = value.replace(/[^0-9.]/g, '')
+    const parts = cleaned.split('.')
+    const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned
+    setCreditLines(prev => prev.map((line, i) =>
+      i === index ? { ...line, amount: formatted } : line
+    ))
+  }, [])
+
+  // Calculate totals
+  const totalDebit = debitLines.reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0)
+  const totalCredit = creditLines.reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0)
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01
 
   const validate = (): boolean => {
@@ -86,10 +148,13 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
     if (!date) newErrors.date = 'Tanggal harus diisi'
     if (!description.trim()) newErrors.description = 'Keterangan harus diisi'
 
-    const validLines = lines.filter(l => l.account_id && (l.debit > 0 || l.credit > 0))
-    if (validLines.length < 2) newErrors.lines = 'Minimal 2 baris dengan akun dan nominal'
+    const validDebits = debitLines.filter(l => l.account_id && parseFloat(l.amount) > 0)
+    const validCredits = creditLines.filter(l => l.account_id && parseFloat(l.amount) > 0)
 
+    if (validDebits.length === 0) newErrors.debit = 'Minimal 1 akun di Debit'
+    if (validCredits.length === 0) newErrors.credit = 'Minimal 1 akun di Kredit'
     if (!isBalanced) newErrors.balance = 'Total Debit harus sama dengan Kredit'
+    if (sameAccountError) newErrors.sameAccount = sameAccountError
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -98,19 +163,33 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
   const handleSubmit = async () => {
     if (!validate()) return
 
-    const validLines = lines
-      .filter(l => l.account_id && (l.debit > 0 || l.credit > 0))
-      .map(l => ({
-        account_id: l.account_id!,
-        debit: l.debit || 0,
-        credit: l.credit || 0,
-      }))
+    const lines: { account_id: number; debit: number; credit: number }[] = []
+
+    debitLines
+      .filter(l => l.account_id && parseFloat(l.amount) > 0)
+      .forEach(l => {
+        lines.push({
+          account_id: l.account_id!,
+          debit: parseFloat(l.amount) || 0,
+          credit: 0,
+        })
+      })
+
+    creditLines
+      .filter(l => l.account_id && parseFloat(l.amount) > 0)
+      .forEach(l => {
+        lines.push({
+          account_id: l.account_id!,
+          debit: 0,
+          credit: parseFloat(l.amount) || 0,
+        })
+      })
 
     const formData: JournalEntryFormData = {
       date,
       reference: reference || undefined,
       description,
-      lines: validLines,
+      lines,
     }
 
     try {
@@ -125,19 +204,51 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
     }
   }
 
-  // Load account options for async select
-  const loadAccountOptions = async (search: string): Promise<SelectOption[]> => {
+  // Load account options - include headers for tree structure
+  const loadDebitAccountOptions = async (search: string): Promise<SelectOption[]> => {
     try {
       const params = new URLSearchParams()
       params.set('per_page', '100')
       if (search) params.set('search', search)
 
       const { data } = await apiClient.get(`/admin/accounts?${params}`)
-      const accounts = (data.data || []).filter((a: any) => !a.is_header)
+      const accounts = data.data || []
 
-      return accounts.map((acc: any) => ({
+      // Filter out accounts already selected in credit (except headers)
+      const filtered = accounts.filter((acc: any) =>
+        acc.is_header || !selectedCreditIds.has(acc.id)
+      )
+
+      return filtered.map((acc: any) => ({
         value: acc.id,
         label: `${acc.code} - ${acc.name}`,
+        is_header: acc.is_header || false,
+        parent_id: acc.parent_id || null,
+      }))
+    } catch {
+      return []
+    }
+  }
+
+  const loadCreditAccountOptions = async (search: string): Promise<SelectOption[]> => {
+    try {
+      const params = new URLSearchParams()
+      params.set('per_page', '100')
+      if (search) params.set('search', search)
+
+      const { data } = await apiClient.get(`/admin/accounts?${params}`)
+      const accounts = data.data || []
+
+      // Filter out accounts already selected in debit (except headers)
+      const filtered = accounts.filter((acc: any) =>
+        acc.is_header || !selectedDebitIds.has(acc.id)
+      )
+
+      return filtered.map((acc: any) => ({
+        value: acc.id,
+        label: `${acc.code} - ${acc.name}`,
+        is_header: acc.is_header || false,
+        parent_id: acc.parent_id || null,
       }))
     } catch {
       return []
@@ -146,16 +257,17 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto"
+                     style={{ width: '900px', maxWidth: '95vw' }}>
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Edit Jurnal' : 'Tambah Jurnal Baru'}</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit Jurnal' : 'Tambah Jurnal'}</DialogTitle>
           <DialogDescription>
-            {isEditMode ? 'Edit transaksi jurnal draft' : 'Buat transaksi jurnal umum baru'}
+            {isEditMode ? 'Edit transaksi jurnal draft' : 'Buat transaksi jurnal baru'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Header Fields */}
+          {/* Header */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Tanggal *</Label>
@@ -171,7 +283,7 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
               <Input
                 value={reference}
                 onChange={e => setReference(e.target.value)}
-                placeholder="Optional"
+                placeholder="No. Bukti, dll"
               />
             </div>
             <div className="space-y-2">
@@ -190,128 +302,170 @@ export function JournalFormModal({ open, onClose, editEntry }: JournalFormModalP
             {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
           </div>
 
-          {/* Lines */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Akun & Nominal</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addLine}>
-                <Plus className="h-4 w-4 mr-1" /> Tambah Baris
-              </Button>
-            </div>
+          {/* Double Entry - Split view */}
+          <div className="grid grid-cols-[1fr_auto_1fr] gap-2">
+            {/* DEBIT Side */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-red-600 font-semibold">
+                  DEBIT
+                </Label>
+                <Button type="button" variant="ghost" size="sm" onClick={addDebitLine}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Akun yang terpengaruh (+)
+              </p>
 
-            <div className="border rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-medium w-1/2">Akun</th>
-                    <th className="px-3 py-2 text-right font-medium w-1/4">Debit</th>
-                    <th className="px-3 py-2 text-right font-medium w-1/4">Kredit</th>
-                    <th className="px-3 py-2 w-12"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lines.map((line, index) => (
-                    <tr key={index} className="border-t">
-                      <td className="px-3 py-2">
-                        <AsyncSelect
-                          value={line.account_id}
-                          onChange={(value) => updateLine(index, 'account_id', value)}
-                          loadOptions={loadAccountOptions}
-                          placeholder="Cari akun..."
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={line.debit || ''}
-                          onChange={e => {
-                            updateLine(index, 'debit', parseFloat(e.target.value) || 0)
-                            if (parseFloat(e.target.value) > 0) {
-                              updateLine(index, 'credit', 0)
-                            }
-                          }}
-                          className="text-right"
-                          placeholder="0"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={line.credit || ''}
-                          onChange={e => {
-                            updateLine(index, 'credit', parseFloat(e.target.value) || 0)
-                            if (parseFloat(e.target.value) > 0) {
-                              updateLine(index, 'debit', 0)
-                            }
-                          }}
-                          className="text-right"
-                          placeholder="0"
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        {lines.length > 2 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeLine(index)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-muted/30">
-                  <tr>
-                    <td className="px-3 py-2 font-medium text-right">Total:</td>
-                    <td className="px-3 py-2 text-right font-mono font-medium">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        maximumFractionDigits: 0,
-                      }).format(totalDebit)}
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono font-medium">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        maximumFractionDigits: 0,
-                      }).format(totalCredit)}
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+              <div className="space-y-2">
+                {debitLines.map((line, index) => (
+                  <div key={`debit-${index}`} className="flex gap-2 items-start">
+                    <div className="flex-1">
+                      <JournalAccountSelect
+                        value={line.account_id}
+                        onChange={(value) => updateDebitAccount(index, value)}
+                        loadOptions={loadDebitAccountOptions}
+                        placeholder="Pilih akun..."
+                      />
+                    </div>
+                    <div className="w-32">
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={line.amount}
+                        onChange={e => updateDebitAmount(index, e.target.value)}
+                        className="text-right font-mono"
+                        placeholder="0"
+                      />
+                    </div>
+                    {debitLines.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeDebitLine(index)}
+                        className="text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {errors.debit && <p className="text-xs text-red-500">{errors.debit}</p>}
 
-            {errors.lines && <p className="text-xs text-red-500">{errors.lines}</p>}
-
-            {/* Balance Warning */}
-            {!isBalanced && (
-              <div className="flex items-center gap-2 text-orange-600 text-sm">
-                <AlertCircle className="h-4 w-4" />
-                <span>Jurnal tidak balance! Selisih: {new Intl.NumberFormat('id-ID', {
+              <div className="p-2 bg-red-50 rounded-md font-semibold text-red-600">
+                Total: {new Intl.NumberFormat('id-ID', {
                   style: 'currency',
                   currency: 'IDR',
                   maximumFractionDigits: 0,
-                }).format(Math.abs(totalDebit - totalCredit))}</span>
+                }).format(totalDebit)}
               </div>
-            )}
+            </div>
+
+            {/* Arrow */}
+            <div className="flex items-center justify-center">
+              <ArrowRight className="h-6 w-6 text-muted-foreground" />
+            </div>
+
+            {/* KREDIT Side */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-green-600 font-semibold">
+                  KREDIT
+                </Label>
+                <Button type="button" variant="ghost" size="sm" onClick={addCreditLine}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Akun sumber / pengurang
+              </p>
+
+              <div className="space-y-2">
+                {creditLines.map((line, index) => (
+                  <div key={`credit-${index}`} className="flex gap-2 items-start">
+                    <div className="flex-1">
+                      <JournalAccountSelect
+                        value={line.account_id}
+                        onChange={(value) => updateCreditAccount(index, value)}
+                        loadOptions={loadCreditAccountOptions}
+                        placeholder="Pilih akun..."
+                      />
+                    </div>
+                    <div className="w-32">
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={line.amount}
+                        onChange={e => updateCreditAmount(index, e.target.value)}
+                        className="text-right font-mono"
+                        placeholder="0"
+                      />
+                    </div>
+                    {creditLines.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeCreditLine(index)}
+                        className="text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {errors.credit && <p className="text-xs text-red-500">{errors.credit}</p>}
+
+              <div className="p-2 bg-green-50 rounded-md font-semibold text-green-600">
+                Total: {new Intl.NumberFormat('id-ID', {
+                  style: 'currency',
+                  currency: 'IDR',
+                  maximumFractionDigits: 0,
+                }).format(totalCredit)}
+              </div>
+            </div>
           </div>
+
+          {/* Error Messages */}
+          {errors.sameAccount && (
+            <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-md">
+              <AlertCircle className="h-4 w-4" />
+              <span>{errors.sameAccount}</span>
+            </div>
+          )}
+
+          {!isBalanced && !errors.balance && (
+            <div className="flex items-center gap-2 text-orange-600 text-sm bg-orange-50 p-3 rounded-md">
+              <AlertCircle className="h-4 w-4" />
+              <span>
+                Jurnal tidak balance! Selisih: {new Intl.NumberFormat('id-ID', {
+                  style: 'currency',
+                  currency: 'IDR',
+                  maximumFractionDigits: 0,
+                }).format(Math.abs(totalDebit - totalCredit))}
+              </span>
+            </div>
+          )}
+
+          {isBalanced && totalDebit > 0 && !errors.sameAccount && (
+            <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 p-3 rounded-md font-semibold">
+              ✓ Jurnal Balance
+            </div>
+          )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             Batal
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || !isBalanced}>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !isBalanced || totalDebit === 0 || !!sameAccountError}
+          >
             {isSubmitting ? 'Menyimpan...' : isEditMode ? 'Simpan Perubahan' : 'Simpan Jurnal'}
           </Button>
         </DialogFooter>
