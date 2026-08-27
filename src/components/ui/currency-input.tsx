@@ -6,7 +6,6 @@ interface CurrencyInputProps {
     value: number
     onChange: (value: number) => void
     placeholder?: string
-    min?: number
     disabled?: boolean
     className?: string
 }
@@ -15,7 +14,6 @@ export function CurrencyInput({
     value,
     onChange,
     placeholder = '0',
-    min = 0,
     disabled = false,
     className = ''
 }: CurrencyInputProps) {
