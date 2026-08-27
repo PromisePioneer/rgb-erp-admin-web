@@ -5,7 +5,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Trash2, UserPlus, CreditCard } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -21,7 +20,6 @@ import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { useEmployeesStore } from '@/features/employees'
 import { EmployeesFilters } from './employees-filters'
 import type { Employee } from '@/features/employees'
-import { apiClient } from '@/lib/api-client'
 
 export function EmployeesTable() {
   const navigate = useNavigate()
@@ -214,7 +212,7 @@ export function EmployeesTable() {
       ),
     },
     {
-      accessorKey: 'actions',
+      id: 'actions',
       header: 'Actions',
       cell: (row) => (
         <Button

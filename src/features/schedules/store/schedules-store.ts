@@ -9,6 +9,7 @@ import type {
   SchedulesPagination,
   CreateSchedulePayload,
   UpdateSchedulePayload,
+  EmployeeScheduleRow,
 } from '../types/schedules.types'
 import { schedulesApi } from '../api/schedules-api'
 
@@ -22,8 +23,13 @@ interface SchedulesState {
   filters: SchedulesFilters
   pagination: SchedulesPagination
 
+  // Calendar view state
+  calendarEmployees: EmployeeScheduleRow[]
+  calendarDates: string[]
+
   // Actions
   fetchSchedules: (params?: SchedulesFilters) => Promise<void>
+  fetchCalendarData: (params?: { month?: string; search?: string }) => Promise<void>
   fetchById: (id: number) => Promise<void>
   create: (payload: CreateSchedulePayload) => Promise<void>
   update: (id: number, payload: UpdateSchedulePayload) => Promise<void>
@@ -33,16 +39,20 @@ interface SchedulesState {
   resetFilters: () => void
   resetForm: () => void
   clearError: () => void
+
+  // Calendar helpers
+  getCalendarRows: () => EmployeeScheduleRow[]
+  getMonthDates: () => string[]
 }
 
 const initialFilters: SchedulesFilters = {
   page: 1,
-  per_page: 15,
+  per_page: 100,
 }
 
 const initialPagination: SchedulesPagination = {
   current_page: 1,
-  per_page: 15,
+  per_page: 100,
   total: 0,
   last_page: 1,
 }
@@ -56,6 +66,8 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
   error: null,
   filters: initialFilters,
   pagination: initialPagination,
+  calendarEmployees: [],
+  calendarDates: [],
 
   // Actions
   fetchSchedules: async (params?: SchedulesFilters) => {
@@ -77,11 +89,34 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     }
   },
 
+  fetchCalendarData: async (params?: { month?: string; search?: string }) => {
+    set({ isLoading: true, error: null })
+
+    try {
+      const response = await schedulesApi.getEmployeesByPlacement({
+        month: params?.month ?? get().filters.month,
+        search: params?.search,
+      })
+
+      set({
+        calendarEmployees: response.data.employees,
+        calendarDates: response.data.dates,
+        isLoading: false,
+      })
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to fetch calendar data'
+      set({ error: message, isLoading: false })
+    }
+  },
+
   fetchById: async (id: number) => {
+    console.log('Store fetchById called with id:', id)
     set({ isLoading: true, error: null, selectedItem: null })
 
     try {
       const response = await schedulesApi.getById(id)
+      console.log('Store fetchById response:', response.data)
       set({
         selectedItem: response.data,
         isLoading: false,
@@ -89,6 +124,7 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to fetch schedule'
+      console.error('Store fetchById error:', error)
       set({ error: message, isLoading: false })
     }
   },
@@ -99,8 +135,8 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     try {
       await schedulesApi.create(payload)
       set({ isSubmitting: false })
-      // Refresh the list
-      await get().fetchSchedules()
+      // Refresh calendar
+      await get().fetchCalendarData()
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to create schedule'
@@ -115,8 +151,8 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     try {
       await schedulesApi.update(id, payload)
       set({ isSubmitting: false })
-      // Refresh the list
-      await get().fetchSchedules()
+      // Refresh calendar
+      await get().fetchCalendarData()
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to update schedule'
@@ -131,8 +167,8 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     try {
       await schedulesApi.delete(id)
       set({ isSubmitting: false })
-      // Refresh the list
-      await get().fetchSchedules()
+      // Refresh calendar
+      await get().fetchCalendarData()
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to delete schedule'
@@ -147,8 +183,8 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     try {
       await schedulesApi.bulkDelete(ids)
       set({ isSubmitting: false })
-      // Refresh the list
-      await get().fetchSchedules()
+      // Refresh calendar
+      await get().fetchCalendarData()
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to delete schedules'
@@ -179,5 +215,16 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
 
   clearError: () => {
     set({ error: null })
+  },
+
+  // Calendar helpers
+  getMonthDates: () => {
+    return get().calendarDates.length > 0
+      ? get().calendarDates
+      : []
+  },
+
+  getCalendarRows: () => {
+    return get().calendarEmployees
   },
 }))

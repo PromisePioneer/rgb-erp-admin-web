@@ -15,6 +15,8 @@ export interface Schedule {
   shift_end: string | null
   area_id: number | null
   area_name: string | null
+  client_id: number | null
+  client_name: string | null
   pos_id: number | null
   pos_name: string | null
   created_at: string
@@ -68,4 +70,26 @@ export interface SelectOption {
   longitude?: number
   start_time?: string
   end_time?: string
+}
+
+// Calendar view types
+export interface CalendarSchedule {
+  id: number | null  // Changed from schedule_id to match API
+  date: string
+  shift_name: string | null
+  shift_start: string | null
+  shift_end: string | null
+  pos_name: string | null
+  area_name: string | null
+}
+
+export interface EmployeeScheduleRow {
+  employee_id: number
+  employee_name: string
+  employee_code: string
+  area_id: number | null
+  area_name: string | null
+  client_id: number | null
+  client_name: string | null
+  schedules: Record<string, CalendarSchedule | null> // key = date string (YYYY-MM-DD)
 }

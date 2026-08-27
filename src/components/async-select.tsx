@@ -1,11 +1,12 @@
 /**
  * Async Select Component
  * Select dropdown dengan remote search - pakai portal agar tidak kepotong
+ * Race condition safe dengan request-id counter
  */
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { createPortal } from 'react-dom'
-import { Search, X, ChevronDown, Check, Loader2, RotateCw } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import {useState, useEffect, useCallback, useRef} from 'react'
+import {createPortal} from 'react-dom'
+import {Search, X, ChevronDown, Check, Loader2, RotateCw} from 'lucide-react'
+import {cn} from '@/lib/utils'
 
 export interface SelectOption {
   value: number | string
@@ -18,10 +19,12 @@ interface AsyncSelectProps {
   loadOptions: (search: string) => Promise<SelectOption[]>
   placeholder?: string
   isDisabled?: boolean
+  readOnly?: boolean
   className?: string
   label?: string
   error?: string
   debounceMs?: number
+  defaultOption?: SelectOption | null
 }
 
 export function AsyncSelect({
@@ -30,96 +33,173 @@ export function AsyncSelect({
   loadOptions,
   placeholder = 'Pilih...',
   isDisabled = false,
+  readOnly = false,
   className = '',
   label,
   error,
   debounceMs = 300,
+  defaultOption,
 }: AsyncSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [options, setOptions] = useState<SelectOption[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [selectedOption, setSelectedOption] = useState<SelectOption | null>(null)
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+  const [dropdownPosition, setDropdownPosition] = useState({top: 0, left: 0, width: 0})
 
+  // Refs for race condition handling
+  const requestIdRef = useRef(0) // for fetchOptions (list loading)
+  const resolveRequestIdRef = useRef(0) // for resolveSelectedOption (single item resolve)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const hasLoadedInitialRef = useRef(false)
 
-  const fetchOptions = useCallback(async (searchTerm: string) => {
+  // Initialize selectedOption from defaultOption prop
+  useEffect(() => {
+    if (defaultOption) {
+      setSelectedOption(defaultOption)
+    }
+  }, [defaultOption])
+
+  /**
+   * Fetch options with request-id to handle race conditions
+   * Only updates state if this is still the latest request
+   */
+  const fetchOptions = useCallback(async (searchTerm: string): Promise<void> => {
+    const currentRequestId = ++requestIdRef.current
     setIsLoading(true)
+
     try {
       const result = await loadOptions(searchTerm)
-      setOptions(result)
+
+      // Only apply if this is still the latest request
+      if (currentRequestId !== requestIdRef.current) {
+        return
+      }
+
+      // Deduplicate options by value to prevent React key warnings
+      const seen = new Set()
+      const uniqueOptions = result.filter((option) => {
+        const key = String(option.value)
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+
+      setOptions(uniqueOptions)
     } catch {
-      setOptions([])
+      // Only clear options if this is still the latest request
+      if (currentRequestId === requestIdRef.current) {
+        setOptions([])
+      }
     } finally {
-      setIsLoading(false)
+      // Only update loading state if this is still the latest request
+      if (currentRequestId === requestIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [loadOptions])
 
+  /**
+   * Resolve selected option label when value is set but not in options
+   * Uses separate request-id to prevent stale updates
+   */
+  const resolveSelectedOption = useCallback(async (targetValue: number | string | null) => {
+    if (targetValue === null || targetValue === undefined) {
+      setSelectedOption(null)
+      return
+    }
+
+    const currentRequestId = ++resolveRequestIdRef.current
+
+    try {
+      const result = await loadOptions('')
+
+      // Only apply if this is still the latest resolve request
+      if (currentRequestId !== resolveRequestIdRef.current) {
+        return
+      }
+
+      const found = result.find((opt) => opt.value === targetValue)
+      if (found) {
+        setSelectedOption(found)
+      }
+    } catch {
+      // Silently fail on resolve errors
+    }
+  }, [loadOptions])
+
+  // Debounced search effect - only runs after dropdown has been opened at least once
   useEffect(() => {
+    // Don't auto-fetch before dropdown has been opened at least once
+    if (!isOpen && !hasLoadedInitialRef.current) return
+
     if (debounceRef.current) clearTimeout(debounceRef.current)
+
     debounceRef.current = setTimeout(() => {
       fetchOptions(search).then(() => {
-        // Restore focus after options load
         setTimeout(() => inputRef.current?.focus(), 0)
       })
     }, debounceMs)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [search, debounceMs, fetchOptions])
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [search, debounceMs, fetchOptions, isOpen])
+
+  // Handle readOnly mode: load options when value is set but dropdown never opened
+  useEffect(() => {
+    if (readOnly && value !== null && value !== undefined && options.length === 0) {
+      fetchOptions('')
+    }
+  }, [readOnly, value, options.length])
 
   // Load initial options when dropdown opens (only first time)
-  const [hasLoadedInitial, setHasLoadedInitial] = useState(false)
-
   useEffect(() => {
-    if (isOpen && !hasLoadedInitial) {
+    if (isOpen && !hasLoadedInitialRef.current) {
       fetchOptions('')
-      setHasLoadedInitial(true)
+      hasLoadedInitialRef.current = true
     }
-  }, [isOpen, hasLoadedInitial])
+  }, [isOpen])
 
+  // Handle value prop changes
   useEffect(() => {
-    if (value !== null && value !== undefined) {
-      const found = options.find(opt => opt.value === value)
+    if (defaultOption) {
+      setSelectedOption(defaultOption)
+    } else if (value !== null && value !== undefined) {
+      const found = options.find((opt) => opt.value === value)
       if (found) {
         setSelectedOption(found)
-      } else if (!isLoading) {
-        // Load options to find the selected value
-        loadOptions('').then(opts => {
-          const f = opts.find(o => o.value === value)
-          if (f) setSelectedOption(f)
-        }).catch(() => {})
+      } else {
+        // Try to resolve from API (only when not readOnly to avoid extra calls)
+        resolveSelectedOption(value)
       }
     } else {
       setSelectedOption(null)
     }
-  }, [value, isLoading])
+  }, [value, options, defaultOption, resolveSelectedOption])
 
   const updatePosition = useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect()
-      // Calculate position relative to viewport
-      const scrollTop = window.scrollY || document.documentElement.scrollTop
-      const scrollLeft = window.scrollX || document.documentElement.scrollLeft
 
-      // Calculate optimal position (prefer below, but show above if near bottom)
-      const dropdownHeight = 280 // approximate max dropdown height
+      const dropdownHeight = 280
       const spaceBelow = window.innerHeight - rect.bottom
       const spaceAbove = rect.top
 
       let top: number
       if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
         // Show above if not enough space below
-        top = rect.top + scrollTop - dropdownHeight - 4
+        top = rect.top - dropdownHeight - 4
       } else {
         // Show below (default)
-        top = rect.bottom + scrollTop + 4
+        top = rect.bottom + 4
       }
 
       setDropdownPosition({
         top,
-        left: rect.left + scrollLeft,
+        left: rect.left,
         width: rect.width,
       })
     }
@@ -135,6 +215,7 @@ export function AsyncSelect({
   }, [isOpen, updatePosition])
 
   const handleSelect = (option: SelectOption) => {
+    if (readOnly) return
     setSelectedOption(option)
     onChange?.(option.value)
     setIsOpen(false)
@@ -147,7 +228,10 @@ export function AsyncSelect({
   }
 
   const handleOpen = () => {
-    if (!isDisabled) {
+    if (!isDisabled && !readOnly) {
+      updatePosition()
+      setIsOpen(true)
+    } else if (readOnly) {
       updatePosition()
       setIsOpen(true)
     }
@@ -171,6 +255,7 @@ export function AsyncSelect({
           'hover:bg-accent hover:text-accent-foreground',
           'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
           'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted',
+          readOnly && !isDisabled && 'cursor-pointer',
           isOpen && 'ring-2 ring-ring ring-offset-2',
           !selectedOption && 'text-muted-foreground',
           error && 'border-destructive border-2'
@@ -180,7 +265,7 @@ export function AsyncSelect({
           {selectedOption?.label || placeholder}
         </span>
         <div className="flex items-center gap-1 shrink-0">
-          {selectedOption && !isDisabled && (
+          {selectedOption && !isDisabled && !readOnly && (
             <span onClick={handleClear} className="p-0.5 rounded-full hover:bg-muted cursor-pointer">
               <X className="h-3.5 w-3.5 text-muted-foreground" />
             </span>
@@ -239,6 +324,11 @@ export function AsyncSelect({
 
             {/* Options List */}
             <div className="max-h-[240px] overflow-y-auto py-1">
+              {readOnly && (
+                <div className="px-3 py-2 text-xs text-muted-foreground bg-muted/30 border-b">
+                  Mode baca saja - tidak dapat mengubah
+                </div>
+              )}
               {isLoading && options.length === 0 ? (
                 <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />

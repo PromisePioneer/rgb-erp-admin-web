@@ -10,6 +10,7 @@ import type {
   SelectOption,
   CreateSchedulePayload,
   UpdateSchedulePayload,
+  EmployeeScheduleRow,
 } from '../types/schedules.types'
 
 export const schedulesApi = {
@@ -116,6 +117,19 @@ export const schedulesApi = {
       '/admin/schedules/shifts/select-options',
       { params }
     )
+    return data
+  },
+
+  /**
+   * Get employees grouped by client and area for calendar view
+   * Includes all employees with placements
+   * GET /api/admin/schedules/employees-by-placement
+   */
+  getEmployeesByPlacement: async (params?: { month?: string; search?: string }) => {
+    const { data } = await apiClient.get<ApiResponse<{
+      employees: EmployeeScheduleRow[]
+      dates: string[]
+    }>>('/admin/schedules/employees-by-placement', { params })
     return data
   },
 }
