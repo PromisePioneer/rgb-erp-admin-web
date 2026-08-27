@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { CheckCircle, XCircle, Trash2, RotateCcw, RefreshCw, Plus, Pencil } from 'lucide-react'
+import { CheckCircle, XCircle, Trash2, RotateCcw, RefreshCw, Plus, Pencil, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Badge } from '@/components/ui/badge'
 import { useJournalStore, type JournalEntry } from '../store/journal-store'
 import { JournalFormModal } from './journal-form-modal'
+import { cn } from '@/lib/utils'
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -39,6 +40,7 @@ export function JournalEntriesTable() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [formModalOpen, setFormModalOpen] = useState(false)
   const [editEntry, setEditEntry] = useState<JournalEntry | null>(null)
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     fetchEntries()
@@ -100,6 +102,18 @@ export function JournalEntriesTable() {
     setEditEntry(null)
   }
 
+  const toggleRowExpand = (id: number) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
   // Ensure entries is an array
   const safeEntries = Array.isArray(entries) ? entries : []
   const totalDebit = safeEntries.reduce((sum, e) => sum + getEntryTotals(e).totalDebit, 0)
@@ -152,6 +166,7 @@ export function JournalEntriesTable() {
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
+              <th className="px-4 py-3 text-left font-medium w-8"></th>
               <th className="px-4 py-3 text-left font-medium">Tanggal</th>
               <th className="px-4 py-3 text-left font-medium">Referensi</th>
               <th className="px-4 py-3 text-left font-medium">Keterangan</th>
@@ -164,13 +179,13 @@ export function JournalEntriesTable() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                   Memuat...
                 </td>
               </tr>
             ) : safeEntries.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                   Tidak ada data jurnal
                 </td>
               </tr>
@@ -178,72 +193,110 @@ export function JournalEntriesTable() {
               safeEntries.map(entry => {
                 const { totalDebit, totalCredit } = getEntryTotals(entry)
                 const isDraft = entry.status === 'draft'
+                const isExpanded = expandedRows.has(entry.id)
+                const hasLines = entry.lines && entry.lines.length > 0
+
                 return (
-                  <tr key={entry.id} className="border-b hover:bg-muted/50">
-                    <td className="px-4 py-3">{formatDate(entry.date)}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{entry.reference || '-'}</td>
-                    <td className="px-4 py-3">{entry.description}</td>
-                    <td className="px-4 py-3 text-center">
-                      <Badge variant={entry.status === 'posted' ? 'default' : 'secondary'}>
-                        {entry.status === 'posted' ? (
-                          <><CheckCircle className="h-3 w-3 mr-1" /> Posted</>
-                        ) : (
-                          <><XCircle className="h-3 w-3 mr-1" /> Draft</>
-                        )}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono">
-                      {formatCurrency(totalDebit)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono">
-                      {formatCurrency(totalCredit)}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex justify-center gap-1">
-                        {isDraft && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(entry)}
-                              title="Edit"
-                            >
-                              <Pencil className="h-4 w-4 text-blue-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handlePost(entry.id)}
-                              disabled={isSubmitting}
-                              title="Post"
-                            >
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                            </Button>
-                          </>
-                        )}
-                        {!isDraft && (
+                  <>
+                    <tr key={entry.id} className={cn("border-b hover:bg-muted/50", isExpanded && "bg-muted/30")}>
+                      <td className="px-4 py-3">
+                        {hasLines && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleUnpost(entry.id)}
-                            disabled={isSubmitting}
-                            title="Unpost"
+                            onClick={() => toggleRowExpand(entry.id)}
+                            className="h-6 w-6 p-0"
                           >
-                            <RotateCcw className="h-4 w-4 text-orange-600" />
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
                           </Button>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteId(entry.id)}
-                          disabled={isSubmitting}
-                          title="Hapus"
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-4 py-3">{formatDate(entry.date)}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{entry.reference || '-'}</td>
+                      <td className="px-4 py-3">{entry.description}</td>
+                      <td className="px-4 py-3 text-center">
+                        <Badge variant={entry.status === 'posted' ? 'default' : 'secondary'}>
+                          {entry.status === 'posted' ? (
+                            <><CheckCircle className="h-3 w-3 mr-1" /> Posted</>
+                          ) : (
+                            <><XCircle className="h-3 w-3 mr-1" /> Draft</>
+                          )}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono">
+                        {formatCurrency(totalDebit)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono">
+                        {formatCurrency(totalCredit)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex justify-center gap-1">
+                          {isDraft && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(entry)}
+                                title="Edit"
+                              >
+                                <Pencil className="h-4 w-4 text-blue-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePost(entry.id)}
+                                disabled={isSubmitting}
+                                title="Post"
+                              >
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              </Button>
+                            </>
+                          )}
+                          {!isDraft && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleUnpost(entry.id)}
+                              disabled={isSubmitting}
+                              title="Unpost"
+                            >
+                              <RotateCcw className="h-4 w-4 text-orange-600" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteId(entry.id)}
+                            disabled={isSubmitting}
+                            title="Hapus"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Lines row */}
+                    {isExpanded && hasLines && entry.lines?.map((line, lineIndex) => (
+                      <tr key={`${entry.id}-line-${lineIndex}`} className="bg-muted/20 border-b">
+                        <td colSpan={2} className="px-4 py-2 pl-12 text-muted-foreground text-xs">
+                          {line.account?.code || `Akun #${line.account_id}`}
+                        </td>
+                        <td colSpan={2} className="px-4 py-2 text-sm">
+                          {line.account?.name || '-'}
+                        </td>
+                        <td colSpan={2} className="px-4 py-2 text-right font-mono text-sm">
+                          {Number(line.debit || 0) > 0 ? formatCurrency(line.debit) : '-'}
+                        </td>
+                        <td colSpan={2} className="px-4 py-2 text-right font-mono text-sm">
+                          {Number(line.credit || 0) > 0 ? formatCurrency(line.credit) : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </>
                 )
               })
             )}
@@ -251,7 +304,7 @@ export function JournalEntriesTable() {
           {!isLoading && safeEntries.length > 0 && (
             <tfoot className="bg-muted/30 font-medium">
               <tr>
-                <td colSpan={4} className="px-4 py-2 text-right">Total:</td>
+                <td colSpan={5} className="px-4 py-2 text-right">Total:</td>
                 <td className="px-4 py-2 text-right font-mono">{formatCurrency(totalDebit)}</td>
                 <td className="px-4 py-2 text-right font-mono">{formatCurrency(totalCredit)}</td>
                 <td />

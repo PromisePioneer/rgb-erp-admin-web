@@ -134,24 +134,29 @@ export function JournalTable() {
               </div>
 
               {/* Lines */}
-              <table className="w-full text-sm">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  <col className="w-full" />
+                  <col className="w-40" />
+                  <col className="w-40" />
+                </colgroup>
                 <tbody>
                   {entry.lines.map((line) => (
                     <tr key={line.id} className="border-b border-border last:border-0">
                       <td
-                        className={`px-6 py-2 ${
+                        className={`px-6 py-2 truncate ${
                           line.credit > 0 ? 'pl-12 text-muted-foreground' : ''
                         }`}
                       >
                         <span className="font-mono text-xs mr-2">
                           {line.account_code}
                         </span>
-                        <span>{line.account_name}</span>
+                        <span className="truncate">{line.account_name}</span>
                       </td>
-                      <td className="px-6 py-2 text-right text-muted-foreground w-40">
+                      <td className="px-6 py-2 text-right text-muted-foreground whitespace-nowrap">
                         {line.debit > 0 ? formatCurrency(line.debit) : ''}
                       </td>
-                      <td className="px-6 py-2 text-right text-muted-foreground w-40">
+                      <td className="px-6 py-2 text-right text-muted-foreground whitespace-nowrap">
                         {line.credit > 0 ? formatCurrency(line.credit) : ''}
                       </td>
                     </tr>

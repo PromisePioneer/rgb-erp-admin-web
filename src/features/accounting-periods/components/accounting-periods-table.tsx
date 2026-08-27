@@ -93,6 +93,14 @@ export function AccountingPeriodsTable() {
         </div>
       </div>
 
+      {/* Info Alert */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-sm text-blue-800">
+          <strong>Informasi:</strong> Periode baru terbentuk otomatis saat ada transaksi pertama di bulan tersebut (misal: input aset, hitung penyusutan, dll).
+          Anda <strong>tidak perlu membuat periode secara manual</strong>. Gunakan tombol <strong>"Tutup"</strong> di bawah untuk mengunci periode yang lapornya sudah difinalisasi.
+        </p>
+      </div>
+
       {isLoading ? (
         <div className="py-12 text-center text-muted-foreground">Memuat...</div>
       ) : sortedYears.length === 0 ? (

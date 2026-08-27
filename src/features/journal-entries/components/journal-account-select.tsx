@@ -1,7 +1,7 @@
 "use client"
-import {useState, useEffect, useCallback} from 'react'
+import {useState, useEffect, useCallback, useRef} from 'react'
 import {createPortal} from 'react-dom'
-import {Search, X, ChevronDown, ChevronRight, Check, Loader2, RotateCw} from 'lucide-react'
+import {Search, X, ChevronDown, ChevronRight, Check, Loader2} from 'lucide-react'
 import {cn} from '@/lib/utils'
 import * as React from "react";
 
@@ -27,7 +27,7 @@ export function JournalAccountSelect({
                                          loadOptions,
                                          placeholder = 'Pilih...',
                                          disabled = false,
-                                         className = '',
+                                         className = "",
                                      }: JournalAccountSelectProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [search, setSearch] = useState('')
@@ -37,12 +37,8 @@ export function JournalAccountSelect({
     const [dropdownPosition, setDropdownPosition] = useState({top: 0, left: 0, width: 0})
     const [expandedHeaders, setExpandedHeaders] = useState<Set<number | string>>(new Set())
 
-    const triggerRef = useCallback((node: HTMLButtonElement | null) => {
-        if (node) {
-            const rect = node.getBoundingClientRect()
-            setDropdownPosition({top: rect.bottom + 4, left: rect.left, width: rect.width})
-        }
-    }, [])
+
+    const triggerRef = useRef<HTMLButtonElement>(null)
 
     // Fetch options
     const fetchOptions = useCallback(async () => {
@@ -118,9 +114,15 @@ export function JournalAccountSelect({
     }
 
     const handleOpen = () => {
-        if (!disabled) {
-            const rect = triggerRef.getBoundingClientRect()
-            setDropdownPosition({top: rect.bottom + 4, left: rect.left, width: rect.width})
+        if (!disabled && triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect()
+
+            setDropdownPosition({
+                top: rect.bottom + 4,
+                left: rect.left,
+                width: rect.width,
+            })
+
             setIsOpen(true)
         }
     }
