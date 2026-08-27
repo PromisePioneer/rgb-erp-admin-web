@@ -150,7 +150,7 @@ export function AccountFormModal({ open, onOpenChange, editAccount }: AccountFor
                 Memuat...
               </div>
             ) : (
-              <Select value={form.parent_id || 'none'} onValueChange={v => setForm({ ...form, parent_id: v === 'none' ? '' : String(v) }}>
+              <Select value={form.parent_id || 'none'} onValueChange={(v) => setForm({ ...form, parent_id: v === 'none' ? '' : String(v) }}>
                 <SelectTrigger><SelectValue placeholder="Tanpa Induk" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Tanpa Induk (Root)</SelectItem>
@@ -178,7 +178,7 @@ export function AccountFormModal({ open, onOpenChange, editAccount }: AccountFor
           {!form.is_header && (
             <div className="space-y-2">
               <Label>Saldo Normal</Label>
-              <Select value={form.normal_balance} onValueChange={v => setForm({ ...form, normal_balance: v as 'debit' | 'credit' }}>
+              <Select value={form.normal_balance} onValueChange={(v) => setForm({ ...form, normal_balance: v as 'debit' | 'credit' }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="debit">Debit</SelectItem>
