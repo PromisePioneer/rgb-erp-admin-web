@@ -1,5 +1,4 @@
-// Chart of Accounts Types
-
+// Account types
 export interface Account {
   id: number
   code: string
@@ -11,22 +10,9 @@ export interface Account {
   is_header: boolean
   is_active: boolean
   sort_order: number
+  children?: Account[]
   created_at: string
   updated_at: string
-}
-
-export interface AccountTree extends Account {
-  children: AccountTree[]
-  expanded?: boolean
-}
-
-export interface AccountFormData {
-  code: string
-  name: string
-  type: Account['type']
-  parent_id: number | null
-  is_header: boolean
-  normal_balance: 'debit' | 'credit'
 }
 
 export interface AccountFilters {

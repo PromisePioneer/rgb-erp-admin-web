@@ -49,6 +49,16 @@ import {
 } from '@/features/finance'
 import { PayrollTable } from '@/features/payroll'
 import { AccountsTable } from '@/features/accounts'
+import { AccountsTable as ChartOfAccountsTable } from '@/features/chart-of-accounts/components/accounts-table'
+import { JournalEntriesTable } from '@/features/journal-entries/components/journal-table'
+import { StockCardTable } from '@/features/stock-card/components/stock-card-table'
+import { TrialBalanceReport } from '@/features/financial-reports/components/trial-balance'
+import { IncomeStatementReport } from '@/features/financial-reports/components/income-statement'
+import { BalanceSheetReport } from '@/features/financial-reports/components/balance-sheet'
+import { CashFlowReport } from '@/features/financial-reports/components/cash-flow'
+import { EquityStatementReport } from '@/features/financial-reports/components/equity-statement'
+import { AccountingPeriodsTable } from '@/features/accounting-periods/components/accounting-periods-table'
+import { FixedAssetsTable } from '@/features/fixed-assets/components/fixed-assets-table'
 
 // Root route
 const rootRoute = createRootRoute({
@@ -1172,7 +1182,7 @@ function ChartOfAccountsRoute() {
         <h2 className="text-2xl font-bold mb-2">Daftar Akun</h2>
         <p className="text-muted-foreground">Chart of Accounts - Hierarchical</p>
       </div>
-      <Placeholder title="Chart of Accounts" />
+      <ChartOfAccountsTable />
     </AuthLayout>
   )
 }
@@ -1194,7 +1204,7 @@ function JournalEntriesRoute() {
         <h2 className="text-2xl font-bold mb-2">Jurnal Umum</h2>
         <p className="text-muted-foreground">Manual journal entries</p>
       </div>
-      <Placeholder title="Journal Entries" />
+      <JournalEntriesTable />
     </AuthLayout>
   )
 }
@@ -1212,11 +1222,7 @@ const journalEntriesRoute = createRoute({
 function FixedAssetsRoute() {
   return (
     <AuthLayout>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Aktiva Tetap</h2>
-        <p className="text-muted-foreground">Fixed assets & depreciation</p>
-      </div>
-      <Placeholder title="Fixed Assets" />
+      <FixedAssetsTable />
     </AuthLayout>
   )
 }
@@ -1234,11 +1240,7 @@ const fixedAssetsRoute = createRoute({
 function AccountingPeriodsRoute() {
   return (
     <AuthLayout>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Periode Akuntansi</h2>
-        <p className="text-muted-foreground">Open/Close periods</p>
-      </div>
-      <Placeholder title="Accounting Periods" />
+      <AccountingPeriodsTable />
     </AuthLayout>
   )
 }
@@ -1257,11 +1259,7 @@ const accountingPeriodsRoute = createRoute({
 function TrialBalanceRoute() {
   return (
     <AuthLayout>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Neraca Percobaan</h2>
-        <p className="text-muted-foreground">Trial Balance</p>
-      </div>
-      <Placeholder title="Trial Balance" />
+      <TrialBalanceReport />
     </AuthLayout>
   )
 }
@@ -1279,11 +1277,7 @@ const trialBalanceRoute = createRoute({
 function IncomeStatementRoute() {
   return (
     <AuthLayout>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Laporan Laba Rugi</h2>
-        <p className="text-muted-foreground">Income Statement</p>
-      </div>
-      <Placeholder title="Income Statement" />
+      <IncomeStatementReport />
     </AuthLayout>
   )
 }
@@ -1301,11 +1295,7 @@ const incomeStatementRoute = createRoute({
 function BalanceSheetReportRoute() {
   return (
     <AuthLayout>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Neraca / Laporan Posisi Keuangan</h2>
-        <p className="text-muted-foreground">Balance Sheet</p>
-      </div>
-      <Placeholder title="Balance Sheet" />
+      <BalanceSheetReport />
     </AuthLayout>
   )
 }
@@ -1323,11 +1313,7 @@ const balanceSheetReportRoute = createRoute({
 function CashFlowRoute() {
   return (
     <AuthLayout>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Arus Kas</h2>
-        <p className="text-muted-foreground">Cash Flow Statement</p>
-      </div>
-      <Placeholder title="Cash Flow" />
+      <CashFlowReport />
     </AuthLayout>
   )
 }
@@ -1345,11 +1331,7 @@ const cashFlowRoute = createRoute({
 function EquityStatementRoute() {
   return (
     <AuthLayout>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Laporan Perubahan Modal</h2>
-        <p className="text-muted-foreground">Statement of Changes in Equity</p>
-      </div>
-      <Placeholder title="Equity Statement" />
+      <EquityStatementReport />
     </AuthLayout>
   )
 }
@@ -1368,11 +1350,7 @@ const equityStatementRoute = createRoute({
 function StockCardRoute() {
   return (
     <AuthLayout>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Kartu Stok</h2>
-        <p className="text-muted-foreground">Stock movements (FIFO/Average)</p>
-      </div>
-      <Placeholder title="Stock Card" />
+      <StockCardTable />
     </AuthLayout>
   )
 }

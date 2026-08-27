@@ -33,6 +33,8 @@ export interface JournalEntry {
   posted_at: string | null
   period_id: number | null
   lines: JournalLine[]
+  total_debit?: number
+  total_credit?: number
   created_by_user?: User
   updated_by_user?: User
   posted_by_user?: User
