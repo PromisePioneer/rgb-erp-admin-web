@@ -10,7 +10,6 @@ import {toast} from 'sonner'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
 import {AsyncSelect, type SelectOption} from '@/components/async-select'
-import {companyApi} from '@/features/companies/api/companies-api'
 import {positionsApi} from '@/features/positions/api/positions-api'
 import {provincesApi} from '@/features/provinces/api/provinces-api'
 import {employeesApi} from '../api/employees-api'
@@ -331,15 +330,6 @@ export function EmployeesForm() {
         }
     }
 
-    // Load companies for dropdown
-    const loadCompanies = async (search: string): Promise<SelectOption[]> => {
-        const response = await companyApi.getSelectOptions({q: search})
-        return response.map((item) => ({
-            value: item.id,
-            label: item.name,
-        }))
-    }
-
     // Load positions for dropdown
     const loadPositions = async (search: string): Promise<SelectOption[]> => {
         const response = await positionsApi.getSelectOptions({q: search})
@@ -469,20 +459,6 @@ export function EmployeesForm() {
             form.setValue('code', '', {shouldValidate: true})
         }
     }
-
-    // Handle company selection change - regenerate employee code if province is selected
-    const handleCompanyChange = async (value: number | string | null) => {
-        const companyId = value ? Number(value) : null
-        form.setValue('company_id', companyId as number | null | undefined, {shouldValidate: true})
-
-        // Regenerate code if province is already selected
-        const provinceId = form.getValues('province_id')
-        if (provinceId) {
-            const joinYear = getJoinYear()
-            await generateCode(provinceId, companyId ?? undefined, joinYear)
-        }
-    }
-
     // Handle join date change - regenerate employee code if province is selected
     const handleJoinDateChange = async (value: string) => {
         form.setValue('join_date', value, {shouldValidate: true})
@@ -589,7 +565,8 @@ export function EmployeesForm() {
                                 className="w-full"
                             />
                             {photoPreview && (
-                                <img src={photoPreview} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded-md"/>
+                                <img src={photoPreview} alt="Preview"
+                                     className="mt-2 h-20 w-20 object-cover rounded-md"/>
                             )}
                         </div>
                         <div className="space-y-2">
@@ -721,12 +698,32 @@ export function EmployeesForm() {
                     <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Company</label>
+                            <label className="text-sm font-medium">Position</label>
                             <AsyncSelect
-                                value={form.watch('company_id') ?? null}
-                                onChange={handleCompanyChange}
-                                loadOptions={loadCompanies}
-                                placeholder="Select company..."
+                                value={form.watch('position_id') ?? null}
+                                onChange={async (value) => {
+                                    const positionId = value as number | null
+                                    form.setValue('position_id', positionId as number | null | undefined, {shouldValidate: true})
+
+                                    // Get position name from selected item or API
+                                    if (positionId) {
+                                        const positions = await loadPositions('')
+                                        const selectedPosition = positions.find(p => p.value === positionId)
+                                        const positionName = selectedPosition?.label || null
+                                        setSelectedPositionName(positionName)
+
+                                        // Reset placement fields if not required
+                                        if (!REQUIRED_PLACEMENT_POSITIONS.includes(positionName || '')) {
+                                            form.setValue('client_id', undefined)
+                                            form.setValue('area_id', undefined)
+                                            form.setValue('pos_id', undefined)
+                                        }
+                                    } else {
+                                        setSelectedPositionName(null)
+                                    }
+                                }}
+                                loadOptions={loadPositions}
+                                placeholder="Select position..."
                                 className="w-full"
                             />
                         </div>
@@ -764,6 +761,7 @@ export function EmployeesForm() {
                             />
                         </div>
 
+
                         <div className="space-y-2">
                             <label className="text-sm font-medium">
                                 POS {isPlacementRequired && <span className="text-red-500">*</span>}
@@ -777,38 +775,6 @@ export function EmployeesForm() {
                                 isDisabled={!form.watch('area_id') || !isPlacementRequired}
                             />
                         </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Position</label>
-                            <AsyncSelect
-                                value={form.watch('position_id') ?? null}
-                                onChange={async (value) => {
-                                    const positionId = value as number | null
-                                    form.setValue('position_id', positionId as number | null | undefined, {shouldValidate: true})
-
-                                    // Get position name from selected item or API
-                                    if (positionId) {
-                                        const positions = await loadPositions('')
-                                        const selectedPosition = positions.find(p => p.value === positionId)
-                                        const positionName = selectedPosition?.label || null
-                                        setSelectedPositionName(positionName)
-
-                                        // Reset placement fields if not required
-                                        if (!REQUIRED_PLACEMENT_POSITIONS.includes(positionName || '')) {
-                                            form.setValue('client_id', undefined)
-                                            form.setValue('area_id', undefined)
-                                            form.setValue('pos_id', undefined)
-                                        }
-                                    } else {
-                                        setSelectedPositionName(null)
-                                    }
-                                }}
-                                loadOptions={loadPositions}
-                                placeholder="Select position..."
-                                className="w-full"
-                            />
-                        </div>
-
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Province</label>
                             <AsyncSelect
