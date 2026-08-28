@@ -7,7 +7,7 @@ import type {
   Settings,
   SettingsApiResponse,
   UpdateSettingsPayload,
-} from '../types/settings.types'
+} from '@/features/settings'
 
 export const settingsApi = {
   /**
