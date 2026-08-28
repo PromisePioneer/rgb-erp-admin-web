@@ -1,6 +1,6 @@
 "use client"
 
-import {useState, useMemo} from 'react'
+import {useState, useMemo, useRef, useLayoutEffect, useEffect} from 'react'
 import {Link, useLocation} from '@tanstack/react-router'
 import {
     ShieldCheck,
@@ -43,11 +43,15 @@ import {
     Settings,
     ChevronDown,
     Menu,
+    Search,
+    X,
 } from 'lucide-react'
 import {useAuthStore} from '@/stores/auth-store'
+import {useSettingsStore} from '@/features/settings/store/settings-store'
 import {navigationSections, navLabels, type NavItem, type NavSection} from './navigation-types'
 import {cn} from '@/lib/utils'
 import * as React from "react";
+import {Input} from "@/components/ui/input";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     'layout-dashboard': LayoutDashboard,
@@ -114,16 +118,27 @@ function sectionHasVisibleItems(section: NavSection, privileges: string[]): bool
     return section.items.some((item) => hasPrivilege(item.menu, privileges))
 }
 
-function SidebarSection({section, privileges, collapsed = false}: {
+function SidebarSection({section, privileges, collapsed = false, searchQuery = '', onLinkClick}: {
     section: NavSection
     privileges: string[]
     collapsed?: boolean
+    searchQuery?: string
+    onLinkClick?: () => void
 }) {
     const [isCollapsed, setIsCollapsed] = useState(false)
     const location = useLocation() // Pindahkan ke level komponen
     const visibleItems = section.items.filter((item) => hasPrivilege(item.menu, privileges))
 
     if (visibleItems.length === 0) return null
+
+    // Filter items based on search query
+    const filteredItems = searchQuery
+        ? visibleItems.filter((item) =>
+            getLabel(section, item).toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        : visibleItems
+
+    if (searchQuery && filteredItems.length === 0) return null
 
     const isActive = (path: string): boolean => {
         const currentPath = location.pathname
@@ -152,13 +167,14 @@ function SidebarSection({section, privileges, collapsed = false}: {
             )}
             {showItems && (
                 <div className="space-y-0.5 px-1">
-                    {visibleItems.map((item) => {
+                    {filteredItems.map((item) => {
                         const Icon = item.icon ? iconMap[item.icon] : null
                         const active = isActive(item.path)
                         return (
                             <Link
                                 key={item.path}
                                 to={item.path}
+                                onClick={onLinkClick}
                                 className={cn(
                                     'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                                     active
@@ -185,12 +201,66 @@ interface SidebarProps {
 
 export function Sidebar({collapsed = false}: SidebarProps) {
     const [mobileOpen, setMobileOpen] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
     const privileges = useAuthStore((state) => state.privileges)
+    const navRef = useRef<HTMLDivElement>(null)
+    const location = useLocation()
+    const { data: settings, fetchSettings } = useSettingsStore()
+
+    // Fetch settings on mount
+    useEffect(() => {
+        fetchSettings()
+    }, [fetchSettings])
+
+    // Restore scroll position on mount and location change
+    useLayoutEffect(() => {
+        if (navRef.current) {
+            const savedScroll = localStorage.getItem('sidebar-scroll')
+            if (savedScroll) {
+                navRef.current.scrollTop = parseInt(savedScroll, 10)
+            }
+        }
+    }, [location.pathname])
+
+    // Save scroll position on scroll
+    const handleScroll = () => {
+        if (navRef.current) {
+            localStorage.setItem('sidebar-scroll', String(navRef.current.scrollTop))
+        }
+    }
+
+    // Save scroll before navigation
+    const handleLinkClick = () => {
+        if (navRef.current) {
+            localStorage.setItem('sidebar-scroll', String(navRef.current.scrollTop))
+        }
+    }
+
+    // Get settings values with defaults
+    const appTitle = settings?.app_title || 'RGB ERP'
+    const appLogo = settings?.app_logo
+    const companyName = settings?.company_name || 'RGB ERP'
 
     const visibleSections = useMemo(
         () => navigationSections.filter((section) => sectionHasVisibleItems(section, privileges)),
         [privileges]
     )
+
+    // Filter sections when searching - show sections that have matching items
+    const filteredSections = useMemo(() => {
+        if (!searchQuery) return visibleSections
+
+        return visibleSections
+            .map(section => {
+                const filteredItems = section.items.filter(
+                    item =>
+                        hasPrivilege(item.menu, privileges) &&
+                        getLabel(section, item).toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                return {...section, items: filteredItems}
+            })
+            .filter(section => section.items.length > 0)
+    }, [visibleSections, privileges, searchQuery])
 
     return (
         <>
@@ -209,26 +279,74 @@ export function Sidebar({collapsed = false}: SidebarProps) {
             >
                 <div
                     className={cn('h-16 border-b border-border shrink-0 flex items-center', collapsed ? 'justify-center px-2' : 'px-5')}>
-                    <div
-                        className="h-10 w-10 rounded-md bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm shrink-0">
-                        <ShieldCheck className="h-5 w-5 text-primary-foreground"/>
-                    </div>
+                    {appLogo && !collapsed ? (
+                        <img
+                            src={appLogo}
+                            alt={appTitle}
+                            className="h-10 w-10 rounded-md object-contain"
+                        />
+                    ) : (
+                        <div
+                            className="h-10 w-10 rounded-md bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm shrink-0">
+                            <ShieldCheck className="h-5 w-5 text-primary-foreground"/>
+                        </div>
+                    )}
                     {!collapsed && (
                         <div className="ml-3">
-                            <p className="font-bold text-sm leading-none">RGB-86</p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">Security ERP</p>
+                            <p className="font-bold text-sm leading-none">{companyName}</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">{appTitle}</p>
                         </div>
                     )}
                 </div>
-                <nav className="flex-1 py-6 px-2 overflow-y-auto thin-scroll">
-                    {visibleSections.map((section) => (
-                        <SidebarSection key={section.label} section={section} privileges={privileges}
-                                        collapsed={collapsed}/>
+
+                {/* Search Input */}
+                {!collapsed && (
+                    <div className="px-3 py-3 border-b border-border">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground"/>
+                            <Input
+                                type="text"
+                                placeholder="Search menu..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-8 h-8 text-xs"
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="h-3.5 w-3.5"/>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <nav
+                    ref={navRef}
+                    className="flex-1 py-6 px-2 overflow-y-auto thin-scroll"
+                    onScroll={handleScroll}
+                >
+                    {filteredSections.map((section) => (
+                        <SidebarSection
+                            key={section.label}
+                            section={section}
+                            privileges={privileges}
+                            collapsed={collapsed}
+                            searchQuery={searchQuery}
+                            onLinkClick={handleLinkClick}
+                        />
                     ))}
+                    {filteredSections.length === 0 && searchQuery && (
+                        <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                            No results found
+                        </div>
+                    )}
                 </nav>
                 <div className={cn('py-4 border-t border-border shrink-0', collapsed ? 'px-2' : 'px-3')}>
                     <p className="text-[10px] text-muted-foreground text-center">
-                        &copy; {new Date().getFullYear()} RGB ERP
+                        &copy; {new Date().getFullYear()} {appTitle}
                     </p>
                 </div>
             </aside>

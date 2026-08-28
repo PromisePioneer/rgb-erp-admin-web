@@ -2,6 +2,7 @@
 export { Button, buttonVariants } from './button'
 export { Input } from './input'
 export { Label } from './label'
+export { Textarea } from './textarea'
 export { Badge } from './badge'
 export { Checkbox } from './checkbox'
 export { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
