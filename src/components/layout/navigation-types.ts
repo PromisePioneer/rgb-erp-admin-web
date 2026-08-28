@@ -29,7 +29,6 @@ export const navigationSections: NavSection[] = [
     items: [
       { label: 'Chart of Accounts', path: '/chart-of-accounts', menu: 'Chart of Account', icon: 'book' },
       { label: 'Journal Entries', path: '/journal-entries', menu: 'Journal Entry', icon: 'file-text' },
-      { label: 'Opening Balance', path: '/opening-balance', menu: 'Financial Report', icon: 'scale' },
       { label: 'Fixed Assets', path: '/fixed-assets', menu: 'Fixed Asset', icon: 'building' },
       { label: 'Asset Classes', path: '/tangible-asset-classes', menu: 'Tangible Asset Class', icon: 'layers' },
       { label: 'Accounting Periods', path: '/accounting-periods', menu: 'Accounting Period', icon: 'calendar' },
@@ -191,7 +190,6 @@ export const navLabels: Record<string, Record<string, string>> = {
     dashboard: 'Dasbor',
     chart_of_accounts: 'Daftar Akun',
     journal_entries: 'Jurnal Umum',
-    opening_balance: 'Saldo Awal',
     fixed_assets: 'Aktiva Tetap',
     asset_classes: 'Kelas Aktiva',
     accounting_periods: 'Periode Akuntansi',

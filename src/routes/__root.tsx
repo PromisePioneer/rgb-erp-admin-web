@@ -5,7 +5,7 @@ import {
     Outlet,
 } from '@tanstack/react-router'
 import {Toaster} from 'sonner'
-import {useState, useEffect} from 'react'
+import {useState} from 'react'
 import {useForm} from 'react-hook-form'
 import {zodResolver} from '@hookform/resolvers/zod'
 import {z} from 'zod'
@@ -59,7 +59,6 @@ import {BalanceSheetReport} from '@/features/financial-reports/components/balanc
 import {CashFlowReport} from '@/features/financial-reports/components/cash-flow'
 import {EquityStatementReport} from '@/features/financial-reports/components/equity-statement'
 import {AccountingPeriodsTable} from '@/features/accounting-periods/components/accounting-periods-table'
-import {OpeningBalancePage} from '@/features/opening-balance/components/OpeningBalancePage'
 import {FixedAssetsTable} from '@/features/fixed-assets/components/fixed-assets-table'
 import {TangibleAssetClassesTable} from '@/features/tangible-asset-classes/components/tangible-asset-classes-table'
 import {Button} from "@/components/ui";
@@ -103,49 +102,18 @@ const loginSchema = z.object({
 })
 type LoginFormValues = z.infer<typeof loginSchema>
 
-// OPS Module Status options from settings
-function getOpsModules(settings: any) {
-    if (!settings) {
-        return [
-            {label: 'Absensi & Jadwal Kerja', status: 'Aktif'},
-            {label: 'Patroli & Checkpoint', status: 'Aktif'},
-            {label: 'Panic Button', status: 'Siaga'},
-            {label: 'Enrollment Wajah', status: 'Aktif'},
-        ]
-    }
-    return [
-        {label: 'Absensi & Jadwal Kerja', status: settings.ops_absensi_status || 'Aktif'},
-        {label: 'Patroli & Checkpoint', status: settings.ops_patroli_status || 'Aktif'},
-        {label: 'Panic Button', status: settings.ops_panic_status || 'Siaga'},
-        {label: 'Enrollment Wajah', status: settings.ops_enrollment_status || 'Aktif'},
-    ]
-}
+const opsModules = [
+    {label: 'Absensi & Jadwal Kerja', status: 'Aktif'},
+    {label: 'Patroli & Checkpoint', status: 'Aktif'},
+    {label: 'Panic Button', status: 'Siaga'},
+    {label: 'Enrollment Wajah', status: 'Aktif'},
+]
 
 function LoginPage() {
     const {login} = useAuthStore()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showPassword, setShowPassword] = useState(false)
-    const [settings, setSettings] = useState<any>(null)
-
-    // Fetch settings on mount
-    useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-                const response = await fetch(`${baseURL}/api/admin/settings`, {
-                    credentials: 'include',
-                })
-                if (response.ok) {
-                    const data = await response.json()
-                    setSettings(data.data)
-                }
-            } catch (err) {
-                console.error('Failed to fetch settings:', err)
-            }
-        }
-        fetchSettings()
-    }, [])
 
     const form = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
@@ -165,21 +133,13 @@ function LoginPage() {
         }
     }
 
-    // Get values from settings with defaults
-    const appTitle = settings?.app_title || 'RGB ERP'
-    const companyName = settings?.company_name || 'PT. Rajawali Buana 86 (RGB 86)'
-    const companyTagline = settings?.company_tagline || 'Bermitra Bersama Kami dan Raih Sukses Bersama.'
-    const companyDescription = settings?.company_description || 'Perusahaan outsourcing sejak 2009.\nMelayani: Security, Cleaning, Catering, Parking, Gardener, Driver & lainnya.'
-    const loginImage = settings?.login_image || '/assets/images/login-background.webp'
-    const opsModules = getOpsModules(settings)
-
     return (
         <div className="min-h-screen w-full bg-background lg:grid lg:grid-cols-5">
             {/* Panel operasional (kiri, hanya desktop) */}
             <div
                 className="relative hidden overflow-hidden bg-slate-950 lg:col-span-3 lg:flex lg:flex-col lg:justify-between"
                 style={{
-                    backgroundImage: `url('${loginImage}')`,
+                    backgroundImage: `url('/assets/images/login-background.webp')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}>
@@ -207,18 +167,17 @@ function LoginPage() {
                             <ShieldCheck className="h-5 w-5 text-sky-400"/>
                         </div>
                         <span className="font-mono text-xs uppercase tracking-[0.25em] text-slate-400">
-              {appTitle}
+              RGB ERP
             </span>
                     </div>
 
                     <h1 className="max-w-md text-3xl font-bold leading-tight text-white">
-                        {companyTagline}
+                        Bermitra Bersama Kami dan Raih Sukses Bersama.
                     </h1>
                     <div className="mt-4 space-y-2 text-base text-slate-300">
-                        <p className="font-semibold text-white">{companyName}</p>
-                        {companyDescription.split('\n').map((line: string, i: number) => (
-                            <p key={i}>{line}</p>
-                        ))}
+                        <p className="font-semibold text-white">PT. Rajawali Buana 86 (RGB 86)</p>
+                        <p>Perusahaan outsourcing sejak 2009.</p>
+                        <p>Melayani: Security, Cleaning, Catering, Parking, Gardener, Driver & lainnya.</p>
                     </div>
 
                     <div className="mt-12 space-y-3">
@@ -258,7 +217,7 @@ function LoginPage() {
                             <ShieldCheck className="h-5 w-5 text-primary"/>
                         </div>
                         <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
-              {appTitle}
+              RGB ERP
             </span>
                     </div>
 
@@ -1716,28 +1675,6 @@ const accountingPeriodsRoute = createRoute({
     component: AccountingPeriodsRoute,
 })
 
-function OpeningBalanceRoute() {
-    return (
-        <AuthLayout>
-            <OpeningBalancePage/>
-        </AuthLayout>
-    )
-}
-
-const openingBalanceRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/opening-balance',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Opening Balance', 'View')
-    },
-    component: OpeningBalanceRoute,
-})
-
 // ===== FINANCIAL REPORTS =====
 function TrialBalanceRoute() {
     return (
@@ -1929,7 +1866,6 @@ const routeTree = rootRoute.addChildren([
     fixedAssetsRoute,
     tangibleAssetClassesRoute,
     accountingPeriodsRoute,
-    openingBalanceRoute,
     trialBalanceRoute,
     incomeStatementRoute,
     balanceSheetReportRoute,

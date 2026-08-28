@@ -9,14 +9,21 @@ export interface User {
   role_id: number
 }
 
+export interface Company {
+  id: number
+  name: string
+}
+
 interface AuthState {
   user: User | null
   privileges: string[]
+  currentCompany: Company | null
   isAuthenticated: boolean
 
   login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   fetchUser: () => Promise<void>
+  setCurrentCompany: (company: Company | null) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -24,44 +31,55 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       privileges: [],
+      currentCompany: null,
       isAuthenticated: false,
 
       login: async (email, password) => {
         // Get CSRF cookie first (Sanctum requirement)
-        await apiClient.get('/sanctum/csrf-cookie')
+        await apiClient.get('/admin/sanctum/csrf-cookie')
 
         // Login
-        const { data } = await apiClient.post('/api/admin/login', {
+        const { data } = await apiClient.post('/admin/login', {
           email,
           password,
         })
 
+        // Response format: { success, data: { user: {...}, message } }
+        const userData = data.data.user
+
         set({
-          user: data.user,
-          privileges: data.privileges || [],
+          user: userData,
+          privileges: userData.privileges || [],
+          currentCompany: userData.current_company || null,
           isAuthenticated: true,
         })
       },
 
       logout: async () => {
         try {
-          await apiClient.post('/logout')
+          await apiClient.post('/admin/logout')
         } finally {
-          set({ user: null, privileges: [], isAuthenticated: false })
+          set({ user: null, privileges: [], currentCompany: null, isAuthenticated: false })
         }
       },
 
       fetchUser: async () => {
         try {
-          const { data } = await apiClient.get('/api/admin/me')
+          const { data } = await apiClient.get('/admin/me')
+
           set({
             user: data.user,
             privileges: data.privileges || [],
+            currentCompany: data.current_company || null,
             isAuthenticated: true,
           })
         } catch {
-          set({ user: null, privileges: [], isAuthenticated: false })
+          set({ user: null, privileges: [], currentCompany: null, isAuthenticated: false })
         }
+      },
+
+      setCurrentCompany: (company: Company | null) => {
+        set({ currentCompany: company })
       },
     }),
     {
@@ -69,6 +87,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         privileges: state.privileges,
+        currentCompany: state.currentCompany,
         isAuthenticated: state.isAuthenticated,
       }),
     }

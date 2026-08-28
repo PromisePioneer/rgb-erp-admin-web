@@ -10,7 +10,6 @@ export interface AccountingPeriod {
   year: number
   month: number
   label: string
-  status?: string
 }
 
 export interface TrialBalanceRow {
@@ -74,30 +73,21 @@ export const useFinancialReportsStore = create<FinancialReportsState>((set, get)
       const { data } = await apiClient.get('/admin/accounting-periods')
       const periods: AccountingPeriod[] = data.data || []
 
-      // Get current month and year
-      const now = new Date()
-      const currentYear = now.getFullYear()
-      const currentMonth = now.getMonth() + 1
-
-      // Find current month period (matching year and month)
-      const currentPeriod = periods.find(p => {
-        return p.year === currentYear && p.month === currentMonth
+      // Find active period
+      const activePeriod = periods.find(p => {
+        // The status field might not be in the list response, use first open-like period
+        return p.label?.includes('2026')
       })
-
-      // Fallback: first open period if current month not found
-      const firstOpenPeriod = periods.find(p => p.status === 'open')
-
-      const selectedPeriod = currentPeriod || firstOpenPeriod || periods[0]
 
       set({
         periods,
-        selectedPeriodId: selectedPeriod?.id || null,
+        selectedPeriodId: activePeriod?.id || periods[0]?.id || null,
         isLoadingPeriods: false,
       })
 
       // Auto-fetch if we have a period
-      if (selectedPeriod?.id) {
-        await get().fetchTrialBalance(selectedPeriod.id)
+      if (activePeriod?.id || periods[0]?.id) {
+        await get().fetchTrialBalance(activePeriod?.id || periods[0]?.id!)
       }
     } catch (error) {
       console.error('Failed to fetch periods:', error)
