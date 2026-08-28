@@ -5,12 +5,13 @@
  */
 import {useState, useEffect, useCallback, useRef} from 'react'
 import {createPortal} from 'react-dom'
-import {Search, X, ChevronDown, Check, Loader2, RotateCw} from 'lucide-react'
+import {Search, X, ChevronDown, Loader2, RotateCw} from 'lucide-react'
 import {cn} from '@/lib/utils'
 
 export interface SelectOption {
   value: number | string
   label: string
+  description?: string
 }
 
 interface AsyncSelectProps {
@@ -345,15 +346,17 @@ export function AsyncSelect({
                     type="button"
                     onClick={() => handleSelect(option)}
                     className={cn(
-                      'flex items-center w-full px-3 py-2.5 text-sm text-left',
+                      'flex flex-col items-start w-full px-3 py-2.5 text-sm text-left',
                       'hover:bg-accent hover:text-accent-foreground',
                       'focus:bg-accent focus:text-accent-foreground focus:outline-none',
                       selectedOption?.value === option.value && 'bg-accent'
                     )}
                   >
-                    <span className="flex-1 truncate">{option.label}</span>
-                    {selectedOption?.value === option.value && (
-                      <Check className="h-4 w-4 text-primary shrink-0 ml-2" />
+                    <span className="font-medium truncate">{option.label}</span>
+                    {option.description && (
+                      <span className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                        {option.description}
+                      </span>
                     )}
                   </button>
                 ))

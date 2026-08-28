@@ -146,15 +146,18 @@ export function FixedAssetsTable() {
             return 0
         }
 
+        // Get useful_life_months from tangible_asset_class or default to 60
+        const usefulLifeMonths = asset.tangible_asset_class?.useful_life || 60
+
         let monthsOwned = (now.getFullYear() - acqDate.getFullYear()) * 12 + (now.getMonth() - acqDate.getMonth()) + 1
-        monthsOwned = Math.min(monthsOwned, asset.useful_life_months)
+        monthsOwned = Math.min(monthsOwned, usefulLifeMonths)
 
         if (monthsOwned <= 0) {
             return 0
         }
 
         const depreciableAmount = Number(asset.acquisition_cost) - Number(asset.salvage_value || 0)
-        const monthlyDep = depreciableAmount / Number(asset.useful_life_months)
+        const monthlyDep = depreciableAmount / usefulLifeMonths
         return Math.round(monthlyDep * monthsOwned)
     }
 

@@ -10,6 +10,7 @@ export interface SelectOption {
     label: string
     is_header?: boolean
     parent_id?: number | null
+    description?: string
 }
 
 interface JournalAccountSelectProps {
@@ -22,13 +23,13 @@ interface JournalAccountSelectProps {
 }
 
 export function JournalAccountSelect({
-                                         value,
-                                         onChange,
-                                         loadOptions,
-                                         placeholder = 'Pilih...',
-                                         disabled = false,
-                                         className = "",
-                                     }: JournalAccountSelectProps) {
+                                     value,
+                                     onChange,
+                                     loadOptions,
+                                     placeholder = 'Pilih...',
+                                     disabled = false,
+                                     className = "",
+                                 }: JournalAccountSelectProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [search, setSearch] = useState('')
     const [options, setOptions] = useState<SelectOption[]>([])
@@ -73,7 +74,8 @@ export function JournalAccountSelect({
     }, [value, options, isOpen])
 
     // Toggle header expansion
-    const toggleHeader = (headerValue: number | string) => {
+    const toggleHeader = (headerValue: number | string, e: React.MouseEvent) => {
+        e.stopPropagation()
         setExpandedHeaders(prev => {
             const next = new Set(prev)
             if (next.has(headerValue)) {
@@ -86,21 +88,38 @@ export function JournalAccountSelect({
     }
 
     // Build tree structure
-    const treeOptions = useCallback(() => {
+    const buildTree = useCallback(() => {
+        // Get all headers (accounts with is_header=true and no parent_id)
         const headers = options.filter(opt => opt.is_header && !opt.parent_id)
-        const children = options.filter(opt => !opt.is_header || opt.parent_id)
 
-        return headers.map(header => ({
-            ...header,
-            children: children.filter(child =>
-                child.parent_id === header.value ||
-                (header.parent_id && child.parent_id === header.parent_id)
-            )
-        }))
+        // Get all children (accounts that have a parent_id)
+        const children = options.filter(opt => opt.parent_id !== null)
+
+        // Map headers and attach their children
+        return headers.map(header => {
+            const headerChildren = children
+                .filter(child => child.parent_id === header.value)
+                .map(child => child)
+
+            return {
+                ...header,
+                children: headerChildren,
+                hasChildren: headerChildren.length > 0
+            }
+        })
     }, [options])
 
+    // Handle select - allow headers without children and all children
     const handleSelect = (option: SelectOption) => {
-        if (option.is_header) return // Can't select header
+        // Only block headers that have children
+        if (option.is_header && option.parent_id === null) {
+            // Check if this header has children
+            const hasChildren = options.some(opt => opt.parent_id === option.value)
+            if (hasChildren) {
+                return // Can't select headers that have children
+            }
+        }
+
         setSelectedOption(option)
         onChange(option.value)
         setIsOpen(false)
@@ -127,7 +146,7 @@ export function JournalAccountSelect({
         }
     }
 
-    const tree = treeOptions()
+    const tree = buildTree()
 
     return (
         <div className={cn('relative', className)}>
@@ -145,14 +164,14 @@ export function JournalAccountSelect({
                     isOpen && 'ring-2 ring-ring ring-offset-2'
                 )}
             >
-        <span className={cn('truncate', !selectedOption && 'text-muted-foreground')}>
-          {selectedOption?.label || placeholder}
-        </span>
+                <span className={cn('truncate', !selectedOption && 'text-muted-foreground')}>
+                  {selectedOption?.label || placeholder}
+                </span>
                 <div className="flex items-center gap-1 shrink-0">
                     {selectedOption && !disabled && (
                         <span onClick={handleClear} className="p-0.5 rounded-full hover:bg-muted cursor-pointer">
-              <X className="h-3.5 w-3.5 text-muted-foreground"/>
-            </span>
+                          <X className="h-3.5 w-3.5 text-muted-foreground"/>
+                        </span>
                     )}
                     <ChevronDown className={cn(
                         'h-4 w-4 text-muted-foreground transition-transform duration-200',
@@ -205,38 +224,48 @@ export function JournalAccountSelect({
                                 <div className="py-6 text-center text-sm text-muted-foreground">
                                     {search ? 'Tidak ada hasil' : 'Tidak ada data'}
                                 </div>
-                            ) : (
-                                tree.length > 0 ? tree.map((header) => (
+                            ) : tree.length > 0 ? (
+                                tree.map((header) => (
                                     <div key={String(header.value)}>
-                                        {/* Header Row */}
+                                        {/* Header Row - Only expandable if has children */}
                                         <button
                                             type="button"
-                                            onClick={() => toggleHeader(header.value)}
+                                            onClick={(e) => header.hasChildren ? toggleHeader(header.value, e) : handleSelect(header)}
                                             className={cn(
-                                                'flex items-center w-full px-3 py-2 text-sm text-left font-medium bg-muted/30 hover:bg-muted cursor-pointer'
+                                                'flex items-center w-full px-3 py-2 text-sm text-left',
+                                                header.hasChildren
+                                                    ? 'font-medium bg-muted/50 hover:bg-muted cursor-pointer'
+                                                    : 'font-medium hover:bg-accent cursor-pointer'
                                             )}
                                         >
-                                            {expandedHeaders.has(header.value) ? (
-                                                <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground"/>
+                                            {header.hasChildren ? (
+                                                expandedHeaders.has(header.value) ? (
+                                                    <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground"/>
+                                                ) : (
+                                                    <ChevronRight className="h-4 w-4 mr-2 text-muted-foreground"/>
+                                                )
                                             ) : (
-                                                <ChevronRight className="h-4 w-4 mr-2 text-muted-foreground"/>
+                                                <span className="h-4 w-4 mr-2"/>
                                             )}
                                             <span className="flex-1">{header.label}</span>
+                                            {header.hasChildren && (
+                                                <span className="text-xs text-muted-foreground ml-2">
+                                                    {expandedHeaders.has(header.value) ? 'Tutup' : `${header.children.length} akun`}
+                                                </span>
+                                            )}
                                         </button>
 
-                                        {/* Child Rows */}
+                                        {/* Child Rows - Only show when expanded */}
                                         {expandedHeaders.has(header.value) && header.children.map((child) => (
                                             <button
                                                 key={String(child.value)}
                                                 type="button"
                                                 onClick={() => handleSelect(child)}
-                                                disabled={child.is_header}
                                                 className={cn(
                                                     'flex items-center w-full px-3 py-2.5 text-sm text-left',
                                                     'hover:bg-accent hover:text-accent-foreground',
                                                     'focus:bg-accent focus:text-accent-foreground focus:outline-none',
-                                                    selectedOption?.value === child.value && 'bg-accent',
-                                                    child.is_header && 'opacity-50 cursor-not-allowed'
+                                                    selectedOption?.value === child.value && 'bg-accent'
                                                 )}
                                             >
                                                 <span className="w-8"/>
@@ -247,27 +276,27 @@ export function JournalAccountSelect({
                                             </button>
                                         ))}
                                     </div>
-                                )) : (
-                                    // No tree structure - just flat list of child accounts
-                                    options.filter(opt => !opt.is_header).map((option) => (
-                                        <button
-                                            key={String(option.value)}
-                                            type="button"
-                                            onClick={() => handleSelect(option)}
-                                            className={cn(
-                                                'flex items-center w-full px-3 py-2.5 text-sm text-left',
-                                                'hover:bg-accent hover:text-accent-foreground',
-                                                'focus:bg-accent focus:text-accent-foreground focus:outline-none',
-                                                selectedOption?.value === option.value && 'bg-accent'
-                                            )}
-                                        >
-                                            <span className="flex-1">{option.label}</span>
-                                            {selectedOption?.value === option.value && (
-                                                <Check className="h-4 w-4 text-primary shrink-0 ml-2"/>
-                                            )}
-                                        </button>
-                                    ))
-                                )
+                                ))
+                            ) : (
+                                // No tree structure - show flat list (all can be selected)
+                                options.map((option) => (
+                                    <button
+                                        key={String(option.value)}
+                                        type="button"
+                                        onClick={() => handleSelect(option)}
+                                        className={cn(
+                                            'flex items-center w-full px-3 py-2.5 text-sm text-left',
+                                            'hover:bg-accent hover:text-accent-foreground',
+                                            'focus:bg-accent focus:text-accent-foreground focus:outline-none',
+                                            selectedOption?.value === option.value && 'bg-accent'
+                                        )}
+                                    >
+                                        <span className="flex-1">{option.label}</span>
+                                        {selectedOption?.value === option.value && (
+                                            <Check className="h-4 w-4 text-primary shrink-0 ml-2"/>
+                                        )}
+                                    </button>
+                                ))
                             )}
                         </div>
                     </div>

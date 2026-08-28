@@ -60,6 +60,7 @@ import {CashFlowReport} from '@/features/financial-reports/components/cash-flow'
 import {EquityStatementReport} from '@/features/financial-reports/components/equity-statement'
 import {AccountingPeriodsTable} from '@/features/accounting-periods/components/accounting-periods-table'
 import {FixedAssetsTable} from '@/features/fixed-assets/components/fixed-assets-table'
+import {TangibleAssetClassesTable} from '@/features/tangible-asset-classes/components/tangible-asset-classes-table'
 import {Button} from "@/components/ui";
 
 // Root route
@@ -1630,6 +1631,28 @@ const fixedAssetsRoute = createRoute({
     component: FixedAssetsRoute,
 })
 
+function TangibleAssetClassesRoute() {
+    return (
+        <AuthLayout>
+            <TangibleAssetClassesTable/>
+        </AuthLayout>
+    )
+}
+
+const tangibleAssetClassesRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/tangible-asset-classes',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Tangible Asset Class', 'View')
+    },
+    component: TangibleAssetClassesRoute,
+})
+
 function AccountingPeriodsRoute() {
     return (
         <AuthLayout>
@@ -1841,6 +1864,7 @@ const routeTree = rootRoute.addChildren([
     chartOfAccountsRoute,
     journalEntriesRoute,
     fixedAssetsRoute,
+    tangibleAssetClassesRoute,
     accountingPeriodsRoute,
     trialBalanceRoute,
     incomeStatementRoute,

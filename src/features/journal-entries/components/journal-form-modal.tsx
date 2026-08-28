@@ -225,6 +225,7 @@ export function JournalFormModal({open, onClose, editEntry}: JournalFormModalPro
                 label: `${acc.code} - ${acc.name}`,
                 is_header: acc.is_header || false,
                 parent_id: acc.parent_id || null,
+                description: acc.description || undefined,
             }))
         } catch {
             return []
@@ -250,6 +251,7 @@ export function JournalFormModal({open, onClose, editEntry}: JournalFormModalPro
                 label: `${acc.code} - ${acc.name}`,
                 is_header: acc.is_header || false,
                 parent_id: acc.parent_id || null,
+                description: acc.description || undefined,
             }))
         } catch {
             return []

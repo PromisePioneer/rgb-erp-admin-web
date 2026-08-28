@@ -11,6 +11,7 @@ export interface FixedAsset {
   code: string
   name: string
   category: string
+  tangible_asset_class_id: number | null
   location: string | null
   serial_number: string | null
   description: string | null
@@ -18,7 +19,7 @@ export interface FixedAsset {
   quantity: number
   unit_price: number
   acquisition_cost: number
-  useful_life_months: number
+  useful_life_months: number // computed from tangible_asset_class
   depreciation_method: string
   asset_account_id: number
   accumulated_depreciation_account_id: number
@@ -32,6 +33,7 @@ export interface FixedAsset {
   asset_account?: { id: number; code: string; name: string }
   accumulated_depreciation_account?: { id: number; code: string; name: string }
   depreciation_expense_account?: { id: number; code: string; name: string }
+  tangible_asset_class?: { id: number; name: string; useful_life: number } | null
   created_at: string
   updated_at: string
 }
@@ -79,13 +81,13 @@ export interface FixedAssetFormData {
   code: string
   name: string
   category: string
+  tangible_asset_class_id?: number
   location?: string
   serial_number?: string
   description?: string
   acquisition_date: string
   quantity: number
   unit_price: number
-  useful_life_months: number
   depreciation_method: 'straight-line' | 'declining-balance' | 'sum-of-years'
   asset_account_id: number
   accumulated_depreciation_account_id: number

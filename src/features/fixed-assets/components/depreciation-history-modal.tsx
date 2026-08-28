@@ -41,8 +41,13 @@ interface Asset {
   category: string
   acquisition_date: string
   acquisition_cost: number
-  useful_life_months: number
+  useful_life_months?: number // kept for backward compatibility but will use tangible_asset_class
   salvage_value: number
+  tangible_asset_class?: {
+    id: number
+    name: string
+    useful_life: number
+  } | null
 }
 
 interface DepreciationHistoryModalProps {
@@ -85,7 +90,9 @@ export function DepreciationHistoryModal({open, onClose, asset}: DepreciationHis
 
   const totalDepreciation = depreciations.reduce((sum, d) => sum + Number(d.amount), 0)
   const monthsCount = depreciations.length
-  const monthlyDepreciation = Number(asset.acquisition_cost) / Number(asset.useful_life_months)
+  // Get useful_life from tangible_asset_class or default to 60
+  const usefulLife = asset.tangible_asset_class?.useful_life || asset.useful_life_months || 60
+  const monthlyDepreciation = (Number(asset.acquisition_cost) - Number(asset.salvage_value || 0)) / usefulLife
 
   const getMonthName = (month: number) => {
     const date = new Date(2024, month - 1)
@@ -121,7 +128,7 @@ export function DepreciationHistoryModal({open, onClose, asset}: DepreciationHis
               </div>
               <div>
                 <p className="text-muted-foreground">Umur Ekonomis</p>
-                <p className="font-medium">{asset.useful_life_months} bulan</p>
+                <p className="font-medium">{usefulLife} bulan</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Penyusutan/Bulan</p>
@@ -218,10 +225,10 @@ export function DepreciationHistoryModal({open, onClose, asset}: DepreciationHis
                 {monthsCount === 0 && (
                   <>Belum ada yang diposting. Mulai posting dari {getMonthName(new Date(asset.acquisition_date).getMonth() + 1)} {new Date(asset.acquisition_date).getFullYear()}</>
                 )}
-                {monthsCount > 0 && monthsCount < Number(asset.useful_life_months) && (
-                  <>Sisa {Number(asset.useful_life_months) - monthsCount} bulan × {formatCurrency(monthlyDepreciation)} = {formatCurrency((Number(asset.useful_life_months) - monthsCount) * monthlyDepreciation)}</>
+                {monthsCount > 0 && monthsCount < usefulLife && (
+                  <>Sisa {usefulLife - monthsCount} bulan × {formatCurrency(monthlyDepreciation)} = {formatCurrency((usefulLife - monthsCount) * monthlyDepreciation)}</>
                 )}
-                {monthsCount >= Number(asset.useful_life_months) && (
+                {monthsCount >= usefulLife && (
                   <span className="text-green-600 font-medium">✓ Semua penyusutan sudah diposting (Fully Depreciated)</span>
                 )}
               </p>

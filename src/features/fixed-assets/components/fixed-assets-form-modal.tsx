@@ -8,6 +8,7 @@ import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription} fro
 import {AsyncSelect} from '@/components/async-select'
 import {apiClient} from '@/lib/api-client'
 import {useFixedAssetsStore, type FixedAsset, type FixedAssetFormData} from '@/features/fixed-assets'
+import {Info} from 'lucide-react'
 
 interface FixedAssetFormModalProps {
     open: boolean
@@ -16,9 +17,21 @@ interface FixedAssetFormModalProps {
 }
 
 const DEPRECIATION_METHODS = [
-    {value: 'straight-line', label: 'Garis Lurus (Straight Line)'},
-    {value: 'declining-balance', label: 'Saldo Menurun (Declining Balance)'},
-    {value: 'sum-of-years', label: 'Jumlah Angka Tahun (Sum of Years)'},
+    {
+        value: 'straight-line',
+        label: 'Garis Lurus (Straight Line)',
+        description: 'Beban penyusutan sama rata setiap tahun. Cocok untuk aset yang fungsinya menurun karena waktu (bangunan, furnitur kantor).',
+    },
+    {
+        value: 'declining-balance',
+        label: 'Saldo Menurun (Declining Balance)',
+        description: 'Beban penyusutan besar di awal, terus menurun drastis. Cocok untuk aset yang cepat turun nilai/teknologi (komputer, kendaraan).',
+    },
+    {
+        value: 'sum-of-years',
+        label: 'Jumlah Angka Tahun (Sum of Years)',
+        description: 'Mirip saldo menurun, beban penyusutan menurun setiap tahun berdasarkan pecahan sisa umur ekonomis.',
+    },
 ]
 
 export function FixedAssetFormModal({open, onClose, editAsset}: FixedAssetFormModalProps) {
@@ -29,10 +42,10 @@ export function FixedAssetFormModal({open, onClose, editAsset}: FixedAssetFormMo
         code: '',
         name: '',
         category: '',
+        tangible_asset_class_id: undefined,
         acquisition_date: '',
         quantity: 1,
         unit_price: 0,
-        useful_life_months: 60,
         depreciation_method: 'straight-line',
         asset_account_id: 0,
         accumulated_depreciation_account_id: 0,
@@ -55,13 +68,13 @@ export function FixedAssetFormModal({open, onClose, editAsset}: FixedAssetFormMo
                     code: editAsset.code,
                     name: editAsset.name,
                     category: editAsset.category,
+                    tangible_asset_class_id: editAsset.tangible_asset_class_id || undefined,
                     location: editAsset.location || '',
                     serial_number: editAsset.serial_number || '',
                     description: editAsset.description || '',
                     acquisition_date: editAsset.acquisition_date.split('T')[0],
                     quantity: editAsset.quantity,
                     unit_price: editAsset.unit_price,
-                    useful_life_months: editAsset.useful_life_months,
                     depreciation_method: editAsset.depreciation_method as FixedAssetFormData['depreciation_method'],
                     asset_account_id: editAsset.asset_account_id,
                     accumulated_depreciation_account_id: editAsset.accumulated_depreciation_account_id,
@@ -73,10 +86,10 @@ export function FixedAssetFormModal({open, onClose, editAsset}: FixedAssetFormMo
                     code: '',
                     name: '',
                     category: '',
+                    tangible_asset_class_id: undefined,
                     acquisition_date: new Date().toISOString().split('T')[0],
                     quantity: 1,
                     unit_price: 0,
-                    useful_life_months: 60,
                     depreciation_method: 'straight-line',
                     asset_account_id: 0,
                     accumulated_depreciation_account_id: 0,
@@ -104,7 +117,6 @@ export function FixedAssetFormModal({open, onClose, editAsset}: FixedAssetFormMo
         if (!formData.acquisition_date) newErrors.acquisition_date = 'Tanggal perolehan harus diisi'
         if (formData.quantity < 1) newErrors.quantity = 'Jumlah minimal 1'
         if (formData.unit_price <= 0) newErrors.unit_price = 'Harga satuan harus lebih dari 0'
-        if (formData.useful_life_months < 1) newErrors.useful_life_months = 'Umur ekonomis minimal 1 bulan'
         if (!formData.asset_account_id) newErrors.asset_account_id = 'Akun aset harus dipilih'
         if (!formData.accumulated_depreciation_account_id) newErrors.accumulated_depreciation_account_id = 'Akun akumulasi penyusutan harus dipilih'
         if (!formData.depreciation_expense_account_id) newErrors.depreciation_expense_account_id = 'Akun beban penyusutan harus dipilih'
@@ -143,6 +155,7 @@ export function FixedAssetFormModal({open, onClose, editAsset}: FixedAssetFormMo
             return searched.map((acc: any) => ({
                 value: acc.id,
                 label: `${acc.code} - ${acc.name}`,
+                description: acc.description || undefined,
             }))
         } catch {
             return []
@@ -163,6 +176,7 @@ export function FixedAssetFormModal({open, onClose, editAsset}: FixedAssetFormMo
             return searched.map((acc: any) => ({
                 value: acc.id,
                 label: `${acc.code} - ${acc.name}`,
+                description: acc.description || undefined,
             }))
         } catch {
             return []
@@ -183,6 +197,7 @@ export function FixedAssetFormModal({open, onClose, editAsset}: FixedAssetFormMo
             return searched.map((acc: any) => ({
                 value: acc.id,
                 label: `${acc.code} - ${acc.name}`,
+                description: acc.description || undefined,
             }))
         } catch {
             return []
@@ -200,6 +215,24 @@ export function FixedAssetFormModal({open, onClose, editAsset}: FixedAssetFormMo
         'Tanah',
         'Lainnya',
     ]
+
+    // Tangible Asset Class loader
+    const loadTangibleAssetClassOptions = useCallback(async (search: string): Promise<any[]> => {
+        try {
+            const {data} = await apiClient.get('/admin/tangible-asset-class/select-options', {
+                params: { q: search }
+            })
+            const classes = data.data || []
+
+            return classes.map((cls: any) => ({
+                value: cls.id,
+                label: `${cls.name} - ${cls.useful_life} bulan`,
+                description: cls.notes || undefined,
+            }))
+        } catch {
+            return []
+        }
+    }, [])
 
     const filteredCategories = formData.category
         ? categorySuggestions.filter(c => c.toLowerCase().includes(formData.category.toLowerCase()))
@@ -261,6 +294,21 @@ export function FixedAssetFormModal({open, onClose, editAsset}: FixedAssetFormMo
                             placeholder="Nama lengkap aset"
                         />
                         {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+                    </div>
+
+                    {/* Tangible Asset Class */}
+                    <div className="space-y-2">
+                        <Label>Kelas Aktiva (Opsional)</Label>
+                        <AsyncSelect
+                            value={formData.tangible_asset_class_id}
+                            onChange={(value) => handleChange('tangible_asset_class_id', value || undefined)}
+                            loadOptions={loadTangibleAssetClassOptions}
+                            placeholder="Pilih kelas aktiva..."
+                            className="w-full"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Pilih kelas aktiva untuk mengisi umur manfaat otomatis
+                        </p>
                     </div>
 
                     {/* Row 2: Location & Serial Number */}
@@ -331,22 +379,29 @@ export function FixedAssetFormModal({open, onClose, editAsset}: FixedAssetFormMo
                         </div>
                     </div>
 
-                    {/* Row 4: Useful Life & Depreciation Method & Salvage */}
-                    <div className="grid grid-cols-3 gap-4">
+                    {/* Row 4: Depreciation Method & Salvage */}
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="useful_life_months">Umur Ekonomis (Bulan) *</Label>
-                            <Input
-                                id="useful_life_months"
-                                type="number"
-                                min={1}
-                                value={formData.useful_life_months}
-                                onChange={e => handleChange('useful_life_months', parseInt(e.target.value) || 1)}
-                            />
-                            {errors.useful_life_months &&
-                                <p className="text-xs text-red-500">{errors.useful_life_months}</p>}
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="depreciation_method">Metode Penyusutan *</Label>
+                            <div className="flex items-center gap-1.5">
+                                <Label htmlFor="depreciation_method">Metode Penyusutan *</Label>
+                                <div className="group relative">
+                                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-80 p-3 bg-popover border rounded-lg shadow-lg text-xs text-popover-foreground z-50">
+                                        <p className="font-medium mb-2">Metode Penyusutan:</p>
+                                        <ol className="text-muted-foreground space-y-2 list-decimal list-inside">
+                                            <li>
+                                                <span className="font-medium">Garis Lurus:</span> Beban sama rata setiap tahun. Cocok untuk aset yang fungsinya menurun karena waktu (bangunan, furnitur).
+                                            </li>
+                                            <li>
+                                                <span className="font-medium">Saldo Menurun:</span> Beban besar di awal, terus menurun drastis. Cocok untuk aset yang cepat turun nilai/teknologi (komputer, kendaraan).
+                                            </li>
+                                            <li>
+                                                <span className="font-medium">Jumlah Angka Tahun:</span> Mirip saldo menurun, beban menurun berdasarkan pecahan sisa umur ekonomis.
+                                            </li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
                             <AsyncSelect
                                 value={formData.depreciation_method}
                                 onChange={(value) => handleChange('depreciation_method', value)}
@@ -358,7 +413,24 @@ export function FixedAssetFormModal({open, onClose, editAsset}: FixedAssetFormMo
                                 <p className="text-xs text-red-500">{errors.depreciation_method}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="salvage_value">Nilai Sisa</Label>
+                            <div className="flex items-center gap-1.5">
+                                <Label htmlFor="salvage_value">Nilai Sisa</Label>
+                                <div className="group relative">
+                                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-72 p-3 bg-popover border rounded-lg shadow-lg text-xs text-popover-foreground z-50">
+                                        <p className="font-medium mb-2">Apa itu Nilai Sisa?</p>
+                                        <p className="text-muted-foreground mb-2">
+                                            Nilai sisa adalah estimasi nilai aset ketika masa pakainya sudah habis.
+                                        </p>
+                                        <p className="font-medium mb-1">Tambahkan nilai sisa jika:</p>
+                                        <ol className="text-muted-foreground space-y-1 list-decimal list-inside">
+                                            <li>Aset diyakini masih laku dijual dengan harga tinggi setelah masa pakainya habis (contoh: mobil operasional, truk, atau gedung bangunan).</li>
+                                            <li>Aset memiliki material yang tetap bernilai meskipun fungsinya sudah hilang (contoh: mesin pabrik berat yang besi tuangnya masih bisa dijual kiloan sebagai besi tua).</li>
+                                        </ol>
+                                        <p className="text-muted-foreground mt-2">Jika tidak yakin, biarkan kosong (akan dianggap 0).</p>
+                                    </div>
+                                </div>
+                            </div>
                             <CurrencyInput
                                 value={formData.salvage_value || 0}
                                 onChange={(val) => handleChange('salvage_value', val)}
