@@ -5,12 +5,28 @@ import type {
   ControllerProps,
   FieldPath,
   FieldValues,
+  UseFormReturn,
 } from "react-hook-form"
-import { useFormContext, Controller } from "react-hook-form"
+import { useFormContext, Controller, FormProvider } from "react-hook-form"
 
-// Simple Form wrapper component
-export function Form({ children, ...props }: React.ComponentProps<"form">) {
-  return <form data-slot="form" {...props}>{children}</form>
+// FormProvider wrapper to pass form context to child components
+export function Form<
+  TFieldValues extends FieldValues = FieldValues,
+  TContext = unknown,
+>({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<"form"> & {
+  form: UseFormReturn<TFieldValues, TContext>
+}) {
+  return (
+    <FormProvider {...props.form}>
+      <form data-slot="form" className={className} {...props}>
+        {children}
+      </form>
+    </FormProvider>
+  )
 }
 
 // FormField wraps Controller from react-hook-form
@@ -55,4 +71,36 @@ export function FormDescription({ className, ...props }: React.ComponentPropsWit
 export function FormMessage({ className, children, ...props }: React.ComponentPropsWithoutRef<"p">) {
   if (!children) return null
   return <p data-slot="form-message" className={className} {...props}>{children}</p>
+}
+
+// Submit button that uses form context
+interface FormSubmitProps extends Omit<React.ComponentPropsWithoutRef<"button">, 'form'> {
+  form: UseFormReturn<FieldValues>
+  onSubmit: (values: FieldValues) => Promise<void>
+}
+
+export function FormSubmit({ form, onSubmit, children, disabled, className, ...props }: FormSubmitProps) {
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    try {
+      await form.handleSubmit(onSubmit)()
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <button
+      type="submit"
+      onClick={handleSubmit}
+      disabled={disabled || isSubmitting || !form.formState.isValid}
+      className={className}
+      {...props}
+    >
+      {children}
+    </button>
+  )
 }

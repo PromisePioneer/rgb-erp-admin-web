@@ -5,7 +5,6 @@
 import { create } from 'zustand'
 import type {
   Client,
-  ClientSelectOption,
   ClientsFilters,
   ClientsPagination,
   CreateClientPayload,
@@ -17,9 +16,7 @@ interface ClientsState {
   // State
   items: Client[]
   selectedItem: Client | null
-  clientTypes: ClientSelectOption[]
   isLoading: boolean
-  isLoadingClientTypes: boolean
   isSubmitting: boolean
   error: string | null
   filters: ClientsFilters
@@ -32,10 +29,9 @@ interface ClientsState {
   update: (id: number, payload: UpdateClientPayload) => Promise<void>
   remove: (id: number) => Promise<void>
   bulkDelete: (ids: number[]) => Promise<void>
-  fetchClientTypes: () => Promise<void>
   setFilters: (filters: Partial<ClientsFilters>) => void
   resetFilters: () => void
-  reset: () => void
+  resetForm: () => void
   clearError: () => void
 }
 
@@ -55,9 +51,7 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
   // Initial state
   items: [],
   selectedItem: null,
-  clientTypes: [],
   isLoading: false,
-  isLoadingClientTypes: false,
   isSubmitting: false,
   error: null,
   filters: initialFilters,
@@ -163,21 +157,6 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
     }
   },
 
-  fetchClientTypes: async () => {
-    set({ isLoadingClientTypes: true })
-
-    try {
-      const response = await clientsApi.getSelectOptions()
-      set({
-        clientTypes: response.data,
-        isLoadingClientTypes: false,
-      })
-    } catch {
-      // Use empty array on error
-      set({ clientTypes: [], isLoadingClientTypes: false })
-    }
-  },
-
   setFilters: (newFilters: Partial<ClientsFilters>) => {
     const updatedFilters = { ...get().filters, ...newFilters }
     // Reset to page 1 when changing filters (except page itself)
@@ -191,15 +170,13 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
     set({ filters: initialFilters })
   },
 
-  reset: () => {
+  resetForm: () => {
     set({
-      items: [],
       selectedItem: null,
       error: null,
-      filters: initialFilters,
-      pagination: initialPagination,
     })
   },
+
 
   clearError: () => {
     set({ error: null })
