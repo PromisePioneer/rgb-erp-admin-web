@@ -1,10 +1,9 @@
 /**
  * Reports Table Component
- * DataTable with shadcn Table, photo preview, and pagination
+ * DataTable with shadcn Table and pagination
  */
-import { useEffect, useState } from 'react'
-import { format } from 'date-fns'
-import { Image, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { useEffect } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -15,20 +14,12 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { useReportsStore } from '../store/reports-store'
 import { ReportsFilters } from './reports-filters'
 
 export function ReportsTable() {
   const { items, isLoading, pagination, fetchReports, filters } =
     useReportsStore()
-  const [previewPhoto, setPreviewPhoto] = useState<string | null>(null)
 
   // Fetch reports on mount and when filters change
   useEffect(() => {
@@ -40,21 +31,16 @@ export function ReportsTable() {
     fetchReports({ ...filters, page: newPage })
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDateTime = (dateTimeString: string | undefined | null) => {
+    if (!dateTimeString) return { date: '-', time: '-' }
     try {
-      return format(new Date(dateString), 'MMM dd, yyyy')
+      const dt = new Date(dateTimeString)
+      const date = dt.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: '2-digit' })
+      const time = dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
+      return { date, time }
     } catch {
-      return dateString
+      return { date: '-', time: '-' }
     }
-  }
-
-  const formatTime = (timeString: string) => {
-    // Handle both "HH:mm:ss" and "HH:mm" formats
-    const parts = timeString.split(':')
-    if (parts.length >= 2) {
-      return `${parts[0]}:${parts[1]}`
-    }
-    return timeString
   }
 
   return (
@@ -71,13 +57,12 @@ export function ReportsTable() {
               <TableHead>Client</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead className="w-[80px]">Photo</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
+                <TableCell colSpan={6} className="text-center py-8">
                   <div className="flex items-center justify-center">
                     <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   </div>
@@ -85,7 +70,7 @@ export function ReportsTable() {
               </TableRow>
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
+                <TableCell colSpan={6} className="text-center py-8">
                   <div className="text-muted-foreground">
                     <p className="text-lg font-medium mb-1">No reports found</p>
                     <p className="text-sm">
@@ -95,15 +80,17 @@ export function ReportsTable() {
                 </TableCell>
               </TableRow>
             ) : (
-              items.map((report) => (
+              items.map((report) => {
+                const { date, time } = formatDateTime(report.created_at)
+                return (
                 <TableRow key={report.id}>
                   <TableCell>
                     <Badge variant="outline">
-                      {formatDate(report.date)}
+                      {date}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatTime(report.time)}
+                    {time}
                   </TableCell>
                   <TableCell className="font-medium">
                     {report.employee_name}
@@ -113,26 +100,13 @@ export function ReportsTable() {
                     {report.location}
                   </TableCell>
                   <TableCell className="max-w-[250px]">
-                    <p className="truncate" title={report.description}>
-                      {report.description}
+                    <p className="truncate" title={report.note}>
+                      {report.note}
                     </p>
                   </TableCell>
-                  <TableCell>
-                    {report.photo_url ? (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setPreviewPhoto(report.photo_url)}
-                        className="hover:bg-accent"
-                      >
-                        <Image className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">-</span>
-                    )}
-                  </TableCell>
                 </TableRow>
-              ))
+                )
+              })
             )}
           </TableBody>
         </Table>
@@ -169,36 +143,6 @@ export function ReportsTable() {
           </div>
         </div>
       )}
-
-      {/* Photo Preview Dialog */}
-      <Dialog open={!!previewPhoto} onOpenChange={() => setPreviewPhoto(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>Report Photo</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="h-[70vh]">
-            <div className="flex items-center justify-center">
-              {previewPhoto && (
-                <div className="relative">
-                  <img
-                    src={previewPhoto}
-                    alt="Report photo"
-                    className="max-w-full max-h-[65vh] object-contain rounded-md"
-                  />
-                  <a
-                    href={previewPhoto}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute top-2 right-2 p-2 bg-background/80 rounded-full hover:bg-background"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

@@ -5,15 +5,12 @@
 
 export interface FieldReport {
   id: number
-  date: string
-  time: string
   employee_id: number
   employee_name: string
   client_id: number
   client_name: string
   location: string
-  description: string
-  photo_url: string | null
+  note: string
   created_at: string
   updated_at: string
 }

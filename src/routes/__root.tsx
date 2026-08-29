@@ -63,6 +63,11 @@ import {OpeningBalancePage} from '@/features/opening-balance/components/OpeningB
 import {FixedAssetsTable} from '@/features/fixed-assets/components/fixed-assets-table'
 import {TangibleAssetClassesTable} from '@/features/tangible-asset-classes/components/tangible-asset-classes-table'
 import {Button} from "@/components/ui";
+import {PanicAlertsTable} from '@/features/panic-alerts'
+import {ApprovalsTable} from '@/features/approvals'
+import {ApprovalFlowsTable} from '@/features/approval-flows'
+import {CheckpointsTable} from '@/features/checkpoints'
+import {PatrolReportsTable} from '@/features/patrol-reports'
 
 // Root route
 const rootRoute = createRootRoute({
@@ -1398,45 +1403,141 @@ const projectsEditRoute = createRoute({
 const faceEnrollmentsRoute = createPlaceholderRoute('/face-enrollments', 'Face Enrollments', 'Face Enrollment')
 
 // Panic Alerts
-const panicAlertsRoute = createPlaceholderRoute('/panic-alerts', 'Panic Alerts', 'Panic Alert')
+function PanicAlertsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Panic Alerts</h2>
+                <p className="text-muted-foreground">View panic button alerts from employees</p>
+            </div>
+            <PanicAlertsTable/>
+        </AuthLayout>
+    )
+}
+
+const panicAlertsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/panic-alerts',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Panic Alert', 'View')
+    },
+    component: PanicAlertsPage,
+})
 
 // News
 const newsRoute = createPlaceholderRoute('/news', 'News', 'News')
 
 // Approvals
-const approvalsRoute = createPlaceholderRoute('/approvals', 'Approvals', 'Approval')
+function ApprovalsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Approvals</h2>
+                <p className="text-muted-foreground">Review and approve pending requests</p>
+            </div>
+            <ApprovalsTable/>
+        </AuthLayout>
+    )
+}
+
+const approvalsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/approvals',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Approval', 'View')
+    },
+    component: ApprovalsPage,
+})
 
 // Approval Flows
-const approvalFlowsRoute = createPlaceholderRoute('/approval-flows', 'Approval Flows', 'Approval Flow')
+function ApprovalFlowsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Approval Flows</h2>
+                <p className="text-muted-foreground">Configure approval workflows for different request types</p>
+            </div>
+            <ApprovalFlowsTable/>
+        </AuthLayout>
+    )
+}
+
+const approvalFlowsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/approval-flows',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Approval Flow', 'View')
+    },
+    component: ApprovalFlowsPage,
+})
 
 // Patrol Report
-const patrolReportRoute = createPlaceholderRoute('/patrol-report', 'Patrol Reports', 'Patrol Report')
+function PatrolReportPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Patrol Reports</h2>
+                <p className="text-muted-foreground">View patrol session reports and statistics</p>
+            </div>
+            <PatrolReportsTable/>
+        </AuthLayout>
+    )
+}
+
+const patrolReportRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/patrol-report',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Patrol Report', 'View')
+    },
+    component: PatrolReportPage,
+})
 
 // Checkpoints
-const checkpointsRoute = createPlaceholderRoute('/checkpoints', 'Checkpoints', 'Checkpoint')
-const checkpointsNewRoute = createRoute({
-    getParentRoute: () => rootRoute, path: '/checkpoints/new',
+function CheckpointsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Checkpoints</h2>
+                <p className="text-muted-foreground">Manage patrol checkpoints for projects</p>
+            </div>
+            <CheckpointsTable/>
+        </AuthLayout>
+    )
+}
+
+const checkpointsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/checkpoints',
     beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState();
+        const {isAuthenticated} = useAuthStore.getState()
         if (!isAuthenticated) {
             window.location.href = '/login';
             return
         }
-        requirePrivilegeInBeforeLoad('Checkpoint', 'Add')
+        requirePrivilegeInBeforeLoad('Checkpoint', 'View')
     },
-    component: () => <AuthLayout><Placeholder title="Add Checkpoint"/></AuthLayout>,
-})
-const checkpointsEditRoute = createRoute({
-    getParentRoute: () => rootRoute, path: '/checkpoints/$id/edit',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState();
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Checkpoint', 'Edit')
-    },
-    component: () => <AuthLayout><Placeholder title="Edit Checkpoint"/></AuthLayout>,
+    component: CheckpointsPage,
 })
 
 // Settings (no privilege check)
@@ -1917,7 +2018,7 @@ const routeTree = rootRoute.addChildren([
     approvalsRoute,
     approvalFlowsRoute,
     patrolReportRoute,
-    checkpointsRoute, checkpointsNewRoute, checkpointsEditRoute,
+    checkpointsRoute,
     settingsRoute,
     financeJournalRoute,
     financeLedgerRoute,
