@@ -42,6 +42,7 @@ type AreaFormValues = {
   longitude: string
   description: string
   status: 'Aktif' | 'Tidak Aktif'
+  coordinator_id?: number | null
 }
 
 export function AreasFormModal({
@@ -72,6 +73,7 @@ export function AreasFormModal({
       longitude: '',
       description: '',
       status: 'Aktif',
+      coordinator_id: null,
     },
   })
 
@@ -85,6 +87,7 @@ export function AreasFormModal({
         longitude: '',
         description: '',
         status: 'Aktif',
+        coordinator_id: null,
       })
       hasShownValidationToast.current = false
     }
@@ -131,6 +134,7 @@ export function AreasFormModal({
         longitude: selectedItem.longitude ?? '',
         description: selectedItem.description ?? '',
         status: selectedItem.status === 1 ? 'Aktif' : 'Tidak Aktif',
+        coordinator_id: selectedItem.coordinator_id ?? null,
       })
     }
   }, [mode, selectedItem, open, form])
@@ -168,6 +172,7 @@ export function AreasFormModal({
       longitude: values.longitude.trim() || undefined,
       description: values.description.trim() || undefined,
       status: values.status,
+      coordinator_id: values.coordinator_id ?? null,
     }
 
     try {
@@ -292,8 +297,8 @@ export function AreasFormModal({
                 <SelectValue placeholder="Pilih status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Aktif">Aktif</SelectItem>
-                <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
+                <SelectItem value="1">Aktif</SelectItem>
+                <SelectItem value="2">Tidak Aktif</SelectItem>
               </SelectContent>
             </Select>
           </div>

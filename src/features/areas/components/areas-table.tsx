@@ -3,7 +3,7 @@
  * Using standardized DataTable with row selection and modal form
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Trash2, MapPin } from 'lucide-react'
+import { Plus, Trash2, MapPin, User, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { AreasFormModal } from './areas-form-modal'
+import { CoordinatorAssignmentModal } from './coordinator-assignment-modal'
 import { useAreasStore } from '../store/areas-store'
 import { AreasFilters } from './areas-filters'
 import type { Area } from '../types/areas.types'
@@ -47,6 +48,10 @@ export function AreasTable({ clientId, clientName }: AreasTableProps) {
   const [showFormModal, setShowFormModal] = useState(false)
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create')
   const [editingAreaId, setEditingAreaId] = useState<number | undefined>(undefined)
+
+  // Coordinator modal state
+  const [showCoordinatorModal, setShowCoordinatorModal] = useState(false)
+  const [selectedAreaForCoordinator, setSelectedAreaForCoordinator] = useState<Area | null>(null)
 
   // Single source of truth for fetch - debounced, primitive dependencies, includes clientId
   useEffect(() => {
@@ -180,6 +185,33 @@ export function AreasTable({ clientId, clientName }: AreasTableProps) {
       header: 'Status',
       cell: (row) => getStatusBadge(row.status),
     },
+    {
+      accessorKey: 'coordinator_name',
+      header: 'Coordinator',
+      cell: (row) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            setSelectedAreaForCoordinator(row)
+            setShowCoordinatorModal(true)
+          }}
+          className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-accent transition-colors text-sm"
+        >
+          {row.coordinator_name ? (
+            <>
+              <User className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>{row.coordinator_name}</span>
+            </>
+          ) : (
+            <>
+              <UserPlus className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Assign</span>
+            </>
+          )}
+        </button>
+      ),
+    },
   ]
 
   // Bulk actions
@@ -255,6 +287,14 @@ export function AreasTable({ clientId, clientName }: AreasTableProps) {
         areaId={editingAreaId}
         defaultClientId={clientId}
         defaultClientName={clientName}
+      />
+
+      {/* Coordinator Assignment Modal */}
+      <CoordinatorAssignmentModal
+        open={showCoordinatorModal}
+        onOpenChange={setShowCoordinatorModal}
+        area={selectedAreaForCoordinator}
+        onSuccess={() => fetchAreas()}
       />
     </div>
   )

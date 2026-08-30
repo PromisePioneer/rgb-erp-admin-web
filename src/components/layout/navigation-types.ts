@@ -105,6 +105,7 @@ export const navigationSections: NavSection[] = [
       { label: 'Approval Flows', path: '/approval-flows', menu: 'Approval Flow', icon: 'git-branch' },
       { label: 'Patrol Report', path: '/patrol-report', menu: 'Patrol Report', icon: 'scan' },
       { label: 'Checkpoints', path: '/checkpoints', menu: 'Checkpoint', icon: 'map-pin' },
+      { label: 'Daily Task Reports', path: '/daily-task-reports', menu: 'Daily Task', icon: 'clipboard-list' },
     ],
   },
   {

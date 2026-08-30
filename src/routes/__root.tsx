@@ -68,6 +68,12 @@ import {ApprovalsTable} from '@/features/approvals'
 import {ApprovalFlowsTable} from '@/features/approval-flows'
 import {CheckpointsTable} from '@/features/checkpoints'
 import {PatrolReportsTable} from '@/features/patrol-reports'
+import {DailyTaskReportsList} from '@/features/daily-task-reports'
+import {ProductsTable} from '@/features/products'
+import {PurchaseRequestsTable, PurchaseRequestsForm} from '@/features/purchase-requests'
+import {PurchaseOrdersTable, PurchaseOrdersForm} from '@/features/purchase-orders'
+import {ReceptionsTable, ReceptionsForm} from '@/features/receptions'
+import {StockOpnameForm} from '@/features/stock-opnames'
 
 // Root route
 const rootRoute = createRootRoute({
@@ -1235,30 +1241,30 @@ const productCategoriesRoute = createRoute({
 })
 
 // Products
-const productsRoute = createPlaceholderRoute('/products', 'Products', 'Product')
-const productsNewRoute = createRoute({
-    getParentRoute: () => rootRoute, path: '/products/new',
+function ProductsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Products</h2>
+                <p className="text-muted-foreground">Manage product information</p>
+            </div>
+            <ProductsTable/>
+        </AuthLayout>
+    )
+}
+
+const productsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/products',
     beforeLoad: () => {
         const {isAuthenticated} = useAuthStore.getState();
         if (!isAuthenticated) {
             window.location.href = '/login';
             return
         }
-        requirePrivilegeInBeforeLoad('Product', 'Add')
+        requirePrivilegeInBeforeLoad('Product', 'View')
     },
-    component: () => <AuthLayout><Placeholder title="Add Product"/></AuthLayout>,
-})
-const productsEditRoute = createRoute({
-    getParentRoute: () => rootRoute, path: '/products/$id/edit',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState();
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Product', 'Edit')
-    },
-    component: () => <AuthLayout><Placeholder title="Edit Product"/></AuthLayout>,
+    component: ProductsPage,
 })
 
 // Assets
@@ -1289,7 +1295,40 @@ const assetsEditRoute = createRoute({
 })
 
 // Purchase Requests
-const purchaseRequestsRoute = createPlaceholderRoute('/purchase-requests', 'Purchase Requests', 'Purchase Request')
+function PurchaseRequestsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Purchase Requests</h2>
+                <p className="text-muted-foreground">Manage purchase request information</p>
+            </div>
+            <PurchaseRequestsTable/>
+        </AuthLayout>
+    )
+}
+
+const purchaseRequestsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/purchase-requests',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Purchase Request', 'View')
+    },
+    component: PurchaseRequestsPage,
+})
+
+function PurchaseRequestsNewPage() {
+    return (
+        <AuthLayout>
+            <PurchaseRequestsForm/>
+        </AuthLayout>
+    )
+}
+
 const purchaseRequestsNewRoute = createRoute({
     getParentRoute: () => rootRoute, path: '/purchase-requests/new',
     beforeLoad: () => {
@@ -1300,8 +1339,17 @@ const purchaseRequestsNewRoute = createRoute({
         }
         requirePrivilegeInBeforeLoad('Purchase Request', 'Add')
     },
-    component: () => <AuthLayout><Placeholder title="Add Purchase Request"/></AuthLayout>,
+    component: PurchaseRequestsNewPage,
 })
+
+function PurchaseRequestsEditPage() {
+    return (
+        <AuthLayout>
+            <PurchaseRequestsForm/>
+        </AuthLayout>
+    )
+}
+
 const purchaseRequestsEditRoute = createRoute({
     getParentRoute: () => rootRoute, path: '/purchase-requests/$id/edit',
     beforeLoad: () => {
@@ -1312,11 +1360,44 @@ const purchaseRequestsEditRoute = createRoute({
         }
         requirePrivilegeInBeforeLoad('Purchase Request', 'Edit')
     },
-    component: () => <AuthLayout><Placeholder title="Edit Purchase Request"/></AuthLayout>,
+    component: PurchaseRequestsEditPage,
 })
 
 // Purchase Orders
-const purchaseOrdersRoute = createPlaceholderRoute('/purchase-orders', 'Purchase Orders', 'Purchase Order')
+function PurchaseOrdersPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Purchase Orders</h2>
+                <p className="text-muted-foreground">Manage purchase order information</p>
+            </div>
+            <PurchaseOrdersTable/>
+        </AuthLayout>
+    )
+}
+
+const purchaseOrdersRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/purchase-orders',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Purchase Order', 'View')
+    },
+    component: PurchaseOrdersPage,
+})
+
+function PurchaseOrdersNewPage() {
+    return (
+        <AuthLayout>
+            <PurchaseOrdersForm/>
+        </AuthLayout>
+    )
+}
+
 const purchaseOrdersNewRoute = createRoute({
     getParentRoute: () => rootRoute, path: '/purchase-orders/new',
     beforeLoad: () => {
@@ -1327,8 +1408,17 @@ const purchaseOrdersNewRoute = createRoute({
         }
         requirePrivilegeInBeforeLoad('Purchase Order', 'Add')
     },
-    component: () => <AuthLayout><Placeholder title="Add Purchase Order"/></AuthLayout>,
+    component: PurchaseOrdersNewPage,
 })
+
+function PurchaseOrdersEditPage() {
+    return (
+        <AuthLayout>
+            <PurchaseOrdersForm/>
+        </AuthLayout>
+    )
+}
+
 const purchaseOrdersEditRoute = createRoute({
     getParentRoute: () => rootRoute, path: '/purchase-orders/$id/edit',
     beforeLoad: () => {
@@ -1339,11 +1429,44 @@ const purchaseOrdersEditRoute = createRoute({
         }
         requirePrivilegeInBeforeLoad('Purchase Order', 'Edit')
     },
-    component: () => <AuthLayout><Placeholder title="Edit Purchase Order"/></AuthLayout>,
+    component: PurchaseOrdersEditPage,
 })
 
 // Receptions
-const receptionsRoute = createPlaceholderRoute('/receptions', 'Receptions', 'Reception')
+function ReceptionsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Penerimaan Barang</h2>
+                <p className="text-muted-foreground">Kelola data penerimaan barang dari supplier</p>
+            </div>
+            <ReceptionsTable/>
+        </AuthLayout>
+    )
+}
+
+const receptionsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/receptions',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Reception', 'View')
+    },
+    component: ReceptionsPage,
+})
+
+function ReceptionsNewPage() {
+    return (
+        <AuthLayout>
+            <ReceptionsForm/>
+        </AuthLayout>
+    )
+}
+
 const receptionsNewRoute = createRoute({
     getParentRoute: () => rootRoute, path: '/receptions/new',
     beforeLoad: () => {
@@ -1354,8 +1477,17 @@ const receptionsNewRoute = createRoute({
         }
         requirePrivilegeInBeforeLoad('Reception', 'Add')
     },
-    component: () => <AuthLayout><Placeholder title="Add Reception"/></AuthLayout>,
+    component: ReceptionsNewPage,
 })
+
+function ReceptionsEditPage() {
+    return (
+        <AuthLayout>
+            <ReceptionsForm/>
+        </AuthLayout>
+    )
+}
+
 const receptionsEditRoute = createRoute({
     getParentRoute: () => rootRoute, path: '/receptions/$id/edit',
     beforeLoad: () => {
@@ -1366,11 +1498,35 @@ const receptionsEditRoute = createRoute({
         }
         requirePrivilegeInBeforeLoad('Reception', 'Edit')
     },
-    component: () => <AuthLayout><Placeholder title="Edit Reception"/></AuthLayout>,
+    component: ReceptionsEditPage,
 })
 
 // Stock Opnames
-const stockOpnamesRoute = createPlaceholderRoute('/stock-opnames', 'Stock Opnames', 'Stock Opname')
+function StockOpnamesPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Stock Opname</h2>
+                <p className="text-muted-foreground">Kelola data stock opname gudang</p>
+            </div>
+            <StockOpnameForm/>
+        </AuthLayout>
+    )
+}
+
+const stockOpnamesRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/stock-opnames',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Stock Opname', 'View')
+    },
+    component: StockOpnamesPage,
+})
 
 // Projects
 const projectsRoute = createPlaceholderRoute('/projects', 'Projects', 'Project')
@@ -1538,6 +1694,32 @@ const checkpointsRoute = createRoute({
         requirePrivilegeInBeforeLoad('Checkpoint', 'View')
     },
     component: CheckpointsPage,
+})
+// Daily Task Reports
+function DailyTaskReportsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Daily Task Reports</h2>
+                <p className="text-muted-foreground">View completed tasks and submit reviews</p>
+            </div>
+            <DailyTaskReportsList/>
+        </AuthLayout>
+    )
+}
+
+const dailyTaskReportsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/daily-task-reports',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Daily Task', 'View')
+    },
+    component: DailyTaskReportsPage,
 })
 
 // Settings (no privilege check)
@@ -2005,7 +2187,7 @@ const routeTree = rootRoute.addChildren([
     pettyCashRoute,
     invoicesRoute,
     payrollRoute,
-    productsRoute, productsNewRoute, productsEditRoute,
+    productsRoute,
     assetsRoute, assetsNewRoute, assetsEditRoute,
     purchaseRequestsRoute, purchaseRequestsNewRoute, purchaseRequestsEditRoute,
     purchaseOrdersRoute, purchaseOrdersNewRoute, purchaseOrdersEditRoute,
@@ -2019,6 +2201,7 @@ const routeTree = rootRoute.addChildren([
     approvalFlowsRoute,
     patrolReportRoute,
     checkpointsRoute,
+    dailyTaskReportsRoute,
     settingsRoute,
     financeJournalRoute,
     financeLedgerRoute,
