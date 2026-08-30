@@ -143,7 +143,7 @@ function LoginPage() {
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+                const baseURL = import.meta.env.VITE_API_URL
                 const response = await fetch(`${baseURL}/api/admin/settings`, {
                     credentials: 'include',
                 })
@@ -195,7 +195,7 @@ function LoginPage() {
                     backgroundPosition: 'center',
                 }}>
                 {/* Backdrop overlay */}
-                <div className="absolute inset-0 bg-slate-950/70" />
+                <div className="absolute inset-0 bg-slate-950/70"/>
                 {/* Grid pattern */}
                 <div
                     className="pointer-events-none absolute inset-0 opacity-[0.15]"
@@ -1695,6 +1695,7 @@ const checkpointsRoute = createRoute({
     },
     component: CheckpointsPage,
 })
+
 // Daily Task Reports
 function DailyTaskReportsPage() {
     return (
