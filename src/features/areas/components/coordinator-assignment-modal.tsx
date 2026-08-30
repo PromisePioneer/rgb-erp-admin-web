@@ -31,7 +31,6 @@ export function CoordinatorAssignmentModal({
 }: CoordinatorAssignmentModalProps) {
   const [coordinatorId, setCoordinatorId] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
 
   // Reset when modal opens/closes or area changes
   useEffect(() => {
@@ -139,9 +138,7 @@ export function CoordinatorAssignmentModal({
               onChange={(value) => setCoordinatorId(value as number | null)}
               loadOptions={loadCoordinators}
               placeholder="Pilih coordinator..."
-              isDisabled={isLoading}
               className="w-full"
-              allowClear
               defaultOptions
             />
           </div>
