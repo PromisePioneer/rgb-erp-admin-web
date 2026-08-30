@@ -142,17 +142,27 @@ function LoginPage() {
     // Fetch settings on mount
     useEffect(() => {
         const fetchSettings = async () => {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 10000)
+
             try {
                 const baseURL = import.meta.env.VITE_API_URL
                 const response = await fetch(`${baseURL}/api/admin/settings`, {
                     credentials: 'include',
+                    signal: controller.signal,
                 })
+                clearTimeout(timeoutId)
+
                 if (response.ok) {
                     const data = await response.json()
                     setSettings(data.data)
                 }
             } catch (err) {
-                console.error('Failed to fetch settings:', err)
+                if (err instanceof Error && err.name === 'AbortError') {
+                    console.warn('Settings fetch timed out')
+                } else {
+                    console.error('Failed to fetch settings:', err)
+                }
             }
         }
         fetchSettings()
