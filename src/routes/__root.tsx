@@ -187,11 +187,11 @@ function LoginPage() {
     }
 
     // Get values from settings with defaults
-    const appTitle = settings?.app_title || 'RGB ERP'
-    const companyName = settings?.company_name || 'PT. Rajawali Buana 86 (RGB 86)'
-    const companyTagline = settings?.company_tagline || 'Bermitra Bersama Kami dan Raih Sukses Bersama.'
-    const companyDescription = settings?.company_description || 'Perusahaan outsourcing sejak 2009.\nMelayani: Security, Cleaning, Catering, Parking, Gardener, Driver & lainnya.'
-    const loginImage = settings?.login_image || '/assets/images/login-background.webp'
+    const appTitle = settings?.app_title;
+    const companyName = settings?.company_name;
+    const companyTagline = settings?.company_tagline;
+    const companyDescription = settings?.company_description
+    const loginImage = settings?.login_image
     const opsModules = getOpsModules(settings)
 
     return (
