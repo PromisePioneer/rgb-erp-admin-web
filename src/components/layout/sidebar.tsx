@@ -203,7 +203,7 @@ export function Sidebar({collapsed = false}: SidebarProps) {
     const privileges = useAuthStore((state) => state.privileges)
     const navRef = useRef<HTMLDivElement>(null)
     const location = useLocation()
-    const { data: settings, fetchSettings } = useSettingsStore()
+    const {data: settings, fetchSettings} = useSettingsStore()
 
     // Fetch settings on mount
     useEffect(() => {
@@ -235,9 +235,9 @@ export function Sidebar({collapsed = false}: SidebarProps) {
     }
 
     // Get settings values with defaults
-    const appTitle = settings?.app_title || 'RGB ERP'
+    const appTitle = settings?.app_title
     const appLogo = settings?.app_logo
-    const companyName = settings?.company_name || 'RGB ERP'
+    const companyName = settings?.company_name
 
     const visibleSections = useMemo(
         () => navigationSections.filter((section) => sectionHasVisibleItems(section, privileges)),
@@ -301,7 +301,8 @@ export function Sidebar({collapsed = false}: SidebarProps) {
                 {!collapsed && (
                     <div className="px-3 py-3 border-b border-border">
                         <div className="relative">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground"/>
+                            <Search
+                                className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground"/>
                             <Input
                                 type="text"
                                 placeholder="Search menu..."
