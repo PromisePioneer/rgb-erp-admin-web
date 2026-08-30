@@ -187,10 +187,10 @@ function LoginPage() {
     }
 
     // Get values from settings with defaults
-    const appTitle = settings?.app_title;
-    const companyName = settings?.company_name;
-    const companyTagline = settings?.company_tagline;
-    const companyDescription = settings?.company_description
+    const appTitle = settings?.app_title || '';
+    const companyName = settings?.company_name || '';
+    const companyTagline = settings?.company_tagline || '';
+    const companyDescription = settings?.company_description || ''
     const loginImage = settings?.login_image
     const opsModules = getOpsModules(settings)
 
