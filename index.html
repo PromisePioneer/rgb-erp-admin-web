@@ -1,39 +1,39 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" id="favicon-link" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8"/>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" id="favicon-link"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title id="app-title">RGB ERP</title>
     <script>
-      // Load favicon and title from settings on page load
-      (async function() {
-        try {
-          const baseURL = (window.VITE_API_URL || 'http://localhost:8000') + '/api';
-          const response = await fetch(baseURL + '/admin/settings', { credentials: 'include' });
-          if (response.ok) {
-            const data = await response.json();
-            const settings = data.data;
+        // Load favicon and title from settings on page load
+        (async function () {
+            try {
+                const baseURL = (window.VITE_API_URL) + '/api';
+                const response = await fetch(baseURL + '/admin/settings', {credentials: 'include'});
+                if (response.ok) {
+                    const data = await response.json();
+                    const settings = data.data;
 
-            // Update title
-            if (settings.app_title) {
-              document.getElementById('app-title').textContent = settings.app_title;
-            }
+                    // Update title
+                    if (settings.app_title) {
+                        document.getElementById('app-title').textContent = settings.app_title;
+                    }
 
-            // Update favicon
-            if (settings.favicon) {
-              const faviconLink = document.getElementById('favicon-link');
-              faviconLink.href = settings.favicon;
+                    // Update favicon
+                    if (settings.favicon) {
+                        const faviconLink = document.getElementById('favicon-link');
+                        faviconLink.href = settings.favicon;
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load settings for branding:', e);
             }
-          }
-        } catch (e) {
-          console.error('Failed to load settings for branding:', e);
-        }
-      })();
+        })();
     </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+</head>
+<body>
+<div id="root"></div>
+<script type="module" src="/src/main.tsx"></script>
+</body>
 </html>
