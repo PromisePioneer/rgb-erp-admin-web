@@ -20,7 +20,15 @@ import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { MapPicker } from '@/components/map-picker'
 import { useClientsStore } from '@/features/clients'
 import { clientTypesApi } from '@/features/client-types/api/client-types-api'
-import type { CreateAreaNested, CreatePosNested, CreateClientPayload, UpdateClientPayload } from '@/features/clients/types/clients.types'
+import type {
+  CreateAreaNested,
+  CreatePosNested,
+  CreateClientPayload,
+  UpdateClientPayload,
+  ClientDetail,
+  ClientArea,
+  ClientPos,
+} from '@/features/clients/types/clients.types'
 
 type FormValues = {
   client_type_id: number | undefined
@@ -111,6 +119,35 @@ export function ClientsForm() {
       })
     }
   }, [isEdit, selectedItem, form])
+
+  // Populate nested areas when editing
+  useEffect(() => {
+    if (isEdit && selectedItem) {
+      const detail = selectedItem as ClientDetail
+      if (detail.areas && Array.isArray(detail.areas)) {
+        const loadedAreas: AreaWithPoss[] = detail.areas.map((area: ClientArea) => ({
+          id: `existing-${area.id}`,
+          name: area.name,
+          latitude: area.latitude ?? '',
+          longitude: area.longitude ?? '',
+          description: area.description ?? '',
+          poss: (area.poss ?? []).map((pos: ClientPos) => ({
+            name: pos.name,
+            latitude: pos.latitude ?? '',
+            longitude: pos.longitude ?? '',
+            description: pos.description ?? '',
+          })),
+        }))
+        setNestedAreas(loadedAreas)
+        // Expand all areas by default
+        setExpandedAreas(new Set(loadedAreas.map(a => a.id)))
+      }
+    } else {
+      // Reset nested areas when creating new client
+      setNestedAreas([])
+      setExpandedAreas(new Set())
+    }
+  }, [isEdit, selectedItem])
 
   const loadClientTypes = useCallback(async (search: string): Promise<SelectOption[]> => {
     try {
@@ -261,6 +298,8 @@ export function ClientsForm() {
           status: Number(values.status),
         }
         if (values.password) updatePayload.password = values.password
+        // Include areas in update (will replace existing areas in backend)
+        if (validAreas.length > 0) updatePayload.areas = validAreas
 
         await update(clientId, updatePayload)
         toast.success('Client berhasil diperbarui')
