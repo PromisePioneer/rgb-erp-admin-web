@@ -118,9 +118,7 @@ export function SchedulesFormModal({
 
     // Effect 1: Fetch data when scheduleId changes
     useEffect(() => {
-        console.log('Effect 1 - mode:', mode, 'scheduleId:', scheduleId, 'open:', open)
         if (mode === 'edit' && scheduleId && open) {
-            console.log('Calling fetchById with:', scheduleId)
             fetchById(scheduleId)
         }
         if (mode === 'create' && open) {

@@ -27,6 +27,12 @@ interface SchedulesState {
   calendarEmployees: EmployeeScheduleRow[]
   calendarDates: string[]
 
+  // Week navigation state
+  currentDate: string // ISO date string for determining current week
+
+  // Area filter state
+  selectedAreaId: number | null
+
   // Actions
   fetchSchedules: (params?: SchedulesFilters) => Promise<void>
   fetchCalendarData: (params?: { month?: string; search?: string }) => Promise<void>
@@ -39,10 +45,19 @@ interface SchedulesState {
   resetFilters: () => void
   resetForm: () => void
   clearError: () => void
+  setSelectedAreaId: (areaId: number | null) => void
 
   // Calendar helpers
   getCalendarRows: () => EmployeeScheduleRow[]
+  getFilteredCalendarRows: () => EmployeeScheduleRow[]
   getMonthDates: () => string[]
+  getUniqueAreas: () => { area_id: number; area_name: string }[]
+
+  // Week navigation
+  getWeekDates: () => string[]
+  prevWeek: () => void
+  nextWeek: () => void
+  goToWeek: (date: string) => void
 }
 
 const initialFilters: SchedulesFilters = {
@@ -68,6 +83,8 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
   pagination: initialPagination,
   calendarEmployees: [],
   calendarDates: [],
+  currentDate: new Date().toISOString().split('T')[0],
+  selectedAreaId: null,
 
   // Actions
   fetchSchedules: async (params?: SchedulesFilters) => {
@@ -93,8 +110,14 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     set({ isLoading: true, error: null })
 
     try {
+      // Convert YYYY-MM-DD to YYYY-MM format for API
+      let monthParam = params?.month ?? get().filters.month
+      if (monthParam && monthParam.length === 10) {
+        monthParam = monthParam.substring(0, 7) // YYYY-MM-DD -> YYYY-MM
+      }
+
       const response = await schedulesApi.getEmployeesByPlacement({
-        month: params?.month ?? get().filters.month,
+        month: monthParam,
         search: params?.search,
       })
 
@@ -111,12 +134,10 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
   },
 
   fetchById: async (id: number) => {
-    console.log('Store fetchById called with id:', id)
     set({ isLoading: true, error: null, selectedItem: null })
 
     try {
       const response = await schedulesApi.getById(id)
-      console.log('Store fetchById response:', response.data)
       set({
         selectedItem: response.data,
         isLoading: false,
@@ -124,7 +145,6 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to fetch schedule'
-      console.error('Store fetchById error:', error)
       set({ error: message, isLoading: false })
     }
   },
@@ -135,8 +155,9 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     try {
       await schedulesApi.create(payload)
       set({ isSubmitting: false })
-      // Refresh calendar
-      await get().fetchCalendarData()
+      // Refresh calendar with current month
+      const currentMonth = get().currentDate.substring(0, 7)
+      await get().fetchCalendarData({ month: currentMonth })
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to create schedule'
@@ -151,8 +172,9 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     try {
       await schedulesApi.update(id, payload)
       set({ isSubmitting: false })
-      // Refresh calendar
-      await get().fetchCalendarData()
+      // Refresh calendar with current month
+      const currentMonth = get().currentDate.substring(0, 7)
+      await get().fetchCalendarData({ month: currentMonth })
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to update schedule'
@@ -167,8 +189,9 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     try {
       await schedulesApi.delete(id)
       set({ isSubmitting: false })
-      // Refresh calendar
-      await get().fetchCalendarData()
+      // Refresh calendar with current month
+      const currentMonth = get().currentDate.substring(0, 7)
+      await get().fetchCalendarData({ month: currentMonth })
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to delete schedule'
@@ -183,8 +206,9 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     try {
       await schedulesApi.bulkDelete(ids)
       set({ isSubmitting: false })
-      // Refresh calendar
-      await get().fetchCalendarData()
+      // Refresh calendar with current month
+      const currentMonth = get().currentDate.substring(0, 7)
+      await get().fetchCalendarData({ month: currentMonth })
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to delete schedules'
@@ -217,6 +241,10 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     set({ error: null })
   },
 
+  setSelectedAreaId: (areaId: number | null) => {
+    set({ selectedAreaId: areaId })
+  },
+
   // Calendar helpers
   getMonthDates: () => {
     return get().calendarDates.length > 0
@@ -226,5 +254,62 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
 
   getCalendarRows: () => {
     return get().calendarEmployees
+  },
+
+  getFilteredCalendarRows: () => {
+    const { calendarEmployees, selectedAreaId } = get()
+    if (!selectedAreaId) {
+      return calendarEmployees
+    }
+    return calendarEmployees.filter((row) => row.area_id === selectedAreaId)
+  },
+
+  getUniqueAreas: () => {
+    const { calendarEmployees } = get()
+    const areaMap = new Map<number, string>()
+
+    calendarEmployees.forEach((row) => {
+      if (row.area_id && row.area_name) {
+        areaMap.set(row.area_id, row.area_name)
+      }
+    })
+
+    return Array.from(areaMap.entries())
+      .map(([area_id, area_name]) => ({ area_id, area_name }))
+      .sort((a, b) => a.area_name.localeCompare(b.area_name))
+  },
+
+  // Week navigation helpers
+  getWeekDates: () => {
+    const current = new Date(get().currentDate)
+    const day = current.getDay()
+    // Get Monday of current week (Sunday = 0, Monday = 1, etc.)
+    const diff = day === 0 ? -6 : 1 - day
+    const monday = new Date(current)
+    monday.setDate(current.getDate() + diff)
+
+    const dates: string[] = []
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(monday)
+      date.setDate(monday.getDate() + i)
+      dates.push(date.toISOString().split('T')[0])
+    }
+    return dates
+  },
+
+  prevWeek: () => {
+    const current = new Date(get().currentDate)
+    current.setDate(current.getDate() - 7)
+    set({ currentDate: current.toISOString().split('T')[0] })
+  },
+
+  nextWeek: () => {
+    const current = new Date(get().currentDate)
+    current.setDate(current.getDate() + 7)
+    set({ currentDate: current.toISOString().split('T')[0] })
+  },
+
+  goToWeek: (date: string) => {
+    set({ currentDate: date })
   },
 }))
