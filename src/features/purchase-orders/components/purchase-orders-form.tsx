@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { usePurchaseOrdersStore } from '../store/purchase-orders-store'
 import { purchaseOrdersApi } from '../api/purchase-orders-api'
@@ -137,6 +138,45 @@ export function PurchaseOrdersForm() {
 
   const handleBack = () => {
     navigate({ to: '/purchase-orders' })
+  }
+
+  // Skeleton loading state
+  if (isLoading && isEdit) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <Skeleton className="h-4 w-48 mb-4" />
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-48 mt-2" />
+        </div>
+
+        {/* Basic Info */}
+        <div className="bg-card rounded-lg border p-6 space-y-4 mb-6">
+          <Skeleton className="h-6 w-40" />
+          <div className="grid grid-cols-2 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-full" />
+        </div>
+
+        {/* Line Items */}
+        <div className="bg-card rounded-lg border p-6 space-y-4">
+          <Skeleton className="h-6 w-32" />
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="grid grid-cols-12 gap-2">
+                <Skeleton className="col-span-5 h-10" />
+                <Skeleton className="col-span-2 h-10" />
+                <Skeleton className="col-span-3 h-10" />
+                <Skeleton className="col-span-2 h-10" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const handleAddLine = () => {

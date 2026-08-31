@@ -8,6 +8,7 @@ import { ArrowLeft, Save, Shield } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Skeleton } from '@/components/ui/skeleton'
 import { rolesApi } from '../api/roles-api'
 import type { PrivilegeChild, PrivilegeGroup } from '../types/roles-privileges.types'
 
@@ -129,10 +130,49 @@ export function RolesPrivilegesForm({ roleId }: RolesPrivilegesFormProps) {
     }
   }
 
+  // Skeleton loading state - mirrors the layout of privileges list
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="max-w-4xl">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <Skeleton className="h-10 w-10" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+        </div>
+
+        {/* Privileges List */}
+        <div className="bg-card rounded-lg border">
+          <div className="divide-y">
+            {Array.from({ length: 6 }).map((_, groupIndex) => (
+              <div key={groupIndex} className="p-4">
+                {/* Parent Checkbox */}
+                <div className="flex items-center gap-3 pb-2">
+                  <Skeleton className="h-4 w-4" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+
+                {/* Child Checkboxes */}
+                <div className="pl-7 space-y-2">
+                  {Array.from({ length: 3 }).map((_, childIndex) => (
+                    <div key={childIndex} className="flex items-center gap-3">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-48" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end gap-3 pt-6">
+          <Skeleton className="h-10 w-24" />
+          <Skeleton className="h-10 w-32" />
+        </div>
       </div>
     )
   }

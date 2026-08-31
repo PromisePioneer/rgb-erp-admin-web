@@ -8,6 +8,7 @@ import { Save, Plus, Trash2, ArrowLeft, Package, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { useReceptionsStore } from '@/features/receptions/store/receptions-store'
 import { receptionsApi } from '@/features/receptions/api/receptions-api'
@@ -138,6 +139,66 @@ export function ReceptionsForm() {
       return []
     }
   }, [])
+
+  // Skeleton loading state - AFTER all hooks
+  if (isLoading && isEdit) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-24" />
+        </div>
+
+        {/* Basic Info */}
+        <div className="bg-card rounded-lg border p-6 space-y-4 mb-6">
+          <Skeleton className="h-6 w-40" />
+          <div className="grid md:grid-cols-3 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+
+        {/* Line Items */}
+        <div className="bg-card rounded-lg border p-6 space-y-4">
+          <Skeleton className="h-6 w-40" />
+          <div className="border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium w-12">#</th>
+                  <th className="px-3 py-2 text-left font-medium">Produk</th>
+                  <th className="px-3 py-2 text-right font-medium w-24">Qty</th>
+                  <th className="px-3 py-2 text-right font-medium w-36">Harga</th>
+                  <th className="px-3 py-2 text-right font-medium w-36">Total</th>
+                  <th className="px-3 py-2 text-center font-medium w-16">Hapus</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-t">
+                    <td className="px-3 py-2"><Skeleton className="h-4 w-6" /></td>
+                    <td className="px-3 py-2"><Skeleton className="h-8 w-full" /></td>
+                    <td className="px-3 py-2"><Skeleton className="h-8 w-24" /></td>
+                    <td className="px-3 py-2"><Skeleton className="h-8 w-full" /></td>
+                    <td className="px-3 py-2"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-3 py-2"><Skeleton className="h-8 w-8 mx-auto" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Update line item
   const updateLineItem = (index: number, field: keyof ReceptionLineItem, value: number | string) => {

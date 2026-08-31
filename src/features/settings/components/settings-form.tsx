@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useSettingsStore } from '@/features/settings'
 import type { UpdateSettingsPayloadWithFiles } from '@/features/settings'
 
@@ -153,10 +154,60 @@ export function SettingsForm() {
     }
   }
 
+  // Skeleton loading state - mirrors form sections
   if (isLoading && !data) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="max-w-4xl">
+        {/* Branding Section */}
+        <div className="border rounded-lg p-6 space-y-6 mb-6">
+          <Skeleton className="h-6 w-48" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+
+        {/* OPS Module Status Section */}
+        <div className="border rounded-lg p-6 space-y-4 mb-6">
+          <Skeleton className="h-6 w-48" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+
+        {/* General Settings Section */}
+        <div className="border rounded-lg p-6 space-y-6">
+          <Skeleton className="h-6 w-48" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-11 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-11 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-11 w-full" />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-3 pt-4 border-t">
+          <Skeleton className="h-10 w-32" />
+        </div>
       </div>
     )
   }

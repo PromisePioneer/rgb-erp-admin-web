@@ -9,6 +9,7 @@ import {useForm} from 'react-hook-form'
 import {toast} from 'sonner'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
+import {Skeleton} from '@/components/ui/skeleton'
 import {AsyncSelect, type SelectOption} from '@/components/async-select'
 import {positionsApi} from '@/features/positions/api/positions-api'
 import {provincesApi} from '@/features/provinces/api/provinces-api'
@@ -278,6 +279,75 @@ export function EmployeesForm() {
             hasShownValidationToast.current = false
         }
     }, [form, form.formState.errors, form.formState.submitCount])
+
+    // Skeleton loading state - AFTER all hooks
+    if (isLoading) {
+        return (
+            <div className="max-w-6xl mx-auto">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="h-10 w-10" />
+                        <div className="space-y-2">
+                            <Skeleton className="h-8 w-48" />
+                            <Skeleton className="h-4 w-32" />
+                        </div>
+                    </div>
+                    <Skeleton className="h-10 w-24" />
+                </div>
+
+                {/* Private Information */}
+                <section className="bg-card rounded-lg border p-6 mb-6">
+                    <Skeleton className="h-6 w-40 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                    <Skeleton className="h-20 w-full mt-4" />
+                    <Skeleton className="h-20 w-full mt-4" />
+                </section>
+
+                {/* Basic Information */}
+                <section className="bg-card rounded-lg border p-6 mb-6">
+                    <Skeleton className="h-6 w-40 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                </section>
+
+                {/* Family Information */}
+                <section className="bg-card rounded-lg border p-6 mb-6">
+                    <Skeleton className="h-6 w-40 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                </section>
+
+                {/* Work Information */}
+                <section className="bg-card rounded-lg border p-6 mb-6">
+                    <Skeleton className="h-6 w-40 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                </section>
+
+                {/* Actions */}
+                <div className="flex justify-end gap-3 pb-8">
+                    <Skeleton className="h-10 w-24" />
+                    <Skeleton className="h-10 w-32" />
+                </div>
+            </div>
+        )
+    }
 
     const handleClose = () => {
         navigate({to: '/employees'})

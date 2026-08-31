@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table'
 import { DataTablePagination, type PaginationMetadata } from './data-table-pagination'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 // Column definition type
@@ -128,15 +129,22 @@ export function DataTable<T extends { [key: string]: any }>({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {/* Loading state */}
+            {/* Loading state - skeleton rows */}
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={totalColumns} className="text-center py-12">
-                  <div className="flex items-center justify-center">
-                    <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  </div>
-                </TableCell>
-              </TableRow>
+              Array.from({ length: 8 }).map((_, index) => (
+                <TableRow key={index}>
+                  {enableRowSelection && (
+                    <TableCell className="w-[40px]">
+                      <Skeleton className="h-4 w-4" />
+                    </TableCell>
+                  )}
+                  {columns.map((_, colIndex) => (
+                    <TableCell key={colIndex}>
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
             ) : data.length === 0 ? (
               /* Empty state */
               <TableRow>
