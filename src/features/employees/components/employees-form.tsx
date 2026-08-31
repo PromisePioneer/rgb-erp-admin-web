@@ -365,6 +365,8 @@ export function EmployeesForm() {
         // Prepare payload with dynamic arrays
         const payload: CreateEmployeePayload = {
             ...values,
+            // Exclude code field when editing (code should not be updated)
+            ...(isEdit ? { code: undefined } : {}),
             height: cleanNumeric(values.height),
             weight: cleanNumeric(values.weight),
             base_salary: cleanNumeric(values.base_salary),
