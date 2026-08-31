@@ -354,9 +354,20 @@ export function EmployeesForm() {
     }
 
     const onSubmit = async (values: CreateEmployeePayload) => {
+        // Convert numeric fields that might be NaN to undefined
+        const cleanNumeric = (val: unknown): number | undefined => {
+            if (val === '' || val === null || val === undefined || Number.isNaN(val)) {
+                return undefined
+            }
+            return Number(val)
+        }
+
         // Prepare payload with dynamic arrays
         const payload: CreateEmployeePayload = {
             ...values,
+            height: cleanNumeric(values.height),
+            weight: cleanNumeric(values.weight),
+            base_salary: cleanNumeric(values.base_salary),
             children_name: children.map((c) => c.name).filter(Boolean),
             children_birth_date: children.map((c) => c.birth_date).filter(Boolean),
             children_birth_place: children.map((c) => c.birth_place).filter(Boolean),
@@ -872,13 +883,13 @@ export function EmployeesForm() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Height (cm)</label>
-                            <Input type="number" {...form.register('height', {valueAsNumber: true})}
+                            <Input type="number" {...form.register('height')}
                                    placeholder="170"/>
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Weight (kg)</label>
-                            <Input type="number" {...form.register('weight', {valueAsNumber: true})}
+                            <Input type="number" {...form.register('weight')}
                                    placeholder="65"/>
                         </div>
                     </div>
@@ -947,7 +958,7 @@ export function EmployeesForm() {
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Base Salary</label>
-                            <Input type="number" {...form.register('base_salary', {valueAsNumber: true})}
+                            <Input type="number" {...form.register('base_salary')}
                                    placeholder="5000000"/>
                         </div>
 
