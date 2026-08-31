@@ -120,9 +120,14 @@ export function SchedulesTable() {
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select
             value={selectedAreaId?.toString() ?? 'all'}
-            onValueChange={(value) =>
-              setSelectedAreaId(value === 'all' ? null : parseInt(value, 10))
-            }
+            onValueChange={(value) => {
+              if (!value || value === 'all') {
+                setSelectedAreaId(null)
+              } else {
+                const parsed = parseInt(value, 10)
+                setSelectedAreaId(isNaN(parsed) ? null : parsed)
+              }
+            }}
           >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Semua Area" />

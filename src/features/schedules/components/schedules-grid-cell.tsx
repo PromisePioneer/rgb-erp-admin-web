@@ -3,7 +3,7 @@
  * Individual cell in the weekly grid showing shift or empty state
  */
 import { useState } from 'react'
-import { Pencil, Calendar } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { getShiftColor, isDayOff, formatShiftTime } from '../utils/shift-colors'
 import type { CalendarSchedule } from '../types/schedules.types'
 
@@ -102,8 +102,6 @@ interface EmployeeRowHeaderProps {
 export function EmployeeRowHeader({
   employeeName,
   employeeCode,
-  isSelected,
-  onSelect,
 }: EmployeeRowHeaderProps) {
   // Generate avatar initials
   const initials = employeeName

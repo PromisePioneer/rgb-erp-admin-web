@@ -28,7 +28,7 @@ function isToday(dateStr: string) {
 }
 
 export function SchedulesWeekNav() {
-  const { currentDate, prevWeek, nextWeek, getWeekDates } = useSchedulesStore()
+  const { prevWeek, nextWeek, getWeekDates } = useSchedulesStore()
 
   const weekDates = getWeekDates()
   const firstDate = weekDates[0]

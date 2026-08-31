@@ -69,6 +69,7 @@ import {ApprovalFlowsTable} from '@/features/approval-flows'
 import {CheckpointsTable} from '@/features/checkpoints'
 import {PatrolReportsTable} from '@/features/patrol-reports'
 import {DailyTaskReportsList} from '@/features/daily-task-reports'
+import {DailyTaskItemsTable} from '@/features/daily-task-items'
 import {ProductsTable} from '@/features/products'
 import {PurchaseRequestsTable, PurchaseRequestsForm} from '@/features/purchase-requests'
 import {PurchaseOrdersTable, PurchaseOrdersForm} from '@/features/purchase-orders'
@@ -1733,6 +1734,33 @@ const dailyTaskReportsRoute = createRoute({
     component: DailyTaskReportsPage,
 })
 
+// Daily Task Items
+function DailyTaskItemsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Item Tugas Harian</h2>
+                <p className="text-muted-foreground">Kelola daftar item tugas harian</p>
+            </div>
+            <DailyTaskItemsTable/>
+        </AuthLayout>
+    )
+}
+
+const dailyTaskItemsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/daily-task-items',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Daily Task Item', 'View')
+    },
+    component: DailyTaskItemsPage,
+})
+
 // Settings (no privilege check)
 function SettingsPage() {
     return (
@@ -2213,6 +2241,7 @@ const routeTree = rootRoute.addChildren([
     patrolReportRoute,
     checkpointsRoute,
     dailyTaskReportsRoute,
+    dailyTaskItemsRoute,
     settingsRoute,
     financeJournalRoute,
     financeLedgerRoute,

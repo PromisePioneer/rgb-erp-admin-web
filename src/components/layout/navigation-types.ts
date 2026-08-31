@@ -106,6 +106,7 @@ export const navigationSections: NavSection[] = [
       { label: 'Patrol Report', path: '/patrol-report', menu: 'Patrol Report', icon: 'scan' },
       { label: 'Checkpoints', path: '/checkpoints', menu: 'Checkpoint', icon: 'map-pin' },
       { label: 'Daily Task Reports', path: '/daily-task-reports', menu: 'Daily Task', icon: 'clipboard-list' },
+      { label: 'Daily Task Items', path: '/daily-task-items', menu: 'Daily Task Item', icon: 'clipboard-list' },
     ],
   },
   {
@@ -173,6 +174,7 @@ export const navLabels: Record<string, Record<string, string>> = {
     approval_flows: 'Approval Flows',
     patrol_report: 'Patrol Report',
     checkpoints: 'Checkpoints',
+    daily_task_items: 'Daily Task Items',
     users: 'Users',
     departments: 'Departments',
     roles: 'Roles',
@@ -231,6 +233,7 @@ export const navLabels: Record<string, Record<string, string>> = {
     approval_flows: 'Alur Persetujuan',
     patrol_report: 'Laporan Patroli',
     checkpoints: 'Titik Pemeriksaan',
+    daily_task_items: 'Item Tugas Harian',
     users: 'Pengguna',
     departments: 'Departemen',
     roles: 'Peran',
