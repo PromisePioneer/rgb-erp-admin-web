@@ -73,7 +73,6 @@ export function DailyTaskItemsTable() {
     fetchItems,
     create,
     update,
-    remove,
     bulkDelete,
     setFilters,
     resetFilters,
@@ -84,7 +83,6 @@ export function DailyTaskItemsTable() {
   const [statusFilter, setStatusFilter] = useState<string>(filters.status || "all")
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [deletingId, setDeletingId] = useState<number | null>(null)
   const [showFormModal, setShowFormModal] = useState(false)
   const [formMode, setFormMode] = useState<"create" | "edit">("create")
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -202,19 +200,6 @@ export function DailyTaskItemsTable() {
       form.reset()
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Terjadi kesalahan")
-    }
-  }
-
-  // Delete single item
-  const handleDelete = async (id: number) => {
-    setDeletingId(id)
-    try {
-      await remove(id)
-      toast.success("Item berhasil dihapus")
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Gagal menghapus item")
-    } finally {
-      setDeletingId(null)
     }
   }
 
@@ -364,15 +349,6 @@ export function DailyTaskItemsTable() {
                         className="h-8 w-8 p-0"
                       >
                         <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(item.id)}
-                        disabled={deletingId === item.id}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>

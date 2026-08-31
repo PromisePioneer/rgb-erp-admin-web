@@ -468,6 +468,20 @@ export function ClientsForm() {
               />
             </div>
 
+            {isEdit && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Password Baru</label>
+                <Input
+                  type="password"
+                  placeholder="Kosongkan jika tidak ingin mengubah"
+                  {...form.register('password')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Isi hanya jika ingin mengubah password
+                </p>
+              </div>
+            )}
+
             {!isEdit && (
               <div className="space-y-2">
                 <label className="text-sm font-medium">Password *</label>
