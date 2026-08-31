@@ -33,8 +33,10 @@ const SHIFT_COLORS: Record<string, { bg: string; text: string; border?: string }
   sick: { bg: 'bg-orange-400', text: 'text-white' },
   izin: { bg: 'bg-cyan-400', text: 'text-gray-800' },
 
-  // Special shifts
+  // Special shifts (with or without numbers)
   night: { bg: 'bg-indigo-600', text: 'text-white' },
+  morning: { bg: 'bg-green-500', text: 'text-white' },
+  middle: { bg: 'bg-amber-500', text: 'text-gray-800' },
   pagi: { bg: 'bg-emerald-500', text: 'text-white' },
   siang: { bg: 'bg-amber-500', text: 'text-gray-800' },
   malam: { bg: 'bg-slate-600', text: 'text-white' },

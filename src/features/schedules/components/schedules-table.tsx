@@ -52,10 +52,14 @@ export function SchedulesTable() {
   const areas = getUniqueAreas()
   const calendarRows = getFilteredCalendarRows()
 
+  // Get the last date of the week to determine which month to fetch
+  // (week might span two months, e.g., Aug 31 - Sept 6)
+  const lastWeekDate = weekDates[weekDates.length - 1] || currentDate
+
   // Fetch data when week changes
   useEffect(() => {
-    fetchCalendarData({ month: currentDate, search: searchQuery || undefined })
-  }, [currentDate, searchQuery])
+    fetchCalendarData({ month: lastWeekDate, search: searchQuery || undefined })
+  }, [lastWeekDate, searchQuery])
 
   // Handle cell click to open form
   const handleCellClick = (
