@@ -3,7 +3,7 @@
  * Using standardized DataTable with row selection
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Trash2, UserPlus, CreditCard } from 'lucide-react'
+import { Trash2, UserPlus, CreditCard, Upload } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,6 +19,7 @@ import {
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { useEmployeesStore } from '@/features/employees'
 import { EmployeesFilters } from './employees-filters'
+import { EmployeesImportModal } from './employees-import-modal'
 import type { Employee } from '@/features/employees'
 
 export function EmployeesTable() {
@@ -36,6 +37,7 @@ export function EmployeesTable() {
   const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
 
   // Single source of truth for fetch - debounced, primitive dependencies
   useEffect(() => {
@@ -249,10 +251,16 @@ export function EmployeesTable() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <EmployeesFilters />
-        <Button onClick={handleAddNew}>
-          <UserPlus className="h-4 w-4 mr-1" />
-          Add Employee
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowImportModal(true)}>
+            <Upload className="h-4 w-4 mr-1" />
+            Import
+          </Button>
+          <Button onClick={handleAddNew}>
+            <UserPlus className="h-4 w-4 mr-1" />
+            Add Employee
+          </Button>
+        </div>
       </div>
 
       {/* Click to edit hint */}
@@ -296,6 +304,9 @@ export function EmployeesTable() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Employees Modal */}
+      <EmployeesImportModal open={showImportModal} onOpenChange={setShowImportModal} />
     </div>
   )
 }

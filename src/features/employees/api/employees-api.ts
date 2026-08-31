@@ -153,4 +153,35 @@ export const employeesApi = {
     })
     return data
   },
+
+  /**
+   * Import employees from Excel/CSV file
+   * POST /api/admin/employees/import
+   *
+   * @param file - Excel/CSV file (xlsx, xls, csv, txt)
+   * @returns Object with imported count and message
+   */
+  import: async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const { data } = await apiClient.post<{ success: boolean; data: { imported: number; message: string } }>(
+      '/admin/employees/import',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+    return data
+  },
+
+  /**
+   * Get import template download URL
+   * GET /api/admin/employees/template
+   */
+  getTemplateUrl: () => {
+    return `${import.meta.env.VITE_API_URL || '/api'}/admin/employees/template`
+  },
 }
