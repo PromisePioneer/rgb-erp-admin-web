@@ -157,7 +157,7 @@ export const schedulesApi = {
   },
 
   /**
-   * Import schedules from Excel file
+   * Import schedules from Excel file (queued)
    * POST /api/admin/schedules/import
    */
   importSchedules: async (
@@ -165,7 +165,7 @@ export const schedulesApi = {
     year: number,
     month: number,
     area_id?: number
-  ): Promise<ApiResponse<{ message: string }>> => {
+  ): Promise<ApiResponse<{ job_id: string; message: string }>> => {
     const formData = fileToFormData(file)
     formData.append('year', String(year))
     formData.append('month', String(month))
@@ -173,7 +173,7 @@ export const schedulesApi = {
       formData.append('area_id', String(area_id))
     }
 
-    const { data } = await apiClient.post<ApiResponse<{ message: string }>>(
+    const { data } = await apiClient.post<ApiResponse<{ job_id: string; message: string }>>(
       '/admin/schedules/import',
       formData,
       {
@@ -181,6 +181,34 @@ export const schedulesApi = {
           'Content-Type': 'multipart/form-data',
         },
       }
+    )
+    return data
+  },
+
+  /**
+   * Get import job status
+   * GET /api/admin/schedules/import/status/{jobId}
+   */
+  getImportStatus: async (jobId: string) => {
+    const { data } = await apiClient.get<ApiResponse<{
+      status: 'pending' | 'processing' | 'completed' | 'failed'
+      percent: number
+      message: string
+      created: number
+      updated: number
+      deleted: number
+      errors: number
+    }>>(`/admin/schedules/import/status/${jobId}`)
+    return data
+  },
+
+  /**
+   * Clear import job status
+   * DELETE /api/admin/schedules/import/status/{jobId}
+   */
+  clearImportStatus: async (jobId: string) => {
+    const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(
+      `/admin/schedules/import/status/${jobId}`
     )
     return data
   },
@@ -200,5 +228,31 @@ export const schedulesApi = {
     const filename = `jadwal_${params.year}_${String(params.month).padStart(2, '0')}.xlsx`
     downloadBlob(blob, filename)
     return { success: true, filename }
+  },
+
+  /**
+   * Check existing schedules for a month
+   * GET /api/admin/schedules/check-existing
+   */
+  checkExisting: async (year: number, month: number) => {
+    const { data } = await apiClient.get<ApiResponse<{
+      has_existing: boolean
+      count: number
+      message: string
+    }>>('/admin/schedules/check-existing', {
+      params: { year, month },
+    })
+    return data
+  },
+
+  /**
+   * Clear schedules for a month
+   * DELETE /admin/schedules/clear-month
+   */
+  clearMonth: async (year: number, month: number) => {
+    const response = await apiClient.delete(`/admin/schedules/clear-month`, {
+      data: { year, month },
+    })
+    return response.data as { success: boolean; data: { deleted: number; message: string } }
   },
 }

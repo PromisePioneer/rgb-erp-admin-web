@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { useSchedulesStore } from '@/features/schedules/store/schedules-store'
 import { SchedulesFormModal } from '@/features/schedules/components/schedules-form-modal'
 import { SchedulesMonthNav } from '@/features/schedules/components/schedules-month-nav'
+import { SchedulesToolbar } from '@/features/schedules/components/schedules-toolbar'
 import type { CalendarSchedule, EmployeeScheduleRow } from '@/features/schedules/types/schedules.types'
 
 const DAYS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
@@ -151,6 +152,9 @@ export function SchedulesTable() {
 
       {/* Month Navigation */}
       <SchedulesMonthNav />
+
+      {/* Import/Export Toolbar */}
+      <SchedulesToolbar currentMonth={currentMonth} onRefresh={() => fetchCalendarData({ month: currentMonth, search: searchQuery || undefined })} />
 
       {/* Search and Filters */}
       <div className="flex items-center gap-3 flex-wrap">

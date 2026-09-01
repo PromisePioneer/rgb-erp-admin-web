@@ -37,8 +37,8 @@ import {AreasTable} from '@/features/areas'
 import {PossTable} from '@/features/poss'
 import {ProvincesTable} from '@/features/provinces'
 import {AttendancesTable} from '@/features/attendances'
-// Import SchedulesToolbar
-import {SchedulesTable, SchedulesToolbar} from '@/features/schedules'
+// Import SchedulesTable
+import {SchedulesTable} from '@/features/schedules'
 import {BankAccountsTable} from '@/features/bank-accounts'
 import {PettyCashTable} from '@/features/petty-cash'
 import {InvoicesTable} from '@/features/invoices'
@@ -990,7 +990,6 @@ function SchedulesPage() {
                 <h2 className="text-2xl font-bold mb-2">Schedules</h2>
                 <p className="text-muted-foreground">Manage employee work schedules and attendance locations</p>
             </div>
-            <SchedulesToolbar />
             <SchedulesTable/>
         </AuthLayout>
     )
