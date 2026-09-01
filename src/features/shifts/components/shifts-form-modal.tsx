@@ -2,7 +2,7 @@
  * Shifts Form Modal Component
  * Create and edit form using react-hook-form
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Save, Clock } from 'lucide-react'
 import { toast } from 'sonner'
@@ -15,6 +15,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useShiftsStore } from '@/features/shifts'
+import { areasApi } from '@/features/areas'
+import type { ShiftType } from '../types/shifts.types'
 
 interface ShiftsFormModalProps {
   open: boolean
@@ -28,7 +30,17 @@ type ShiftFormValues = {
   start_time: string
   end_time: string
   status: number
+  area_id: number | null
+  type: ShiftType | null
 }
+
+const SHIFT_TYPES: { value: ShiftType; label: string }[] = [
+  { value: 'morning', label: 'Morning (Pagi)' },
+  { value: 'middle', label: 'Middle (Siang)' },
+  { value: 'night', label: 'Night (Malam)' },
+  { value: 'off', label: 'Off' },
+  { value: 'back_office', label: 'Back Office' },
+]
 
 export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFormModalProps) {
   const {
@@ -41,6 +53,8 @@ export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFor
     resetForm,
   } = useShiftsStore()
 
+  const [areaOptions, setAreaOptions] = useState<{ id: number; name: string }[]>([])
+  const [isLoadingAreas, setIsLoadingAreas] = useState(false)
   const hasShownValidationToast = useRef(false)
 
   const form = useForm<ShiftFormValues>({
@@ -49,8 +63,28 @@ export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFor
       start_time: '',
       end_time: '',
       status: 1,
+      area_id: null,
+      type: null,
     },
   })
+
+  // Load area options
+  useEffect(() => {
+    if (open) {
+      setIsLoadingAreas(true)
+      areasApi
+        .getSelectOptions()
+        .then((res) => {
+          setAreaOptions(res.data)
+        })
+        .catch(() => {
+          setAreaOptions([])
+        })
+        .finally(() => {
+          setIsLoadingAreas(false)
+        })
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) {
@@ -59,6 +93,8 @@ export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFor
         start_time: '',
         end_time: '',
         status: 1,
+        area_id: null,
+        type: null,
       })
       hasShownValidationToast.current = false
     }
@@ -103,6 +139,8 @@ export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFor
         start_time: selectedItem.start_time ?? '',
         end_time: selectedItem.end_time ?? '',
         status: selectedItem.status,
+        area_id: selectedItem.area_id,
+        type: selectedItem.type,
       })
     }
   }, [mode, selectedItem, open, form])
@@ -117,6 +155,8 @@ export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFor
       start_time: values.start_time || null,
       end_time: values.end_time || null,
       status: values.status,
+      area_id: values.area_id,
+      type: values.type,
     }
 
     try {
@@ -190,12 +230,50 @@ export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFor
             </div>
           </div>
 
+          {/* Area */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Area (Opsional)</label>
+            <select
+              {...form.register('area_id', { valueAsNumber: true })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-offset-2"
+            >
+              <option value="">-- Pilih Area --</option>
+              {areaOptions.map((area) => (
+                <option key={area.id} value={area.id}>
+                  {area.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Kosongkan untuk shift global (fallback)
+            </p>
+          </div>
+
+          {/* Type */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Type</label>
+            <select
+              {...form.register('type')}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-offset-2"
+            >
+              <option value="">-- Pilih Tipe --</option>
+              {SHIFT_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Tipe untuk resolusi kode P/M/O saat import jadwal
+            </p>
+          </div>
+
           {/* Status */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Status</label>
             <select
               {...form.register('status', { valueAsNumber: true })}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-offset-2"
             >
               <option value={1}>Active</option>
               <option value={0}>Inactive</option>
