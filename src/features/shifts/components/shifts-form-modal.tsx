@@ -2,12 +2,13 @@
  * Shifts Form Modal Component
  * Create and edit form using react-hook-form
  */
-import { useEffect, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useEffect, useRef } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { Save, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import {
   Dialog,
   DialogContent,
@@ -53,8 +54,6 @@ export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFor
     resetForm,
   } = useShiftsStore()
 
-  const [areaOptions, setAreaOptions] = useState<{ id: number; name: string }[]>([])
-  const [isLoadingAreas, setIsLoadingAreas] = useState(false)
   const hasShownValidationToast = useRef(false)
 
   const form = useForm<ShiftFormValues>({
@@ -67,24 +66,6 @@ export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFor
       type: null,
     },
   })
-
-  // Load area options
-  useEffect(() => {
-    if (open) {
-      setIsLoadingAreas(true)
-      areasApi
-        .getSelectOptions()
-        .then((res) => {
-          setAreaOptions(res.data)
-        })
-        .catch(() => {
-          setAreaOptions([])
-        })
-        .finally(() => {
-          setIsLoadingAreas(false)
-        })
-    }
-  }, [open])
 
   useEffect(() => {
     if (!open) {
@@ -174,6 +155,15 @@ export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFor
     }
   }
 
+  // Load area options for async select
+  const loadAreaOptions = async (search: string): Promise<SelectOption[]> => {
+    const result = await areasApi.getSelectOptions({ q: search })
+    return result.data.map((area) => ({
+      value: area.id,
+      label: area.name,
+    }))
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
@@ -230,20 +220,22 @@ export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFor
             </div>
           </div>
 
-          {/* Area */}
+          {/* Area - Async Select */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Area (Opsional)</label>
-            <select
-              {...form.register('area_id', { valueAsNumber: true })}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-offset-2"
-            >
-              <option value="">-- Pilih Area --</option>
-              {areaOptions.map((area) => (
-                <option key={area.id} value={area.id}>
-                  {area.name}
-                </option>
-              ))}
-            </select>
+            <Controller
+              name="area_id"
+              control={form.control}
+              render={({ field }) => (
+                <AsyncSelect
+                  placeholder="Pilih Area..."
+                  value={field.value}
+                  onChange={(val) => field.onChange(val as number | null)}
+                  loadOptions={loadAreaOptions}
+                  className="w-full"
+                />
+              )}
+            />
             <p className="text-xs text-muted-foreground">
               Kosongkan untuk shift global (fallback)
             </p>
@@ -254,7 +246,7 @@ export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFor
             <label className="text-sm font-medium">Type</label>
             <select
               {...form.register('type')}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-offset-2"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <option value="">-- Pilih Tipe --</option>
               {SHIFT_TYPES.map((type) => (
@@ -273,7 +265,7 @@ export function ShiftsFormModal({ open, onOpenChange, mode, shiftId }: ShiftsFor
             <label className="text-sm font-medium">Status</label>
             <select
               {...form.register('status', { valueAsNumber: true })}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-offset-2"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <option value={1}>Active</option>
               <option value={0}>Inactive</option>
