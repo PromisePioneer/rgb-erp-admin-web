@@ -28,6 +28,7 @@ const REQUIRED_PLACEMENT_POSITIONS = [
     'Danru',
     'Valet',
     'Cleaning Service',
+    'Team Leader'
 ]
 
 export function EmployeesForm() {
@@ -287,63 +288,63 @@ export function EmployeesForm() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-4">
-                        <Skeleton className="h-10 w-10" />
+                        <Skeleton className="h-10 w-10"/>
                         <div className="space-y-2">
-                            <Skeleton className="h-8 w-48" />
-                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-8 w-48"/>
+                            <Skeleton className="h-4 w-32"/>
                         </div>
                     </div>
-                    <Skeleton className="h-10 w-24" />
+                    <Skeleton className="h-10 w-24"/>
                 </div>
 
                 {/* Private Information */}
                 <section className="bg-card rounded-lg border p-6 mb-6">
-                    <Skeleton className="h-6 w-40 mb-4" />
+                    <Skeleton className="h-6 w-40 mb-4"/>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
                     </div>
-                    <Skeleton className="h-20 w-full mt-4" />
-                    <Skeleton className="h-20 w-full mt-4" />
+                    <Skeleton className="h-20 w-full mt-4"/>
+                    <Skeleton className="h-20 w-full mt-4"/>
                 </section>
 
                 {/* Basic Information */}
                 <section className="bg-card rounded-lg border p-6 mb-6">
-                    <Skeleton className="h-6 w-40 mb-4" />
+                    <Skeleton className="h-6 w-40 mb-4"/>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
                     </div>
                 </section>
 
                 {/* Family Information */}
                 <section className="bg-card rounded-lg border p-6 mb-6">
-                    <Skeleton className="h-6 w-40 mb-4" />
+                    <Skeleton className="h-6 w-40 mb-4"/>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
                     </div>
                 </section>
 
                 {/* Work Information */}
                 <section className="bg-card rounded-lg border p-6 mb-6">
-                    <Skeleton className="h-6 w-40 mb-4" />
+                    <Skeleton className="h-6 w-40 mb-4"/>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
                     </div>
                 </section>
 
                 {/* Actions */}
                 <div className="flex justify-end gap-3 pb-8">
-                    <Skeleton className="h-10 w-24" />
-                    <Skeleton className="h-10 w-32" />
+                    <Skeleton className="h-10 w-24"/>
+                    <Skeleton className="h-10 w-32"/>
                 </div>
             </div>
         )
@@ -366,7 +367,7 @@ export function EmployeesForm() {
         const payload: CreateEmployeePayload = {
             ...values,
             // Exclude code field when editing (code should not be updated)
-            ...(isEdit ? { code: undefined } : {}),
+            ...(isEdit ? {code: undefined} : {}),
             height: cleanNumeric(values.height),
             weight: cleanNumeric(values.weight),
             base_salary: cleanNumeric(values.base_salary),
