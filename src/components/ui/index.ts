@@ -17,7 +17,6 @@ export {
   SelectTrigger,
   SelectValue,
 } from './select'
-export { AsyncSelect } from './async-select'
 export {
   Table,
   TableBody,
