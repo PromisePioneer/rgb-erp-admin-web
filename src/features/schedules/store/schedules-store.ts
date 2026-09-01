@@ -27,8 +27,8 @@ interface SchedulesState {
   calendarEmployees: EmployeeScheduleRow[]
   calendarDates: string[]
 
-  // Week navigation state
-  currentDate: string // ISO date string for determining current week
+  // Current month (YYYY-MM format)
+  currentMonth: string
 
   // Area filter state
   selectedAreaId: number | null
@@ -48,16 +48,14 @@ interface SchedulesState {
   setSelectedAreaId: (areaId: number | null) => void
 
   // Calendar helpers
-  getCalendarRows: () => EmployeeScheduleRow[]
   getFilteredCalendarRows: () => EmployeeScheduleRow[]
-  getMonthDates: () => string[]
   getUniqueAreas: () => { area_id: number; area_name: string }[]
 
-  // Week navigation
-  getWeekDates: () => string[]
-  prevWeek: () => void
-  nextWeek: () => void
-  goToWeek: (date: string) => void
+  // Month navigation
+  prevMonth: () => void
+  nextMonth: () => void
+  goToMonth: (month: string) => void
+  getCurrentMonthLabel: () => string
 }
 
 const initialFilters: SchedulesFilters = {
@@ -83,7 +81,7 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
   pagination: initialPagination,
   calendarEmployees: [],
   calendarDates: [],
-  currentDate: new Date().toISOString().split('T')[0],
+  currentMonth: new Date().toISOString().substring(0, 7), // YYYY-MM
   selectedAreaId: null,
 
   // Actions
@@ -110,11 +108,7 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     set({ isLoading: true, error: null })
 
     try {
-      // Convert YYYY-MM-DD to YYYY-MM format for API
-      let monthParam = params?.month ?? get().filters.month
-      if (monthParam && monthParam.length === 10) {
-        monthParam = monthParam.substring(0, 7) // YYYY-MM-DD -> YYYY-MM
-      }
+      const monthParam = params?.month ?? get().currentMonth
 
       const response = await schedulesApi.getEmployeesByPlacement({
         month: monthParam,
@@ -155,9 +149,7 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     try {
       await schedulesApi.create(payload)
       set({ isSubmitting: false })
-      // Refresh calendar with current month
-      const currentMonth = get().currentDate.substring(0, 7)
-      await get().fetchCalendarData({ month: currentMonth })
+      await get().fetchCalendarData({ month: get().currentMonth })
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to create schedule'
@@ -172,9 +164,7 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     try {
       await schedulesApi.update(id, payload)
       set({ isSubmitting: false })
-      // Refresh calendar with current month
-      const currentMonth = get().currentDate.substring(0, 7)
-      await get().fetchCalendarData({ month: currentMonth })
+      await get().fetchCalendarData({ month: get().currentMonth })
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to update schedule'
@@ -189,9 +179,7 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     try {
       await schedulesApi.delete(id)
       set({ isSubmitting: false })
-      // Refresh calendar with current month
-      const currentMonth = get().currentDate.substring(0, 7)
-      await get().fetchCalendarData({ month: currentMonth })
+      await get().fetchCalendarData({ month: get().currentMonth })
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to delete schedule'
@@ -206,9 +194,7 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
     try {
       await schedulesApi.bulkDelete(ids)
       set({ isSubmitting: false })
-      // Refresh calendar with current month
-      const currentMonth = get().currentDate.substring(0, 7)
-      await get().fetchCalendarData({ month: currentMonth })
+      await get().fetchCalendarData({ month: get().currentMonth })
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to delete schedules'
@@ -219,7 +205,6 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
 
   setFilters: (newFilters: Partial<SchedulesFilters>) => {
     const updatedFilters = { ...get().filters, ...newFilters }
-    // Reset to page 1 when changing filters (except page itself)
     if (!('page' in newFilters)) {
       updatedFilters.page = 1
     }
@@ -231,10 +216,7 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
   },
 
   resetForm: () => {
-    set({
-      selectedItem: null,
-      error: null,
-    })
+    set({ selectedItem: null, error: null })
   },
 
   clearError: () => {
@@ -246,16 +228,6 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
   },
 
   // Calendar helpers
-  getMonthDates: () => {
-    return get().calendarDates.length > 0
-      ? get().calendarDates
-      : []
-  },
-
-  getCalendarRows: () => {
-    return get().calendarEmployees
-  },
-
   getFilteredCalendarRows: () => {
     const { calendarEmployees, selectedAreaId } = get()
     if (!selectedAreaId) {
@@ -279,37 +251,31 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
       .sort((a, b) => a.area_name.localeCompare(b.area_name))
   },
 
-  // Week navigation helpers
-  getWeekDates: () => {
-    const current = new Date(get().currentDate)
-    const day = current.getDay()
-    // Get Monday of current week (Sunday = 0, Monday = 1, etc.)
-    const diff = day === 0 ? -6 : 1 - day
-    const monday = new Date(current)
-    monday.setDate(current.getDate() + diff)
-
-    const dates: string[] = []
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(monday)
-      date.setDate(monday.getDate() + i)
-      dates.push(date.toISOString().split('T')[0])
-    }
-    return dates
+  // Month navigation
+  prevMonth: () => {
+    const [year, month] = get().currentMonth.split('-').map(Number)
+    const prevMonthNum = month === 1 ? 12 : month - 1
+    const prevYear = month === 1 ? year - 1 : year
+    set({ currentMonth: `${prevYear}-${String(prevMonthNum).padStart(2, '0')}` })
   },
 
-  prevWeek: () => {
-    const current = new Date(get().currentDate)
-    current.setDate(current.getDate() - 7)
-    set({ currentDate: current.toISOString().split('T')[0] })
+  nextMonth: () => {
+    const [year, month] = get().currentMonth.split('-').map(Number)
+    const nextMonthNum = month === 12 ? 1 : month + 1
+    const nextYear = month === 12 ? year + 1 : year
+    set({ currentMonth: `${nextYear}-${String(nextMonthNum).padStart(2, '0')}` })
   },
 
-  nextWeek: () => {
-    const current = new Date(get().currentDate)
-    current.setDate(current.getDate() + 7)
-    set({ currentDate: current.toISOString().split('T')[0] })
+  goToMonth: (month: string) => {
+    set({ currentMonth: month })
   },
 
-  goToWeek: (date: string) => {
-    set({ currentDate: date })
+  getCurrentMonthLabel: () => {
+    const MONTHS = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ]
+    const [year, month] = get().currentMonth.split('-').map(Number)
+    return `${MONTHS[month - 1]} ${year}`
   },
 }))
