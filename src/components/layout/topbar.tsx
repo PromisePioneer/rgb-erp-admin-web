@@ -10,9 +10,13 @@ import {
   LogOut,
   ChevronDown,
   PanelLeftClose,
+  Globe,
+  Moon,
+  Sun,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useCompanyStore } from '@/stores/company-store'
+import { useTranslationStore } from '@/stores/translation-store'
 import { SidebarToggle } from './sidebar'
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { companyApi } from '@/features/companies/api/companies-api'
@@ -81,9 +85,40 @@ interface TopbarProps {
 export function Topbar({ onCollapse }: TopbarProps) {
   const { user, logout } = useAuthStore()
   const { currentCompany, switchCompany, fetchCompanies } = useCompanyStore()
+  const { locale, setLocale } = useTranslationStore()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [langMenuOpen, setLangMenuOpen] = useState(false)
   const location = useLocation()
   const pageTitle = getPageTitle(location.pathname)
+
+  // Dark mode toggle
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark')
+    }
+    return false
+  })
+
+  const toggleDarkMode = () => {
+    const newIsDark = !isDark
+    setIsDark(newIsDark)
+    if (newIsDark) {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+    }
+  }
+
+  // Init dark mode from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme')
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark').matches)) {
+      document.documentElement.classList.add('dark')
+      setIsDark(true)
+    }
+  }, [])
 
   // Fetch companies on mount
   useEffect(() => {
@@ -97,6 +132,13 @@ export function Topbar({ onCollapse }: TopbarProps) {
     } catch (error) {
       console.error('Logout failed:', error)
     }
+  }
+
+  const handleLanguageChange = async (newLocale: 'en' | 'id') => {
+    setLocale(newLocale)
+    setLangMenuOpen(false)
+    // Optionally reload to refresh all translations
+    // window.location.reload()
   }
 
   // Load companies for select
@@ -161,6 +203,54 @@ export function Topbar({ onCollapse }: TopbarProps) {
         {/* Notifications placeholder */}
         <button className="relative p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
           <Bell className="h-5 w-5" />
+        </button>
+
+        {/* Language Switcher */}
+        <div className="relative" data-state={langMenuOpen ? 'open' : 'closed'}>
+          <button
+            onClick={() => setLangMenuOpen(!langMenuOpen)}
+            className="flex items-center gap-1.5 p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            title="Change Language"
+          >
+            <Globe className="h-5 w-5" />
+            <span className="text-xs font-medium uppercase">{locale}</span>
+          </button>
+
+          {/* Dropdown */}
+          {langMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)} />
+              <div className="absolute right-0 mt-2 w-40 bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden">
+                <div className="py-1">
+                  <button
+                    onClick={() => handleLanguageChange('id')}
+                    className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors ${
+                      locale === 'id' ? 'bg-accent text-primary font-medium' : 'text-foreground'
+                    }`}
+                  >
+                    🇮🇩 Indonesia
+                  </button>
+                  <button
+                    onClick={() => handleLanguageChange('en')}
+                    className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors ${
+                      locale === 'en' ? 'bg-accent text-primary font-medium' : 'text-foreground'
+                    }`}
+                  >
+                    🇬🇧 English
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={toggleDarkMode}
+          className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          title={isDark ? 'Light Mode' : 'Dark Mode'}
+        >
+          {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </button>
 
         {/* User menu */}

@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { schedulesApi } from '../api/schedules-api'
+import { useTranslation } from '@/hooks/use-translation'
 
 interface SchedulesToolbarProps {
   currentMonth: string
@@ -22,6 +23,8 @@ interface SchedulesToolbarProps {
 }
 
 export function SchedulesToolbar({ currentMonth, onRefresh }: SchedulesToolbarProps) {
+  const { t } = useTranslation()
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false)
@@ -31,7 +34,7 @@ export function SchedulesToolbar({ currentMonth, onRefresh }: SchedulesToolbarPr
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [existingCount, setExistingCount] = useState(0)
 
-  // Import state - use string to track job ID, null when not importing
+  // Import state
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
 
   // Use ref for toast ID to persist across renders
@@ -54,7 +57,6 @@ export function SchedulesToolbar({ currentMonth, onRefresh }: SchedulesToolbarPr
 
   // Poll for job status
   useEffect(() => {
-    // If no job ID, don't poll
     if (!currentJobId) return
 
     let intervalId: ReturnType<typeof setInterval> | null = null
@@ -64,24 +66,19 @@ export function SchedulesToolbar({ currentMonth, onRefresh }: SchedulesToolbarPr
         const result = await schedulesApi.getImportStatus(currentJobId)
         const data = result.data
 
-        // Check again after API call - job might have been cancelled
         if (!currentJobId) return
 
         if (data.status === 'completed') {
-          // Clear interval immediately
           if (intervalId) {
             clearInterval(intervalId)
             intervalId = null
           }
-          // Stop polling by clearing job ID
           setCurrentJobId(null)
-          // Show success toast
           toast.success(
-            `Import selesai! ${data.created} dibuat, ${data.updated} diupdate${data.errors > 0 ? `, ${data.errors} error` : ''}`,
+            t('import_success', { created: data.created, updated: data.updated }),
             { id: toastIdRef.current ?? undefined }
           )
           toastIdRef.current = null
-          // Refresh data
           onRefresh()
         } else if (data.status === 'failed') {
           if (intervalId) {
@@ -89,52 +86,48 @@ export function SchedulesToolbar({ currentMonth, onRefresh }: SchedulesToolbarPr
             intervalId = null
           }
           setCurrentJobId(null)
-          toast.error(`Import gagal: ${data.message}`, { id: toastIdRef.current ?? undefined })
+          toast.error(
+            t('import_failed', { message: data.message }),
+            { id: toastIdRef.current ?? undefined }
+          )
           toastIdRef.current = null
         } else {
-          // Still processing - update toast
           if (toastIdRef.current) {
             toast.loading(data.message, { id: toastIdRef.current })
           }
         }
       } catch (err) {
         console.error('Failed to poll import status:', err)
-        // Only stop on network error, not on API error
       }
     }
 
-    // Start polling immediately
     poll()
     intervalId = setInterval(poll, 1500)
 
-    // Cleanup function - runs when currentJobId changes or component unmounts
     return () => {
       if (intervalId) {
         clearInterval(intervalId)
       }
     }
-  }, [currentJobId, onRefresh])
+  }, [currentJobId, onRefresh, t])
 
   const startImport = useCallback(async (file: File, year: number, month: number, clearFirst: boolean = false) => {
     setShowConfirmDialog(false)
 
     try {
-      // Clear existing schedules if needed
       if (clearFirst) {
         await schedulesApi.clearMonth(year, month)
       }
 
-      // Start import (returns job_id)
       const result = await schedulesApi.importSchedules(file, year, month)
       setCurrentJobId(result.data.job_id)
 
-      // Show initial toast
-      toastIdRef.current = toast.loading('Memulai import jadwal...')
+      toastIdRef.current = toast.loading(t('import_started'))
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Gagal import jadwal'
+      const errorMessage = err instanceof Error ? err.message : t('import_failed', { message: 'Unknown error' })
       toast.error(errorMessage)
     }
-  }, [])
+  }, [t])
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -142,7 +135,6 @@ export function SchedulesToolbar({ currentMonth, onRefresh }: SchedulesToolbarPr
 
     const { year, month } = getYearMonth()
 
-    // Check existing schedules first
     try {
       const existing = await schedulesApi.checkExisting(year, month)
       setExistingCount(existing.data.count)
@@ -158,7 +150,6 @@ export function SchedulesToolbar({ currentMonth, onRefresh }: SchedulesToolbarPr
       setPendingFile(null)
     }
 
-    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -185,9 +176,9 @@ export function SchedulesToolbar({ currentMonth, onRefresh }: SchedulesToolbarPr
     setIsDownloadingTemplate(true)
     try {
       await schedulesApi.downloadTemplate({ year, month })
-      toast.success('Template berhasil didownload')
+      toast.success(t('template_downloaded'))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal download template')
+      toast.error(err instanceof Error ? err.message : t('import_failed', { message: 'Template error' }))
     } finally {
       setIsDownloadingTemplate(false)
     }
@@ -198,24 +189,27 @@ export function SchedulesToolbar({ currentMonth, onRefresh }: SchedulesToolbarPr
     setIsExporting(true)
     try {
       await schedulesApi.exportSchedules({ year, month })
-      toast.success('Export berhasil')
+      toast.success(t('template_downloaded'))
     } catch {
-      toast.error('Gagal export jadwal')
+      toast.error(t('import_failed', { message: 'Export error' }))
     } finally {
       setIsExporting(false)
     }
   }
 
-  // Check if currently importing
+  const handleRefresh = async () => {
+    onRefresh()
+  }
+
   const isImporting = currentJobId !== null
 
   return (
     <>
       <div className="flex items-center justify-between gap-4 mb-4">
         {/* Left side - Refresh */}
-        <Button variant="outline" size="sm" onClick={onRefresh} className="h-9">
+        <Button variant="outline" size="sm" onClick={handleRefresh} className="h-9" disabled={isImporting}>
           <RefreshCw className="h-4 w-4 mr-1" />
-          Refresh
+          {isImporting ? t('refreshing') : t('refresh')}
         </Button>
 
         {/* Right side - Action buttons */}
@@ -224,11 +218,11 @@ export function SchedulesToolbar({ currentMonth, onRefresh }: SchedulesToolbarPr
             variant="outline"
             size="sm"
             onClick={handleDownloadTemplate}
-            disabled={isDownloadingTemplate}
+            disabled={isDownloadingTemplate || isImporting}
             className="h-9"
           >
             <Download className="h-4 w-4 mr-1" />
-            {isDownloadingTemplate ? 'Memuat...' : 'Template'}
+            {isDownloadingTemplate ? t('downloading_template') : t('download_template')}
           </Button>
 
           <Button
@@ -243,18 +237,18 @@ export function SchedulesToolbar({ currentMonth, onRefresh }: SchedulesToolbarPr
             ) : (
               <Upload className="h-4 w-4 mr-1" />
             )}
-            {isImporting ? 'Mengimport...' : 'Import'}
+            {isImporting ? t('importing') : t('import_schedule')}
           </Button>
 
           <Button
             variant="outline"
             size="sm"
             onClick={handleExport}
-            disabled={isExporting}
+            disabled={isExporting || isImporting}
             className="h-9"
           >
             <FileDown className="h-4 w-4 mr-1" />
-            {isExporting ? 'Meng-export...' : 'Export'}
+            {isExporting ? t('exporting') : t('export_schedule')}
           </Button>
         </div>
 
@@ -268,21 +262,21 @@ export function SchedulesToolbar({ currentMonth, onRefresh }: SchedulesToolbarPr
         />
       </div>
 
-      {/* replace Confirmation Dialog */}
+      {/* Replace Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={(open) => !open && handleCancelImport()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Jadwal Sudah Ada</DialogTitle>
+            <DialogTitle>{t('schedule_already_exists')}</DialogTitle>
             <DialogDescription>
-              Sudah ada {existingCount} jadwal di bulan tersebut. Import akan menimpa jadwal yang sudah ada.
+              {t('schedule_already_exists_desc', { count: existingCount })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={handleCancelImport}>
-              Batal
+              {t('cancel')}
             </Button>
             <Button onClick={handleConfirmReplace}>
-              Ya, Replace
+              {t('yes_replace')}
             </Button>
           </DialogFooter>
         </DialogContent>

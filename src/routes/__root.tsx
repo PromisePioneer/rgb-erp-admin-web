@@ -10,6 +10,7 @@ import {useForm} from 'react-hook-form'
 import {zodResolver} from '@hookform/resolvers/zod'
 import {z} from 'zod'
 import {useAuthStore} from '@/stores/auth-store'
+import {useTranslationStore} from '@/stores/translation-store'
 import {requirePrivilegeInBeforeLoad} from '@/lib/privilege-guard'
 import {useNavigate} from '@tanstack/react-router'
 import {ArrowLeft, ShieldCheck, Eye, EyeOff} from 'lucide-react'
@@ -72,19 +73,31 @@ import {PatrolReportsTable} from '@/features/patrol-reports'
 import {DailyTaskReportsList} from '@/features/daily-task-reports'
 import {DailyTaskItemsTable} from '@/features/daily-task-items'
 import {ProductsTable} from '@/features/products'
+import {FaceEnrollmentsTable} from '@/features/face-enrollments'
 import {PurchaseRequestsTable, PurchaseRequestsForm} from '@/features/purchase-requests'
 import {PurchaseOrdersTable, PurchaseOrdersForm} from '@/features/purchase-orders'
 import {ReceptionsTable, ReceptionsForm} from '@/features/receptions'
 import {StockOpnameForm} from '@/features/stock-opnames'
+import {MasterDataHub} from '@/features/master-data'
 
 // Root route
 const rootRoute = createRootRoute({
-    component: () => (
-        <>
-            <Outlet/>
-            <Toaster position="top-right" richColors/>
-        </>
-    ),
+    component: () => {
+        const {fetchTranslations, isLoaded} = useTranslationStore()
+
+        useEffect(() => {
+            if (!isLoaded) {
+                fetchTranslations()
+            }
+        }, [fetchTranslations, isLoaded])
+
+        return (
+            <>
+                <Outlet/>
+                <Toaster position="top-right" richColors/>
+            </>
+        )
+    },
 })
 
 // Auth layout wrapper
@@ -1225,6 +1238,32 @@ const provincesRoute = createRoute({
     component: ProvincesPage,
 })
 
+// Master Data Hub
+function MasterDataPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Master Data</h2>
+                <p className="text-muted-foreground">Kelola data referensi yang digunakan di seluruh sistem</p>
+            </div>
+            <MasterDataHub/>
+        </AuthLayout>
+    )
+}
+
+const masterDataRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/master-data',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+    },
+    component: MasterDataPage,
+})
+
 // Product Categories
 function ProductCategoriesPage() {
     return (
@@ -1568,7 +1607,31 @@ const projectsEditRoute = createRoute({
 })
 
 // Face Enrollments
-const faceEnrollmentsRoute = createPlaceholderRoute('/face-enrollments', 'Face Enrollments', 'Face Enrollment')
+function FaceEnrollmentsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Face Enrollments</h2>
+                <p className="text-muted-foreground">Manage employee face enrollment data</p>
+            </div>
+            <FaceEnrollmentsTable/>
+        </AuthLayout>
+    )
+}
+
+const faceEnrollmentsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/face-enrollments',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Face Enrollment', 'View')
+    },
+    component: FaceEnrollmentsPage,
+})
 
 // Panic Alerts
 function PanicAlertsPage() {
@@ -2214,6 +2277,7 @@ const routeTree = rootRoute.addChildren([
     shiftsRoute,
     warehousesRoute,
     productCategoriesRoute,
+    masterDataRoute,
     provincesRoute,
     salaryComponentsRoute,
     // Placeholder routes
