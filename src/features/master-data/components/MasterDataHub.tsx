@@ -14,8 +14,8 @@ import {
   Tags,
   ArrowRight,
   Search,
-  LucideIcon,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { masterDataStatsApi, type MasterDataStats } from '../api/master-data-stats-api'
