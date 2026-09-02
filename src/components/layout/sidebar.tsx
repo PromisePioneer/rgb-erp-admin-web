@@ -5,7 +5,11 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { Card } from '@/components/ui/card'
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { useSettingsStore } from "@/features/settings/store/settings-store"
-import { PanelLeft, PanelLeftClose } from "lucide-react"
+import { useCompanyStore } from '@/stores/company-store'
+import { useTranslationStore } from '@/stores/translation-store'
+import { PanelLeft, PanelLeftClose, Bell, Globe } from "lucide-react"
+import { AsyncSelect, type SelectOption } from '@/components/async-select'
+import { companyApi } from '@/features/companies/api/companies-api'
 
 // Re-export for backward compatibility
 export { AppSidebar as Sidebar } from "@/components/app-sidebar"
@@ -39,9 +43,47 @@ function useCollapseState() {
   return { isCollapsed, toggleCollapse }
 }
 
+// Load companies for select
+async function loadCompanies(search: string): Promise<SelectOption[]> {
+  try {
+    const response = await companyApi.getSelectOptions({ q: search })
+    return response.map((company) => ({
+      value: company.id,
+      label: company.name,
+    }))
+  } catch {
+    return []
+  }
+}
+
 export function MainLayout({ children }: MainLayoutProps) {
   const { isCollapsed, toggleCollapse } = useCollapseState()
   const { data: settings } = useSettingsStore()
+  const { currentCompany, switchCompany, fetchCompanies } = useCompanyStore()
+  const { locale, setLocale } = useTranslationStore()
+  const [langMenuOpen, setLangMenuOpen] = React.useState(false)
+
+  // Fetch companies on mount
+  React.useEffect(() => {
+    fetchCompanies()
+  }, [fetchCompanies])
+
+  // Handle company change
+  const handleCompanyChange = async (value: number | string | null) => {
+    if (!value) return
+    try {
+      await switchCompany(Number(value))
+      window.location.reload()
+    } catch (error) {
+      console.error('Failed to switch company:', error)
+    }
+  }
+
+  // Handle language change
+  const handleLanguageChange = (newLocale: 'en' | 'id') => {
+    setLocale(newLocale)
+    setLangMenuOpen(false)
+  }
 
   return (
     <SidebarProvider>
@@ -66,6 +108,66 @@ export function MainLayout({ children }: MainLayoutProps) {
             </button>
             <div className="flex items-center gap-2">
               <h1 className="text-sm font-medium">{settings?.app_title || 'Dashboard'}</h1>
+            </div>
+
+            {/* Spacer */}
+            <div className="flex-1" />
+
+            {/* Right side actions */}
+            <div className="flex items-center gap-2">
+              {/* Company Selector */}
+              <div className="w-[200px]">
+                <AsyncSelect
+                  value={currentCompany?.id ?? null}
+                  onChange={handleCompanyChange}
+                  loadOptions={loadCompanies}
+                  placeholder="Select Company"
+                />
+              </div>
+
+              {/* Language Switcher */}
+              <div className="relative" data-state={langMenuOpen ? 'open' : 'closed'}>
+                <button
+                  onClick={() => setLangMenuOpen(!langMenuOpen)}
+                  className="flex items-center gap-1.5 p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  title="Change Language"
+                >
+                  <Globe className="h-5 w-5" />
+                  <span className="text-xs font-medium uppercase">{locale}</span>
+                </button>
+
+                {/* Dropdown */}
+                {langMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-40 bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden">
+                      <div className="py-1">
+                        <button
+                          onClick={() => handleLanguageChange('id')}
+                          className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors ${
+                            locale === 'id' ? 'bg-accent text-primary font-medium' : 'text-foreground'
+                          }`}
+                        >
+                          🇮🇩 Indonesia
+                        </button>
+                        <button
+                          onClick={() => handleLanguageChange('en')}
+                          className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors ${
+                            locale === 'en' ? 'bg-accent text-primary font-medium' : 'text-foreground'
+                          }`}
+                        >
+                          🇬🇧 English
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Notifications */}
+              <button className="relative p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                <Bell className="h-5 w-5" />
+              </button>
             </div>
           </header>
 
