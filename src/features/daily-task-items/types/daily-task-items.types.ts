@@ -14,8 +14,10 @@ export interface DailyTaskItem {
   id: number
   name: string
   description: string | null
-  status: number // 1 = active, 0 = inactive
+  status: number // 1 = active, 2 = inactive
   status_label: string
+  position_id: number | null
+  position_name: string | null
   created_at: string
   updated_at: string
 }
@@ -26,7 +28,8 @@ export interface DailyTaskItemDetail extends DailyTaskItem {
 
 export interface DailyTaskItemsFilters {
   search?: string
-  status?: number // 1 = active, 0 = inactive
+  status?: number // 1 = active, 2 = inactive
+  position_id?: number
   page?: number
   per_page?: number
 }
@@ -34,7 +37,8 @@ export interface DailyTaskItemsFilters {
 export interface CreateDailyTaskItem {
   name: string
   description?: string | null
-  status: number // 1 = active, 0 = inactive
+  status: number // 1 = active, 2 = inactive
+  position_id?: number | null
 }
 
 export interface UpdateDailyTaskItem extends CreateDailyTaskItem {}

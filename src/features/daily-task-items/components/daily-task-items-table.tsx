@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useDailyTaskItemsStore } from "../store/daily-task-items-store"
 import { dailyTaskItemsApi } from "../api/daily-task-items-api"
+import { positionsApi, type PositionOption } from "../api/positions-api"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -43,7 +44,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { Plus, Search, Trash2, Pencil, X } from "lucide-react"
+import { Plus, Search, Trash2, Pencil, X, ChevronDown } from "lucide-react"
 import { STATUS_ACTIVE, STATUS_INACTIVE } from "../types/daily-task-items.types"
 
 const STATUS_COLORS: Record<number, string> = {
@@ -66,6 +67,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Nama harus diisi"),
   description: z.string().optional().nullable(),
   status: z.enum(["active", "inactive"]),
+  position_id: z.number().optional().nullable(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -88,11 +90,16 @@ export function DailyTaskItemsTable() {
   // Local state
   const [searchValue, setSearchValue] = useState(filters.search || "")
   const [statusFilter, setStatusFilter] = useState<string>(filters.status === undefined ? "all" : (filters.status === STATUS_ACTIVE ? "active" : "inactive"))
+  const [positionFilter, setPositionFilter] = useState<string>(filters.position_id === undefined ? "all" : String(filters.position_id))
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showFormModal, setShowFormModal] = useState(false)
   const [formMode, setFormMode] = useState<"create" | "edit">("create")
   const [editingId, setEditingId] = useState<number | null>(null)
+
+  // Positions dropdown state
+  const [positions, setPositions] = useState<PositionOption[]>([])
+  const [isLoadingPositions, setIsLoadingPositions] = useState(false)
 
   // Form
   const form = useForm<FormValues>({
@@ -101,12 +108,29 @@ export function DailyTaskItemsTable() {
       name: "",
       description: "",
       status: "active",
+      position_id: undefined,
     },
   })
+
+  // Fetch positions for dropdown
+  const fetchPositions = useCallback(async () => {
+    setIsLoadingPositions(true)
+    try {
+      const response = await positionsApi.getSelectOptions()
+      if (response.success) {
+        setPositions(response.data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch positions:", error)
+    } finally {
+      setIsLoadingPositions(false)
+    }
+  }, [])
 
   // Fetch on mount
   useEffect(() => {
     fetchItems()
+    fetchPositions()
   }, [])
 
   // Handle search
@@ -128,6 +152,18 @@ export function DailyTaskItemsTable() {
     [filters]
   )
 
+  // Handle position filter
+  const handlePositionFilter = useCallback(
+    (value: string | null) => {
+      const val = value || "all"
+      setPositionFilter(val)
+      const positionId = val === "all" ? undefined : Number(val)
+      setFilters({ position_id: positionId })
+      fetchItems({ ...filters, position_id: positionId, page: 1 })
+    },
+    [filters]
+  )
+
   // Handle pagination
   const handlePageChange = useCallback(
     (page: number) => {
@@ -141,6 +177,7 @@ export function DailyTaskItemsTable() {
   const handleResetFilters = useCallback(() => {
     setSearchValue("")
     setStatusFilter("all")
+    setPositionFilter("all")
     resetFilters()
     fetchItems({})
   }, [])
@@ -169,7 +206,7 @@ export function DailyTaskItemsTable() {
 
   // Open create modal
   const handleAddNew = () => {
-    form.reset({ name: "", description: "", status: "active" })
+    form.reset({ name: "", description: "", status: "active", position_id: undefined })
     setFormMode("create")
     setEditingId(null)
     setShowFormModal(true)
@@ -184,6 +221,7 @@ export function DailyTaskItemsTable() {
           name: response.data.name,
           description: response.data.description || "",
           status: statusToString(response.data.status) as "active" | "inactive", // Convert number to string
+          position_id: response.data.position_id || undefined,
         })
         setFormMode("edit")
         setEditingId(id)
@@ -229,7 +267,7 @@ export function DailyTaskItemsTable() {
   }
 
   // Has active filters
-  const hasActiveFilters = searchValue || statusFilter !== "all"
+  const hasActiveFilters = searchValue || statusFilter !== "all" || positionFilter !== "all"
 
   return (
     <div className="space-y-4">
@@ -247,6 +285,21 @@ export function DailyTaskItemsTable() {
               className="pl-9"
             />
           </div>
+
+          {/* Position Filter */}
+          <Select value={positionFilter} onValueChange={handlePositionFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Posisi" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Posisi</SelectItem>
+              {positions.map((pos) => (
+                <SelectItem key={pos.id} value={String(pos.id)}>
+                  {pos.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Status Filter */}
           <Select value={statusFilter} onValueChange={handleStatusFilter}>
@@ -294,6 +347,7 @@ export function DailyTaskItemsTable() {
                 />
               </TableHead>
               <TableHead>Nama</TableHead>
+              <TableHead>Posisi</TableHead>
               <TableHead>Deskripsi</TableHead>
               <TableHead className="w-24">Status</TableHead>
               <TableHead className="w-24">Aksi</TableHead>
@@ -322,7 +376,7 @@ export function DailyTaskItemsTable() {
               ))
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Tidak ada data
                 </TableCell>
               </TableRow>
@@ -344,6 +398,9 @@ export function DailyTaskItemsTable() {
                     >
                       {item.name}
                     </button>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {item.position_name || "-"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {item.description || "-"}
@@ -459,6 +516,21 @@ export function DailyTaskItemsTable() {
               {form.formState.errors.name && (
                 <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Posisi</label>
+              <select
+                {...form.register("position_id", { valueAsNumber: true })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="">Pilih Posisi (Opsional)</option>
+                {positions.map((pos) => (
+                  <option key={pos.id} value={pos.id}>
+                    {pos.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
