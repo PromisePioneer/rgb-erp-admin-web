@@ -6,32 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title id="app-title">RGB ERP</title>
     <script>
-        // Load favicon and title from settings on page load
+        // Load favicon and title from public branding endpoint (no auth required)
         (async function () {
             try {
-                // Try API endpoint
                 const baseURL = (window.VITE_API_URL) + '/api';
-                const response = await fetch(baseURL + '/admin/settings', {credentials: 'include'});
+                const response = await fetch(baseURL + '/branding');
 
                 if (response.ok) {
                     const data = await response.json();
-                    const settings = data.data;
+                    const branding = data.data;
 
                     // Update title
-                    if (settings.app_title) {
-                        document.getElementById('app-title').textContent = settings.app_title;
+                    if (branding.app_title) {
+                        document.getElementById('app-title').textContent = branding.app_title;
                     }
 
                     // Update favicon
-                    if (settings.favicon) {
+                    if (branding.favicon) {
                         const faviconLink = document.getElementById('favicon-link');
-                        faviconLink.href = settings.favicon;
+                        faviconLink.href = branding.favicon;
                     }
                 }
-                // If response is not ok (e.g., redirect to login), keep default favicon
             } catch (e) {
                 // Network error - keep default favicon
-                console.log('Using default favicon');
+                console.log('Using default branding');
             }
         })();
     </script>
