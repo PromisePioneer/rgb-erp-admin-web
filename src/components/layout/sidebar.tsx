@@ -145,11 +145,10 @@ export function MainLayout({ children }: MainLayoutProps) {
               <h1 className="text-sm font-medium">{settings?.app_title || 'Dashboard'}</h1>
             </div>
 
-            {/* Spacer */}
-            <div className="flex-1" />
-
-            {/* Clock */}
-            <HeaderClock />
+            {/* Clock - Center */}
+            <div className="flex-1 flex justify-center">
+              <HeaderClock />
+            </div>
 
             {/* Right side actions */}
             <div className="flex items-center gap-2">
