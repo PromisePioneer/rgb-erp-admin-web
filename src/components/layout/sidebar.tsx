@@ -56,6 +56,41 @@ async function loadCompanies(search: string): Promise<SelectOption[]> {
   }
 }
 
+// Clock component
+function HeaderClock() {
+  const [time, setTime] = React.useState(new Date())
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('id-ID', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
+  }
+
+  return (
+    <div className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground">
+      <span className="font-medium">{formatTime(time)}</span>
+      <span className="text-xs">·</span>
+      <span>{formatDate(time)}</span>
+    </div>
+  )
+}
+
 export function MainLayout({ children }: MainLayoutProps) {
   const { isCollapsed, toggleCollapse } = useCollapseState()
   const { data: settings } = useSettingsStore()
@@ -112,6 +147,9 @@ export function MainLayout({ children }: MainLayoutProps) {
 
             {/* Spacer */}
             <div className="flex-1" />
+
+            {/* Clock */}
+            <HeaderClock />
 
             {/* Right side actions */}
             <div className="flex items-center gap-2">
