@@ -200,11 +200,6 @@ export function Topbar({ onCollapse }: TopbarProps) {
           />
         </div>
 
-        {/* Notifications placeholder */}
-        <button className="relative p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-          <Bell className="h-5 w-5" />
-        </button>
-
         {/* Language Switcher */}
         <div className="relative" data-state={langMenuOpen ? 'open' : 'closed'}>
           <button
@@ -243,6 +238,11 @@ export function Topbar({ onCollapse }: TopbarProps) {
             </>
           )}
         </div>
+
+        {/* Notifications */}
+        <button className="relative p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+          <Bell className="h-5 w-5" />
+        </button>
 
         {/* Dark Mode Toggle */}
         <button
