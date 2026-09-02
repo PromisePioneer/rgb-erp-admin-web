@@ -9,8 +9,10 @@
         // Load favicon and title from settings on page load
         (async function () {
             try {
+                // Try API endpoint
                 const baseURL = (window.VITE_API_URL) + '/api';
                 const response = await fetch(baseURL + '/admin/settings', {credentials: 'include'});
+
                 if (response.ok) {
                     const data = await response.json();
                     const settings = data.data;
@@ -26,8 +28,10 @@
                         faviconLink.href = settings.favicon;
                     }
                 }
+                // If response is not ok (e.g., redirect to login), keep default favicon
             } catch (e) {
-                console.error('Failed to load settings for branding:', e);
+                // Network error - keep default favicon
+                console.log('Using default favicon');
             }
         })();
     </script>
