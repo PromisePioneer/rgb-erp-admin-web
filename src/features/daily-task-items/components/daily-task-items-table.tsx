@@ -44,16 +44,23 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Plus, Search, Trash2, Pencil, X } from "lucide-react"
+import { STATUS_ACTIVE, STATUS_INACTIVE } from "../types/daily-task-items.types"
 
-const STATUS_COLORS: Record<string, string> = {
-  active: "bg-green-100 text-green-800",
-  inactive: "bg-gray-100 text-gray-800",
+const STATUS_COLORS: Record<number, string> = {
+  [STATUS_ACTIVE]: "bg-green-100 text-green-800",
+  [STATUS_INACTIVE]: "bg-gray-100 text-gray-800",
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  active: "Aktif",
-  inactive: "Tidak Aktif",
+const STATUS_LABELS: Record<number, string> = {
+  [STATUS_ACTIVE]: "Aktif",
+  [STATUS_INACTIVE]: "Tidak Aktif",
 }
+
+// Map number to string for form display
+const statusToString = (status: number): string => (status === STATUS_ACTIVE ? "active" : "inactive")
+
+// Map string to number for API
+const stringToStatus = (str: string): number => (str === "active" ? STATUS_ACTIVE : STATUS_INACTIVE)
 
 const formSchema = z.object({
   name: z.string().min(1, "Nama harus diisi"),
@@ -108,12 +115,13 @@ export function DailyTaskItemsTable() {
     fetchItems({ ...filters, search: searchValue, page: 1 })
   }, [searchValue])
 
-  // Handle status filter
+  // Handle status filter - convert string to number for API
   const handleStatusFilter = useCallback(
     (value: string | null) => {
       const val = value || "all"
       setStatusFilter(val)
-      const status = val === "all" ? undefined : val
+      // Convert string filter to number for API
+      const status = val === "all" ? undefined : (val === "active" ? STATUS_ACTIVE : STATUS_INACTIVE)
       setFilters({ status })
       fetchItems({ ...filters, status, page: 1 })
     },
@@ -175,7 +183,7 @@ export function DailyTaskItemsTable() {
         form.reset({
           name: response.data.name,
           description: response.data.description || "",
-          status: response.data.status,
+          status: statusToString(response.data.status), // Convert number to string
         })
         setFormMode("edit")
         setEditingId(id)
@@ -186,14 +194,19 @@ export function DailyTaskItemsTable() {
     }
   }
 
-  // Submit form
+  // Submit form - convert status to number for API
   const handleSubmit = async (values: FormValues) => {
+    const payload = {
+      ...values,
+      status: stringToStatus(values.status), // Convert string to number
+    }
+
     try {
       if (formMode === "create") {
-        await create(values)
+        await create(payload)
         toast.success("Item berhasil ditambahkan")
       } else if (editingId) {
-        await update(editingId, values)
+        await update(editingId, payload)
         toast.success("Item berhasil diperbarui")
       }
       setShowFormModal(false)
