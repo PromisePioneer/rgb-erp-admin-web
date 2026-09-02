@@ -87,7 +87,7 @@ export function DailyTaskItemsTable() {
 
   // Local state
   const [searchValue, setSearchValue] = useState(filters.search || "")
-  const [statusFilter, setStatusFilter] = useState<string>(filters.status || "all")
+  const [statusFilter, setStatusFilter] = useState<string>(filters.status === undefined ? "all" : (filters.status === STATUS_ACTIVE ? "active" : "inactive"))
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showFormModal, setShowFormModal] = useState(false)
@@ -183,7 +183,7 @@ export function DailyTaskItemsTable() {
         form.reset({
           name: response.data.name,
           description: response.data.description || "",
-          status: statusToString(response.data.status), // Convert number to string
+          status: statusToString(response.data.status) as "active" | "inactive", // Convert number to string
         })
         setFormMode("edit")
         setEditingId(id)

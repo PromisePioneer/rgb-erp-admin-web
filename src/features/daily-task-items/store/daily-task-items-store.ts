@@ -43,7 +43,7 @@ const defaultPagination: Pagination = {
 
 const defaultFilters: DailyTaskItemsFilters = {
   search: '',
-  status: '',
+  status: undefined,
   page: 1,
   per_page: 15,
 }
