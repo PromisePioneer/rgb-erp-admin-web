@@ -4,7 +4,7 @@
  */
 
 import { useNavigate } from '@tanstack/react-router'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
   Globe,
   Building2,
@@ -14,9 +14,11 @@ import {
   Tags,
   ArrowRight,
   Search,
+  LucideIcon,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { masterDataStatsApi, type MasterDataStats } from '../api/master-data-stats-api'
 
 interface MasterDataItem {
   id: string
@@ -24,13 +26,13 @@ interface MasterDataItem {
   nameId: string
   description: string
   descriptionId: string
-  icon: React.ElementType
+  icon: LucideIcon
   path: string
-  count: number
+  countKey: keyof MasterDataStats
   isImplemented: boolean
 }
 
-// Master data configuration
+// Master data configuration - maps to stats keys
 const masterDataItems: MasterDataItem[] = [
   {
     id: 'provinces',
@@ -40,7 +42,7 @@ const masterDataItems: MasterDataItem[] = [
     descriptionId: 'Data provinsi',
     icon: Globe,
     path: '/provinces',
-    count: 38,
+    countKey: 'provinces',
     isImplemented: true,
   },
   {
@@ -51,61 +53,172 @@ const masterDataItems: MasterDataItem[] = [
     descriptionId: 'Data departemen',
     icon: Building2,
     path: '/departments',
-    count: 24,
+    countKey: 'departments',
     isImplemented: true,
   },
   {
-    id: 'locations',
-    name: 'Locations',
-    nameId: 'Lokasi',
-    description: 'Data location',
-    descriptionId: 'Data lokasi',
-    icon: MapPin,
-    path: '/locations',
-    count: 156,
-    isImplemented: false,
+    id: 'clients',
+    name: 'Clients',
+    nameId: 'Klien',
+    description: 'Data client',
+    descriptionId: 'Data klien',
+    icon: Building2,
+    path: '/clients',
+    countKey: 'clients',
+    isImplemented: true,
   },
   {
-    id: 'employee-types',
-    name: 'Employee Types',
-    nameId: 'Jenis Karyawan',
-    description: 'Employee type data',
-    descriptionId: 'Jenis karyawan',
+    id: 'positions',
+    name: 'Positions',
+    nameId: 'Posisi',
+    description: 'Data position',
+    descriptionId: 'Data posisi',
     icon: Users,
-    path: '/employee-types',
-    count: 5,
-    isImplemented: false,
+    path: '/positions',
+    countKey: 'positions',
+    isImplemented: true,
   },
   {
-    id: 'violation-types',
-    name: 'Violation Types',
-    nameId: 'Jenis Pelanggaran',
-    description: 'Violation type data',
-    descriptionId: 'Jenis pelanggaran',
-    icon: AlertTriangle,
-    path: '/violation-types',
-    count: 32,
-    isImplemented: false,
+    id: 'shifts',
+    name: 'Shifts',
+    nameId: 'Shift',
+    description: 'Data shift',
+    descriptionId: 'Data shift',
+    icon: Globe,
+    path: '/shifts',
+    countKey: 'shifts',
+    isImplemented: true,
   },
   {
-    id: 'categories',
-    name: 'Categories',
-    nameId: 'Kategori',
-    description: 'Category data',
-    descriptionId: 'Data kategori',
+    id: 'employees',
+    name: 'Employees',
+    nameId: 'Karyawan',
+    description: 'Data employee',
+    descriptionId: 'Data karyawan',
+    icon: Users,
+    path: '/employees',
+    countKey: 'employees',
+    isImplemented: true,
+  },
+  {
+    id: 'areas',
+    name: 'Areas',
+    nameId: 'Area',
+    description: 'Data area',
+    descriptionId: 'Data area',
+    icon: MapPin,
+    path: '/areas',
+    countKey: 'areas',
+    isImplemented: true,
+  },
+  {
+    id: 'poss',
+    name: 'Poss',
+    nameId: 'POS',
+    description: 'Data pos',
+    descriptionId: 'Data pos',
+    icon: MapPin,
+    path: '/poss',
+    countKey: 'poss',
+    isImplemented: true,
+  },
+  {
+    id: 'roles',
+    name: 'Roles',
+    nameId: 'Peran',
+    description: 'Data role',
+    descriptionId: 'Data peran',
+    icon: Users,
+    path: '/roles',
+    countKey: 'roles',
+    isImplemented: true,
+  },
+  {
+    id: 'client-types',
+    name: 'Client Types',
+    nameId: 'Tipe Klien',
+    description: 'Data client type',
+    descriptionId: 'Data tipe klien',
     icon: Tags,
-    path: '/categories',
-    count: 18,
-    isImplemented: false,
+    path: '/client-types',
+    countKey: 'client_types',
+    isImplemented: true,
+  },
+  {
+    id: 'banks',
+    name: 'Banks',
+    nameId: 'Bank',
+    description: 'Data bank',
+    descriptionId: 'Data bank',
+    icon: Building2,
+    path: '/banks',
+    countKey: 'banks',
+    isImplemented: true,
+  },
+  {
+    id: 'bank-accounts',
+    name: 'Bank Accounts',
+    nameId: 'Akun Bank',
+    description: 'Data bank account',
+    descriptionId: 'Data akun bank',
+    icon: Building2,
+    path: '/bank-accounts',
+    countKey: 'bank_accounts',
+    isImplemented: true,
+  },
+  {
+    id: 'warehouses',
+    name: 'Warehouses',
+    nameId: 'Gudang',
+    description: 'Data warehouse',
+    descriptionId: 'Data gudang',
+    icon: Building2,
+    path: '/warehouses',
+    countKey: 'warehouses',
+    isImplemented: true,
+  },
+  {
+    id: 'product-categories',
+    name: 'Product Categories',
+    nameId: 'Kategori Produk',
+    description: 'Data product category',
+    descriptionId: 'Data kategori produk',
+    icon: Tags,
+    path: '/product-categories',
+    countKey: 'product_categories',
+    isImplemented: true,
+  },
+  {
+    id: 'products',
+    name: 'Products',
+    nameId: 'Produk',
+    description: 'Data product',
+    descriptionId: 'Data produk',
+    icon: Tags,
+    path: '/products',
+    countKey: 'products',
+    isImplemented: true,
+  },
+  {
+    id: 'daily-task-items',
+    name: 'Daily Task Items',
+    nameId: 'Item Tugas Harian',
+    description: 'Data daily task item',
+    descriptionId: 'Data item tugas harian',
+    icon: AlertTriangle,
+    path: '/daily-task-items',
+    countKey: 'daily_task_items',
+    isImplemented: true,
   },
 ]
 
 interface MasterDataCardProps {
   item: MasterDataItem
+  count: number
   onClick: () => void
 }
 
-function MasterDataCard({ item, onClick }: MasterDataCardProps) {
+function MasterDataCard({ item, count, onClick }: MasterDataCardProps) {
   const Icon = item.icon
 
   return (
@@ -135,7 +248,7 @@ function MasterDataCard({ item, onClick }: MasterDataCardProps) {
       {/* Footer: Count and Arrow */}
       <div className="mt-auto flex items-center justify-between">
         <span className="text-sm text-gray-400">
-          {item.count} data
+          {count.toLocaleString('id-ID')} data
         </span>
         <ArrowRight className="h-4 w-4 text-gray-400 transition-transform group-hover:translate-x-1 group-hover:text-gray-600" />
       </div>
@@ -155,6 +268,25 @@ function MasterDataCard({ item, onClick }: MasterDataCardProps) {
 export function MasterDataHub() {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
+  const [stats, setStats] = useState<MasterDataStats | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await masterDataStatsApi.getStats()
+      if (response.success) {
+        setStats(response.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch master data stats:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchStats()
+  }, [fetchStats])
 
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return masterDataItems
@@ -175,6 +307,11 @@ export function MasterDataHub() {
     }
   }
 
+  const getCount = (item: MasterDataItem): number => {
+    if (!stats) return 0
+    return stats[item.countKey] || 0
+  }
+
   return (
     <div className="space-y-6">
       {/* Search Field */}
@@ -182,26 +319,46 @@ export function MasterDataHub() {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <Input
           type="text"
-          placeholder="Search master data..."
+          placeholder="Cari master data..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
         />
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div
+              key={i}
+              className="animate-pulse rounded-lg border bg-white p-5"
+            >
+              <div className="mb-4 h-10 w-10 rounded-lg bg-gray-200" />
+              <div className="mb-2 h-4 w-24 rounded bg-gray-200" />
+              <div className="mb-4 h-3 w-32 rounded bg-gray-200" />
+              <div className="mt-auto h-3 w-16 rounded bg-gray-200" />
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Cards Grid - 3 columns */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredItems.map((item) => (
-          <MasterDataCard
-            key={item.id}
-            item={item}
-            onClick={() => handleCardClick(item)}
-          />
-        ))}
-      </div>
+      {!isLoading && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredItems.map((item) => (
+            <MasterDataCard
+              key={item.id}
+              item={item}
+              count={getCount(item)}
+              onClick={() => handleCardClick(item)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Empty State */}
-      {filteredItems.length === 0 && (
+      {!isLoading && filteredItems.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Search className="mb-4 h-12 w-12 text-gray-300" />
           <h3 className="mb-2 text-lg font-medium text-gray-900">
