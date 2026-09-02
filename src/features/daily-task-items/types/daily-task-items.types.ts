@@ -4,7 +4,7 @@
 
 // Status constants
 export const STATUS_ACTIVE = 1
-export const STATUS_INACTIVE = 0
+export const STATUS_INACTIVE = 2
 export const STATUS_LABELS: Record<number, string> = {
   [STATUS_ACTIVE]: "Aktif",
   [STATUS_INACTIVE]: "Tidak Aktif",
