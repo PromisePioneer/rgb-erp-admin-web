@@ -79,17 +79,6 @@ const masterDataItems: MasterDataItem[] = [
     isImplemented: true,
   },
   {
-    id: 'shifts',
-    name: 'Shifts',
-    nameId: 'Shift',
-    description: 'Data shift',
-    descriptionId: 'Data shift',
-    icon: Globe,
-    path: '/shifts',
-    countKey: 'shifts',
-    isImplemented: true,
-  },
-  {
     id: 'employees',
     name: 'Employees',
     nameId: 'Karyawan',
