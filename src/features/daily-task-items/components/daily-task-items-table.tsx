@@ -44,7 +44,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { Plus, Search, Trash2, Pencil, X, ChevronDown } from "lucide-react"
+import { Plus, Search, Trash2, Pencil, X } from "lucide-react"
 import { STATUS_ACTIVE, STATUS_INACTIVE } from "../types/daily-task-items.types"
 
 const STATUS_COLORS: Record<number, string> = {
@@ -99,7 +99,6 @@ export function DailyTaskItemsTable() {
 
   // Positions dropdown state
   const [positions, setPositions] = useState<PositionOption[]>([])
-  const [isLoadingPositions, setIsLoadingPositions] = useState(false)
 
   // Form
   const form = useForm<FormValues>({
@@ -114,7 +113,6 @@ export function DailyTaskItemsTable() {
 
   // Fetch positions for dropdown
   const fetchPositions = useCallback(async () => {
-    setIsLoadingPositions(true)
     try {
       const response = await positionsApi.getSelectOptions()
       if (response.success) {
@@ -122,8 +120,6 @@ export function DailyTaskItemsTable() {
       }
     } catch (error) {
       console.error("Failed to fetch positions:", error)
-    } finally {
-      setIsLoadingPositions(false)
     }
   }, [])
 
