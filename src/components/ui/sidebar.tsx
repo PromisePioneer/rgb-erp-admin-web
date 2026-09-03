@@ -38,6 +38,7 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  isMobileHandled?: boolean // Indicates mobile is handled by parent MobileSidebar
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -57,6 +58,7 @@ const SidebarProvider = React.forwardRef<
     defaultOpen?: boolean
     open?: boolean
     onOpenChange?: (open: boolean) => void
+    isMobileHandled?: boolean // Set to true when parent MobileSidebar handles mobile
   }
 >(
   (
@@ -67,6 +69,7 @@ const SidebarProvider = React.forwardRef<
       className,
       style,
       children,
+      isMobileHandled = false,
       ...props
     },
     ref
@@ -129,8 +132,9 @@ const SidebarProvider = React.forwardRef<
         openMobile,
         setOpenMobile,
         toggleSidebar,
+        isMobileHandled,
       }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, isMobileHandled]
     )
 
     return (
@@ -179,7 +183,15 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const sidebarContext = useSidebar()
+    const contextIsMobile = sidebarContext?.isMobile
+    const isMobileHandled = sidebarContext?.isMobileHandled
+    const state = sidebarContext?.state || "expanded"
+
+    // Use context isMobile if available, otherwise fall back to useIsMobile
+    // Skip mobile rendering if isMobileHandled is true (parent MobileSidebar handles it)
+    const isMobile = contextIsMobile !== undefined ? contextIsMobile : useIsMobile()
+    const shouldSkipMobile = isMobile && isMobileHandled
 
     if (collapsible === "none") {
       return (
@@ -196,9 +208,25 @@ const Sidebar = React.forwardRef<
       )
     }
 
+    // Skip mobile rendering if parent MobileSidebar already handles it
+    if (shouldSkipMobile) {
+      return (
+        <div
+          className={cn(
+            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
+            className
+          )}
+          ref={ref}
+          {...props}
+        >
+          {children}
+        </div>
+      )
+    }
+
     if (isMobile) {
       return (
-        <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+        <Sheet open={sidebarContext?.openMobile} onOpenChange={sidebarContext?.setOpenMobile} {...props}>
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
