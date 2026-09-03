@@ -1,101 +1,109 @@
 /**
- * Approval Types Table Component
- * CRUD management for approval types with flow configuration
+ * Approval Types Table Component (User-Friendly)
+ * Single table with inline flow display
  */
 import { useEffect, useState } from 'react'
-import { Plus, Settings2, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Users, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
-import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
 import { useApprovalTypesStore } from '../store/approval-types-store'
 import { ApprovalTypesFormModal } from './approval-types-form-modal'
-import { ApprovalFlowsFormModal } from './approval-flows-form-modal'
 import type { ApprovalType } from '../types/approval-types.types'
 import { toast } from 'sonner'
 
 export function ApprovalTypesTable() {
-  const { items, fetchTypes, saveType, deleteType, isLoading } = useApprovalTypesStore()
-  const [showTypeModal, setShowTypeModal] = useState(false)
+  const { items, fetchTypes, deleteType, isLoading } = useApprovalTypesStore()
+  const [showModal, setShowModal] = useState(false)
   const [editingType, setEditingType] = useState<ApprovalType | null>(null)
-  const [showFlowModal, setShowFlowModal] = useState(false)
-  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null)
 
   useEffect(() => {
     fetchTypes()
   }, [fetchTypes])
 
-  const handleToggleActive = async (type: ApprovalType, isActive: boolean) => {
-    try {
-      await saveType({ name: type.name, is_active: isActive }, type.id)
-      toast.success(`Type ${isActive ? 'activated' : 'deactivated'} successfully`)
-    } catch {
-      toast.error('Failed to update type status')
-    }
+  const handleAdd = () => {
+    setEditingType(null)
+    setShowModal(true)
   }
 
   const handleEdit = (type: ApprovalType) => {
     setEditingType(type)
-    setShowTypeModal(true)
-  }
-
-  const handleConfigureFlow = (type: ApprovalType) => {
-    setSelectedTypeId(type.id)
-    setShowFlowModal(true)
+    setShowModal(true)
   }
 
   const handleDelete = async (type: ApprovalType) => {
-    if (!confirm(`Delete approval type "${type.name}"?`)) return
+    if (!confirm(`Hapus jenis pengajuan "${type.name}"?`)) return
 
     try {
       await deleteType(type.id)
-      toast.success('Type deleted successfully')
-    } catch (error) {
-      toast.error('Failed to delete type')
+      toast.success('Jenis pengajuan berhasil dihapus')
+    } catch {
+      toast.error('Gagal menghapus jenis pengajuan')
     }
+  }
+
+  // Render approval flow as connected icons
+  const renderFlow = (type: ApprovalType) => {
+    if (type.steps_count === 0) {
+      return (
+        <span className="text-muted-foreground text-sm italic">
+          Belum ada alur
+        </span>
+      )
+    }
+
+    return (
+      <div className="flex items-center gap-1 flex-wrap">
+        {type.steps_summary.map((step, index) => (
+          <div key={index} className="flex items-center">
+            <Badge variant="outline" className="gap-1 text-xs">
+              <Users className="h-3 w-3" />
+              {step.approver_name}
+            </Badge>
+            {index < type.steps_summary.length - 1 && (
+              <ChevronRight className="h-3 w-3 text-muted-foreground mx-1" />
+            )}
+          </div>
+        ))}
+      </div>
+    )
   }
 
   const columns: DataTableColumn<ApprovalType>[] = [
     {
       accessorKey: 'name',
-      header: 'Name',
-      cell: (row) => <span className="font-medium">{row.name}</span>,
-    },
-    {
-      accessorKey: 'type',
-      header: 'Type Code',
+      header: 'Jenis Pengajuan',
       cell: (row) => (
-        <code className="text-sm bg-muted px-2 py-1 rounded">{row.type}</code>
+        <div className="flex flex-col gap-0.5">
+          <span className="font-medium">{row.name}</span>
+          <span className="text-muted-foreground text-xs">{row.type}</span>
+        </div>
       ),
     },
     {
-      accessorKey: 'steps_count',
-      header: 'Steps',
-      cell: (row) => (
-        <span className={`text-sm ${row.steps_count > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
-          {row.steps_count > 0 ? `${row.steps_count} step(s)` : 'Not configured'}
-        </span>
-      ),
+      accessorKey: 'steps_summary',
+      header: 'Alur Persetujuan',
+      cell: (row) => renderFlow(row),
     },
     {
       accessorKey: 'is_active',
-      header: 'Active',
+      header: 'Status',
       cell: (row) => (
-        <Switch
-          checked={row.is_active}
-          onCheckedChange={(checked) => handleToggleActive(row, checked)}
-        />
+        <Badge variant={row.is_active ? 'default' : 'secondary'}>
+          {row.is_active ? 'Aktif' : 'Nonaktif'}
+        </Badge>
       ),
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: 'Aksi',
       cell: (row) => (
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => handleConfigureFlow(row)}>
-            <Settings2 className="h-4 w-4 mr-1" />
-            Flow
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleEdit(row)}
+          >
             Edit
           </Button>
           <Button
@@ -115,12 +123,12 @@ export function ApprovalTypesTable() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Settings2 className="h-4 w-4" />
-          <span>Manage request types that support approval workflows</span>
+          <Users className="h-4 w-4" />
+          <span>Kelola alur persetujuan untuk berbagai jenis pengajuan</span>
         </div>
-        <Button onClick={() => { setEditingType(null); setShowTypeModal(true) }}>
+        <Button onClick={handleAdd}>
           <Plus className="h-4 w-4 mr-1" />
-          Add Type
+          Tambah Jenis
         </Button>
       </div>
 
@@ -130,20 +138,16 @@ export function ApprovalTypesTable() {
         pagination={{ current_page: 1, per_page: items.length || 10, total: items.length, last_page: 1 }}
         isLoading={isLoading}
         onPageChange={() => {}}
-        emptyMessage="No approval types configured"
+        emptyMessage="Belum ada jenis pengajuan. Klik 'Tambah Jenis' untuk membuat."
       />
 
-      {showTypeModal && (
+      {showModal && (
         <ApprovalTypesFormModal
           type={editingType}
-          onClose={() => { setShowTypeModal(false); setEditingType(null) }}
-        />
-      )}
-
-      {showFlowModal && selectedTypeId && (
-        <ApprovalFlowsFormModal
-          typeId={selectedTypeId}
-          onClose={() => { setShowFlowModal(false); setSelectedTypeId(null) }}
+          onClose={() => {
+            setShowModal(false)
+            setEditingType(null)
+          }}
         />
       )}
     </div>
