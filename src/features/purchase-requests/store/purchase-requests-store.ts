@@ -28,6 +28,7 @@ interface PurchaseRequestsState {
   fetchById: (id: number) => Promise<void>
   create: (payload: CreatePurchaseRequestPayload) => Promise<void>
   update: (id: number, payload: UpdatePurchaseRequestPayload) => Promise<void>
+  submitForApproval: (id: number) => Promise<void>
   remove: (id: number) => Promise<void>
   bulkDelete: (ids: number[]) => Promise<void>
   setFilters: (filters: Partial<PurchaseRequestsFilters>) => void
@@ -121,6 +122,23 @@ export const usePurchaseRequestsStore = create<PurchaseRequestsState>((set, get)
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to update purchase request'
+      set({ error: message, isSubmitting: false })
+      throw error
+    }
+  },
+
+  submitForApproval: async (id: number) => {
+    set({ isSubmitting: true, error: null })
+
+    try {
+      await purchaseRequestsApi.submitForApproval(id)
+      set({ isSubmitting: false })
+      // Refresh the list and selected item
+      await get().fetchPurchaseRequests()
+      await get().fetchById(id)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to submit for approval'
       set({ error: message, isSubmitting: false })
       throw error
     }

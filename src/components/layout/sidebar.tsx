@@ -4,15 +4,36 @@ import * as React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Card } from '@/components/ui/card'
 import { SidebarProvider } from "@/components/ui/sidebar"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useSettingsStore } from "@/features/settings/store/settings-store"
 import { useCompanyStore } from '@/stores/company-store'
 import { useTranslationStore } from '@/stores/translation-store'
-import { PanelLeft, PanelLeftClose, Bell, Globe } from "lucide-react"
+import { PanelLeft, PanelLeftClose, Bell, Globe, Menu } from "lucide-react"
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { companyApi } from '@/features/companies/api/companies-api'
+import { Button } from '@/components/ui/button'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 // Re-export for backward compatibility
 export { AppSidebar as Sidebar } from "@/components/app-sidebar"
+
+// Mobile sidebar wrapper with Sheet
+function MobileSidebar() {
+  const [open, setOpen] = React.useState(false)
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="lg:hidden">
+          <Menu className="h-5 w-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-[280px] p-0">
+        <AppSidebar isCollapsed={false} />
+      </SheetContent>
+    </Sheet>
+  )
+}
 
 // SidebarToggle for backward compatibility
 export function SidebarToggle() {
@@ -83,7 +104,7 @@ function HeaderClock() {
   }
 
   return (
-    <div className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground">
+    <div className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground">
       <span className="font-medium">{formatTime(time)}</span>
       <span className="text-xs">·</span>
       <span>{formatDate(time)}</span>
@@ -97,6 +118,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { currentCompany, switchCompany, fetchCompanies } = useCompanyStore()
   const { locale, setLocale } = useTranslationStore()
   const [langMenuOpen, setLangMenuOpen] = React.useState(false)
+  const isMobile = useIsMobile()
 
   // Fetch companies on mount
   React.useEffect(() => {
@@ -123,24 +145,32 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <AppSidebar isCollapsed={isCollapsed} />
+        {/* Desktop Sidebar - hidden on mobile */}
+        {!isMobile && <AppSidebar isCollapsed={isCollapsed} />}
+
         {/* Content area - adjusts based on sidebar state */}
         <div className={`
           flex-1 flex flex-col min-h-screen transition-all duration-200 ease-in-out
-          ${isCollapsed ? "ml-16" : "ml-[280px]"}
+          ${!isMobile ? (isCollapsed ? "ml-16" : "ml-[280px]") : ""}
         `}>
           {/* Header with toggle button */}
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card px-4">
-            <button
-              onClick={toggleCollapse}
-              className="p-1.5 hover:bg-accent rounded-md transition-colors"
-            >
-              {isCollapsed ? (
-                <PanelLeft className="h-4 w-4" />
-              ) : (
-                <PanelLeftClose className="h-4 w-4" />
-              )}
-            </button>
+            {/* Mobile hamburger menu */}
+            {isMobile && <MobileSidebar />}
+
+            {/* Desktop collapse toggle */}
+            {!isMobile && (
+              <button
+                onClick={toggleCollapse}
+                className="p-1.5 hover:bg-accent rounded-md transition-colors"
+              >
+                {isCollapsed ? (
+                  <PanelLeft className="h-4 w-4" />
+                ) : (
+                  <PanelLeftClose className="h-4 w-4" />
+                )}
+              </button>
+            )}
             <div className="flex items-center gap-2">
               <h1 className="text-sm font-medium">{settings?.app_title || 'Dashboard'}</h1>
             </div>
@@ -152,15 +182,17 @@ export function MainLayout({ children }: MainLayoutProps) {
 
             {/* Right side actions */}
             <div className="flex items-center gap-2">
-              {/* Company Selector */}
-              <div className="w-[200px]">
-                <AsyncSelect
-                  value={currentCompany?.id ?? null}
-                  onChange={handleCompanyChange}
-                  loadOptions={loadCompanies}
-                  placeholder="Select Company"
-                />
-              </div>
+              {/* Company Selector - hidden on small mobile */}
+              {!isMobile && (
+                <div className="w-[200px]">
+                  <AsyncSelect
+                    value={currentCompany?.id ?? null}
+                    onChange={handleCompanyChange}
+                    loadOptions={loadCompanies}
+                    placeholder="Select Company"
+                  />
+                </div>
+              )}
 
               {/* Language Switcher */}
               <div className="relative" data-state={langMenuOpen ? 'open' : 'closed'}>

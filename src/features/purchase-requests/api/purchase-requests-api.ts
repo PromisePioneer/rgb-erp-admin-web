@@ -73,6 +73,17 @@ export const purchaseRequestsApi = {
   },
 
   /**
+   * Submit purchase request for approval
+   * POST /api/admin/purchase-requests/:id/submit
+   */
+  submitForApproval: async (id: number) => {
+    const { data } = await apiClient.post<ApiResponse<{ message: string }>>(
+      `/admin/purchase-requests/${id}/submit`
+    )
+    return data
+  },
+
+  /**
    * Get select options for products dropdown
    * GET /api/admin/purchase-requests/products-select-options
    */

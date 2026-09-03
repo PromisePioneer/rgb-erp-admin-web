@@ -68,6 +68,7 @@ import {Button} from "@/components/ui";
 import {PanicAlertsTable} from '@/features/panic-alerts'
 import {ApprovalsTable} from '@/features/approvals'
 import {ApprovalFlowsTable} from '@/features/approval-flows'
+import {ApprovalTypesTable} from '@/features/approval-types'
 import {CheckpointsTable} from '@/features/checkpoints'
 import {PatrolReportsTable} from '@/features/patrol-reports'
 import {DailyTaskReportsList} from '@/features/daily-task-reports'
@@ -1717,6 +1718,33 @@ const approvalFlowsRoute = createRoute({
     component: ApprovalFlowsPage,
 })
 
+// Approval Types (Dynamic)
+function ApprovalTypesPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Approval Types</h2>
+                <p className="text-muted-foreground">Manage request types and approval flows dynamically</p>
+            </div>
+            <ApprovalTypesTable/>
+        </AuthLayout>
+    )
+}
+
+const approvalTypesRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/approval-types',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Approval Flow', 'View')
+    },
+    component: ApprovalTypesPage,
+})
+
 // Patrol Report
 function PatrolReportPage() {
     return (
@@ -2303,6 +2331,7 @@ const routeTree = rootRoute.addChildren([
     newsRoute,
     approvalsRoute,
     approvalFlowsRoute,
+    approvalTypesRoute,
     patrolReportRoute,
     checkpointsRoute,
     dailyTaskReportsRoute,

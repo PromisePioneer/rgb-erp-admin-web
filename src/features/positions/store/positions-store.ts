@@ -15,6 +15,7 @@ import { positionsApi } from '../api/positions-api'
 interface PositionsState {
   // State
   items: Position[]
+  allPositions: Position[] // All positions for dropdown (hierarchical)
   selectedItem: Position | null
   isLoading: boolean
   isSubmitting: boolean
@@ -24,6 +25,8 @@ interface PositionsState {
 
   // Actions
   fetchPositions: (params?: PositionsFilters) => Promise<void>
+  fetchAllPositions: () => Promise<void>
+  fetchParentPositions: () => Promise<void> // Only positions with company_id = NULL
   fetchById: (id: number) => Promise<void>
   create: (payload: CreatePositionPayload) => Promise<void>
   update: (id: number, payload: UpdatePositionPayload) => Promise<void>
@@ -50,6 +53,7 @@ const initialPagination: PositionsPagination = {
 export const usePositionsStore = create<PositionsState>((set, get) => ({
   // Initial state
   items: [],
+  allPositions: [],
   selectedItem: null,
   isLoading: false,
   isSubmitting: false,
@@ -74,6 +78,38 @@ export const usePositionsStore = create<PositionsState>((set, get) => ({
       const message =
         error instanceof Error ? error.message : 'Failed to fetch positions'
       set({ error: message, isLoading: false })
+    }
+  },
+
+  fetchAllPositions: async () => {
+    set({ isLoading: true, error: null })
+
+    try {
+      const response = await positionsApi.getAll()
+      set({
+        allPositions: response.data,
+        isLoading: false,
+      })
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to fetch all positions'
+      set({ error: message, isLoading: false })
+    }
+  },
+
+  fetchParentPositions: async () => {
+    set({ isLoading: true, error: null, allPositions: [] }) // Clear old data
+
+    try {
+      const response = await positionsApi.getAll({ parent_only: 'true' as any })
+      set({
+        allPositions: Array.isArray(response.data) ? response.data : [],
+        isLoading: false,
+      })
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to fetch parent positions'
+      set({ error: message, isLoading: false, allPositions: [] })
     }
   },
 

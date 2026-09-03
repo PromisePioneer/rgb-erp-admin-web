@@ -19,7 +19,7 @@ import {
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { usePurchaseRequestsStore } from '../store/purchase-requests-store'
 import { PurchaseRequestsFilters } from './purchase-requests-filters'
-import type { PurchaseRequest } from '../types/purchase-requests.types'
+import type { PurchaseRequest, PurchaseRequestStatus } from '../types/purchase-requests.types'
 
 export function PurchaseRequestsTable() {
   const navigate = useNavigate()
@@ -134,6 +134,15 @@ export function PurchaseRequestsTable() {
       ),
     },
     {
+      accessorKey: 'notes',
+      header: 'Notes',
+      cell: (row) => (
+        <span className="text-muted-foreground max-w-[200px] truncate block" title={row.notes}>
+          {row.notes || '-'}
+        </span>
+      ),
+    },
+    {
       accessorKey: 'total',
       header: 'Total',
       cell: (row) => (
@@ -150,18 +159,27 @@ export function PurchaseRequestsTable() {
       accessorKey: 'status',
       header: 'Status',
       cell: (row) => {
-        const statusConfig: Record<number, { label: string; class: string }> = {
-          1: { label: 'Pending', class: 'bg-yellow-100 text-yellow-800' },
-          2: { label: 'Approved', class: 'bg-green-100 text-green-800' },
-          0: { label: 'Rejected', class: 'bg-red-100 text-red-800' },
+        const statusConfig: Record<PurchaseRequestStatus, { label: string; class: string }> = {
+          pending: { label: 'Pending', class: 'bg-yellow-100 text-yellow-800' },
+          approved: { label: 'Approved', class: 'bg-green-100 text-green-800' },
+          rejected: { label: 'Rejected', class: 'bg-red-100 text-red-800' },
         }
-        const config = statusConfig[row.status] || statusConfig[0]
+        const config = statusConfig[row.status] || statusConfig.pending
         return (
           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${config.class}`}>
             {config.label}
           </span>
         )
       },
+    },
+    {
+      accessorKey: 'current_level',
+      header: 'Level',
+      cell: (row) => (
+        <span className="text-muted-foreground">
+          {row.status === 'pending' ? `Level ${row.current_level}` : '-'}
+        </span>
+      ),
     },
   ]
 

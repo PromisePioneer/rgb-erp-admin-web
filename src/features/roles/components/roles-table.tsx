@@ -29,6 +29,7 @@ export function RolesTable() {
     isLoading,
     pagination,
     fetchRoles,
+    fetchAllRoles,
     filters,
     bulkDelete,
     isSubmitting,
@@ -46,7 +47,8 @@ export function RolesTable() {
   // Fetch on mount and when filters change
   useEffect(() => {
     fetchRoles(filters)
-  }, [fetchRoles, filters])
+    fetchAllRoles() // Fetch all for parent dropdown
+  }, [fetchRoles, fetchAllRoles, filters])
 
   // Reset selection when data changes
   useEffect(() => {
@@ -127,6 +129,19 @@ export function RolesTable() {
         >
           {row.name}
         </button>
+      ),
+    },
+    {
+      accessorKey: 'parent_role_id',
+      header: 'Approver (Parent)',
+      cell: (row) => (
+        <span className="text-sm">
+          {row.parent_role_name ? (
+            row.parent_role_name
+          ) : (
+            <span className="text-green-600 font-medium">Auto Approve</span>
+          )}
+        </span>
       ),
     },
     {

@@ -6,7 +6,10 @@
 export interface Position {
   id: number
   name: string
+  company_id: number | null  // null = universal position
   status: number
+  parent_position_id: number | null
+  parent_position_name: string | null
   created_at: string
   updated_at: string
 }
@@ -35,6 +38,7 @@ export interface ApiResponse<T> {
 export interface CreatePositionPayload {
   name: string
   status: number
+  parent_position_id?: number | null
 }
 
 export interface UpdatePositionPayload extends CreatePositionPayload {}

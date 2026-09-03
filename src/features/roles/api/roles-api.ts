@@ -26,6 +26,18 @@ export const rolesApi = {
   },
 
   /**
+   * Get all roles without pagination (for dropdowns)
+   * GET /api/admin/roles?per_page=all
+   */
+  getAll: async () => {
+    const { data } = await apiClient.get<ApiResponse<Role[]>>(
+      '/admin/roles',
+      { params: { per_page: 'all' } }
+    )
+    return data
+  },
+
+  /**
    * Get single role by ID
    * GET /api/admin/roles/:id
    */
@@ -70,7 +82,7 @@ export const rolesApi = {
 
   /**
    * Bulk delete roles (soft delete)
-   * POST /api/admin/roles/bulk-delete
+   * POST /admin/roles/bulk-delete
    */
   bulkDelete: async (ids: number[]) => {
     const { data } = await apiClient.post<{ success: boolean; data: { message: string } }>(
@@ -82,7 +94,7 @@ export const rolesApi = {
 
   /**
    * Get privileges for a role
-   * GET /api/admin/roles/:id/privileges
+   * GET /admin/roles/:id/privileges
    */
   getPrivileges: async (roleId: number) => {
     const { data } = await apiClient.get<{ success: boolean; data: RolePrivilegesResponse }>(
@@ -93,7 +105,7 @@ export const rolesApi = {
 
   /**
    * Update privileges for a role
-   * PUT /api/admin/roles/:id/privileges
+   * PUT /admin/roles/:id/privileges
    */
   updatePrivileges: async (roleId: number, payload: UpdatePrivilegesPayload) => {
     const { data } = await apiClient.put<{ success: boolean; data: { message: string } }>(

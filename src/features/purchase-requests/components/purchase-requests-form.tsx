@@ -8,13 +8,14 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Save, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { usePurchaseRequestsStore } from '../store/purchase-requests-store'
 import { purchaseRequestsApi } from '../api/purchase-requests-api'
+import type { PurchaseRequestStatus } from '../types/purchase-requests.types'
 
 // Line item type
 interface LineItem {
@@ -29,14 +30,31 @@ interface LineItem {
 const formSchema = z.object({
   date: z.string().min(1, 'Tanggal wajib diisi'),
   supplier: z.string().optional(),
+  notes: z.string().min(1, 'Notes wajib diisi').max(1000, 'Notes maksimal 1000 karakter'),
 })
 
 type FormValues = z.infer<typeof formSchema>
 
+// Status badge component
+function StatusBadge({ status }: { status: PurchaseRequestStatus }) {
+  const config: Record<PurchaseRequestStatus, { label: string; class: string }> = {
+    pending: { label: 'Pending', class: 'bg-yellow-100 text-yellow-800' },
+    approved: { label: 'Approved', class: 'bg-green-100 text-green-800' },
+    rejected: { label: 'Rejected', class: 'bg-red-100 text-red-800' },
+  }
+  const { label, class: className } = config[status] || config.pending
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
+      {label}
+    </span>
+  )
+}
+
 export function PurchaseRequestsForm() {
   const navigate = useNavigate()
   const params = useParams({ strict: false }) as { id?: string }
-  const { fetchById, create, update, selectedItem, isSubmitting, isLoading, resetForm } = usePurchaseRequestsStore()
+  const { fetchById, create, update, submitForApproval, selectedItem, isSubmitting, isLoading, resetForm } = usePurchaseRequestsStore()
 
   const isEdit = !!params.id
   const [initialized, setInitialized] = useState(false)
@@ -51,6 +69,7 @@ export function PurchaseRequestsForm() {
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
       supplier: '',
+      notes: '',
     },
   })
 
@@ -70,6 +89,7 @@ export function PurchaseRequestsForm() {
       form.reset({
         date: selectedItem.date.split('T')[0],
         supplier: selectedItem.supplier ?? '',
+        notes: selectedItem.notes ?? '',
       })
       const newLineItems = selectedItem.details.map((d, i) => ({
         id: String(i + 1),
@@ -93,6 +113,18 @@ export function PurchaseRequestsForm() {
 
   const handleBack = () => {
     navigate({ to: '/purchase-requests' })
+  }
+
+  const handleSubmitForApproval = async () => {
+    if (!params.id) return
+
+    try {
+      await submitForApproval(Number(params.id))
+      toast.success('Purchase request submitted for approval')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to submit for approval'
+      toast.error(message)
+    }
   }
 
   // Skeleton loading state
@@ -192,6 +224,7 @@ export function PurchaseRequestsForm() {
       const payload = {
         date: values.date,
         supplier: values.supplier || undefined,
+        notes: values.notes,
         details: validItems.map((d) => ({
           product_id: d.product_id,
           qty: d.qty,
@@ -213,6 +246,11 @@ export function PurchaseRequestsForm() {
     }
   }
 
+  // Determine if form is editable
+  const canEdit = selectedItem?.can_edit ?? true
+  const canSubmit = selectedItem?.can_submit ?? false
+  const currentStatus = selectedItem?.status
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
@@ -224,12 +262,19 @@ export function PurchaseRequestsForm() {
           <ArrowLeft className="h-4 w-4" />
           Kembali ke Purchase Requests
         </button>
-        <h2 className="text-2xl font-bold">
-          {isEdit ? 'Edit Purchase Request' : 'New Purchase Request'}
-        </h2>
-        <p className="text-muted-foreground">
-          {isEdit ? 'Edit data purchase request' : 'Tambah purchase request baru'}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">
+              {isEdit ? 'Edit Purchase Request' : 'New Purchase Request'}
+            </h2>
+            <p className="text-muted-foreground">
+              {isEdit ? 'Edit data purchase request' : 'Tambah purchase request baru'}
+            </p>
+          </div>
+          {isEdit && currentStatus && (
+            <StatusBadge status={currentStatus} />
+          )}
+        </div>
       </div>
 
       {/* Form */}
@@ -245,6 +290,7 @@ export function PurchaseRequestsForm() {
               <Input
                 type="date"
                 {...form.register('date')}
+                disabled={!canEdit}
               />
               {form.formState.errors.date && (
                 <p className="text-sm text-red-500">{form.formState.errors.date.message}</p>
@@ -257,8 +303,24 @@ export function PurchaseRequestsForm() {
               <Input
                 {...form.register('supplier')}
                 placeholder="Masukkan nama supplier (opsional)"
+                disabled={!canEdit}
               />
             </div>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Notes *</label>
+            <textarea
+              {...form.register('notes')}
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder="Masukkan catatan purchase request..."
+              rows={3}
+              disabled={!canEdit}
+            />
+            {form.formState.errors.notes && (
+              <p className="text-sm text-red-500">{form.formState.errors.notes.message}</p>
+            )}
           </div>
         </div>
 
@@ -266,10 +328,12 @@ export function PurchaseRequestsForm() {
         <div className="bg-card rounded-lg border p-6 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Item Produk</h3>
-            <Button type="button" variant="outline" size="sm" onClick={handleAddLine}>
-              <Plus className="h-4 w-4 mr-1" />
-              Tambah Item
-            </Button>
+            {canEdit && (
+              <Button type="button" variant="outline" size="sm" onClick={handleAddLine}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah Item
+              </Button>
+            )}
           </div>
 
           {/* Table Header */}
@@ -297,6 +361,7 @@ export function PurchaseRequestsForm() {
                     loadOptions={loadProducts}
                     placeholder="Pilih produk..."
                     className="w-full"
+                    isDisabled={!canEdit}
                   />
                 </div>
 
@@ -313,6 +378,7 @@ export function PurchaseRequestsForm() {
                       ))
                     }}
                     placeholder="0"
+                    disabled={!canEdit}
                   />
                 </div>
 
@@ -329,21 +395,24 @@ export function PurchaseRequestsForm() {
                       ))
                     }}
                     placeholder="0"
+                    disabled={!canEdit}
                   />
                 </div>
 
                 {/* Actions */}
                 <div className="col-span-2 flex justify-end">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemoveLine(index)}
-                    disabled={lineItems.length <= 1}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {canEdit && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveLine(index)}
+                      disabled={lineItems.length <= 1}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -365,14 +434,35 @@ export function PurchaseRequestsForm() {
         </div>
 
         {/* Submit */}
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={handleBack}>
-            Batal
-          </Button>
-          <Button type="submit" disabled={isSubmitting || isLoading}>
-            <Save className="h-4 w-4 mr-1" />
-            {isSubmitting ? 'Menyimpan...' : 'Simpan'}
-          </Button>
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-muted-foreground">
+            {!canEdit && currentStatus === 'approved' && (
+              <span className="text-green-600 font-medium">Purchase request ini sudah disetujui dan tidak dapat diedit.</span>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <Button type="button" variant="outline" onClick={handleBack}>
+              Batal
+            </Button>
+            {canSubmit && (
+              <Button
+                type="button"
+                variant="default"
+                onClick={handleSubmitForApproval}
+                disabled={isSubmitting || isLoading}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Send className="h-4 w-4 mr-1" />
+                {isSubmitting ? 'Mengirim...' : 'Ajukan Approval'}
+              </Button>
+            )}
+            {canEdit && (
+              <Button type="submit" disabled={isSubmitting || isLoading}>
+                <Save className="h-4 w-4 mr-1" />
+                {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+              </Button>
+            )}
+          </div>
         </div>
       </form>
     </div>

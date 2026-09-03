@@ -3,13 +3,29 @@
  * API endpoint: /api/admin/purchase-requests
  */
 
+// Status types
+export type PurchaseRequestStatus = 'pending' | 'approved' | 'rejected'
+
+// Approval type
+export interface PurchaseRequestApproval {
+  id: number
+  level: number
+  status: 'pending' | 'approved' | 'rejected'
+  note: string | null
+  acted_at: string | null
+}
+
 export interface PurchaseRequest {
   id: number
   date: string
   code: string
   supplier: string | null
+  notes: string
   total: number
-  status: number
+  status: PurchaseRequestStatus
+  current_level: number
+  can_edit: boolean
+  can_submit: boolean
   created_at: string
   updated_at: string
 }
@@ -25,11 +41,12 @@ export interface PurchaseRequestDetail {
 
 export interface PurchaseRequestFull extends PurchaseRequest {
   details: PurchaseRequestDetail[]
+  approvals: PurchaseRequestApproval[]
 }
 
 export interface PurchaseRequestsFilters {
   search?: string
-  status?: number
+  status?: PurchaseRequestStatus
   page?: number
   per_page?: number
 }
@@ -52,12 +69,14 @@ export interface ApiResponse<T> {
 export interface CreatePurchaseRequestPayload {
   date: string
   supplier?: string
+  notes: string
   details: PurchaseRequestDetailPayload[]
 }
 
 export interface UpdatePurchaseRequestPayload {
   date: string
   supplier?: string
+  notes: string
   details: PurchaseRequestDetailPayload[]
 }
 

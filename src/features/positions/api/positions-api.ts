@@ -24,6 +24,17 @@ export const positionsApi = {
   },
 
   /**
+   * Get all positions without pagination (for dropdowns)
+   * GET /api/admin/positions?per_page=all
+   */
+  getAll: async (params?: { parent_only?: boolean }) => {
+    const { data } = await apiClient.get<ApiResponse<Position[]>>('/admin/positions', {
+      params: { per_page: 'all', ...params },
+    })
+    return data
+  },
+
+  /**
    * Get single position by ID
    * GET /api/admin/positions/:id
    */

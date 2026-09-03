@@ -7,6 +7,8 @@ export interface Role {
   id: number
   name: string
   status: number
+  parent_role_id: number | null
+  parent_role_name: string | null
   created_at: string
   updated_at: string
 }
@@ -35,6 +37,7 @@ export interface ApiResponse<T> {
 export interface CreateRolePayload {
   name: string
   status: number
+  parent_role_id?: number | null
 }
 
 export interface UpdateRolePayload extends CreateRolePayload {}

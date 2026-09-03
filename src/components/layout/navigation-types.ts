@@ -98,6 +98,7 @@ export const navigationSections: NavSection[] = [
       { label: 'news', path: '/news', menu: 'News', icon: 'megaphone' },
       { label: 'approvals', path: '/approvals', menu: 'Approval', icon: 'inbox' },
       { label: 'approval_flows', path: '/approval-flows', menu: 'Approval Flow', icon: 'git-branch' },
+      { label: 'approval_types', path: '/approval-types', menu: 'Approval Flow', icon: 'list' },
       { label: 'patrol_report', path: '/patrol-report', menu: 'Patrol Report', icon: 'scan' },
       { label: 'checkpoints', path: '/checkpoints', menu: 'Checkpoint', icon: 'map-pin' },
       { label: 'daily_task_reports', path: '/daily-task-reports', menu: 'Daily Task', icon: 'clipboard-list' },
