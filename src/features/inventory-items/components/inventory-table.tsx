@@ -169,10 +169,13 @@ function ItemDetailModal({
                             </div>
                             <div>
                                 <p className="text-muted-foreground">Kondisi</p>
-                                <span
-                                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${item.condition_color}`}>
-                  {item.condition_label}
-                </span>
+                                {item.condition ? (
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${item.condition_color}`}>
+                                        {item.condition_label}
+                                    </span>
+                                ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                )}
                             </div>
                             <div>
                                 <p className="text-muted-foreground">Lokasi Sekarang</p>
@@ -664,13 +667,21 @@ export function InventoryTable() {
             ),
         },
         {
+            accessorKey: 'purchase_order_code',
+            header: 'No. PO',
+            cell: (row) => (
+                <span className="font-mono text-xs text-muted-foreground">
+                    {row.purchase_order_code ?? '-'}
+                </span>
+            ),
+        },
+        {
             accessorKey: 'condition',
             header: 'Kondisi',
             cell: (row) => (
-                <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${row.condition_color}`}>
-          {row.condition_label}
-        </span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${row.condition_color}`}>
+                    {row.condition_label}
+                </span>
             ),
         },
         {
