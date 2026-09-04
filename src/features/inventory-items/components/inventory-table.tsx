@@ -399,7 +399,7 @@ export function InventoryTable() {
 
             printWindow.document.write(`
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
           <title>Print QR Code - ${item.product_name}</title>
           <style>
