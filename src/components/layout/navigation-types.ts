@@ -22,7 +22,7 @@ export const navigationSections: NavSection[] = [
     {
         label: 'overview',
         items: [
-            {label: 'dashboard', path: '/dashboard'},
+            {label: 'dashboard', path: '/dashboard', icon: 'layout-dashboard'},
         ],
     },
     {

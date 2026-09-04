@@ -6,13 +6,7 @@ import { useEffect, useState } from 'react'
 import { FileText, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { AsyncSelect } from '@/components/async-select'
 import {
   Table,
   TableBody,
@@ -38,6 +32,18 @@ const MONTHS = [
   { value: 10, label: 'October' },
   { value: 11, label: 'November' },
   { value: 12, label: 'December' },
+]
+
+const YEARS = [
+  new Date().getFullYear() - 2,
+  new Date().getFullYear() - 1,
+  new Date().getFullYear(),
+  new Date().getFullYear() + 1,
+]
+
+const TYPE_OPTIONS = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'thr', label: 'THR' },
 ]
 
 function formatCurrency(amount: number): string {
@@ -69,19 +75,19 @@ export function PayrollTable() {
     fetchPayroll()
   }, [filters.month, filters.year, filters.type, filters.page, fetchPayroll])
 
-  const handleMonthChange = (value: string | null) => {
+  const handleMonthChange = (value: string | number | null) => {
     if (!value) return
-    setFilters({ month: parseInt(value, 10) })
+    setFilters({ month: parseInt(String(value), 10) })
   }
 
-  const handleYearChange = (value: string | null) => {
+  const handleYearChange = (value: string | number | null) => {
     if (!value) return
-    setFilters({ year: parseInt(value, 10) })
+    setFilters({ year: parseInt(String(value), 10) })
   }
 
-  const handleTypeChange = (value: string | null) => {
+  const handleTypeChange = (value: string | number | null) => {
     if (!value) return
-    setFilters({ type: value as 'monthly' | 'thr' })
+    setFilters({ type: String(value) as 'monthly' | 'thr' })
   }
 
   const handlePageChange = (newPage: number) => {
@@ -131,63 +137,37 @@ export function PayrollTable() {
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
           <label className="text-sm text-muted-foreground">Type</label>
-          <Select
+          <AsyncSelect
+            placeholder="Select type..."
+            loadOptions={async () => TYPE_OPTIONS.map(t => ({ value: String(t.value), label: t.label }))}
             value={filters.type}
-            onValueChange={handleTypeChange}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="thr">THR</SelectItem>
-            </SelectContent>
-          </Select>
+            onChange={handleTypeChange}
+            className="w-32"
+          />
         </div>
 
         {filters.type === 'monthly' && (
           <div className="space-y-1">
             <label className="text-sm text-muted-foreground">Month</label>
-            <Select
-              value={filters.month?.toString() ?? '1'}
-              onValueChange={handleMonthChange}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MONTHS.map((month) => (
-                  <SelectItem
-                    key={month.value}
-                    value={month.value.toString()}
-                  >
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <AsyncSelect
+              placeholder="Select month..."
+              loadOptions={async () => MONTHS.map(m => ({ value: String(m.value), label: m.label }))}
+              value={filters.month}
+              onChange={handleMonthChange}
+              className="w-40"
+            />
           </div>
         )}
 
         <div className="space-y-1">
           <label className="text-sm text-muted-foreground">Year</label>
-          <Select
-            value={filters.year?.toString() ?? new Date().getFullYear().toString()}
-            onValueChange={handleYearChange}
-          >
-            <SelectTrigger className="w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[new Date().getFullYear() - 2, new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(
-                (year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                )
-              )}
-            </SelectContent>
-          </Select>
+          <AsyncSelect
+            placeholder="Select year..."
+            loadOptions={async () => YEARS.map(y => ({ value: String(y), label: String(y) }))}
+            value={filters.year}
+            onChange={handleYearChange}
+            className="w-28"
+          />
         </div>
 
         <div className="text-sm text-muted-foreground">

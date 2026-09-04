@@ -11,13 +11,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { AsyncSelect } from '@/components/async-select'
 import {
   Dialog,
   DialogContent,
@@ -240,22 +234,18 @@ export function AccountsFormModal({
           {(!isEdit || selectedItem) && (
           <div className="space-y-2">
             <label className="text-sm font-medium">Tipe Akun *</label>
-            <Select
-              onValueChange={(value) => form.setValue('type', value as AccountType, { shouldValidate: true })}
-              value={form.watch('type')}
-              disabled={isLoading || isSubmitting}
-            >
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Pilih tipe akun..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="asset">Asset (Aktiva)</SelectItem>
-                <SelectItem value="liability">Liability (Kewajiban)</SelectItem>
-                <SelectItem value="equity">Equity (Modal)</SelectItem>
-                <SelectItem value="revenue">Revenue (Pendapatan)</SelectItem>
-                <SelectItem value="expense">Expense (Beban)</SelectItem>
-              </SelectContent>
-            </Select>
+            <AsyncSelect
+              placeholder="Pilih tipe akun..."
+              loadOptions={async () => [
+                { value: 'asset', label: 'Asset (Aktiva)' },
+                { value: 'liability', label: 'Liability (Kewajiban)' },
+                { value: 'equity', label: 'Equity (Modal)' },
+                { value: 'revenue', label: 'Revenue (Pendapatan)' },
+                { value: 'expense', label: 'Expense (Beban)' },
+              ]}
+              value={form.watch('type') ?? null}
+              onChange={(val) => form.setValue('type', val as AccountType, { shouldValidate: true })}
+            />
             {form.formState.errors.type && (
               <p className="text-sm text-red-500">
                 {form.formState.errors.type.message}

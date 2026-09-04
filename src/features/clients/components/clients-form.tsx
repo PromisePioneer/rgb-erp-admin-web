@@ -10,13 +10,6 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { MapPicker } from '@/components/map-picker'
 import { useClientsStore } from '@/features/clients'
@@ -427,18 +420,14 @@ export function ClientsForm() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
-              <Select
-                value={form.watch('status')}
-                onValueChange={(value) => form.setValue('status', value ?? '1')}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Aktif</SelectItem>
-                  <SelectItem value="0">Tidak Aktif</SelectItem>
-                </SelectContent>
-              </Select>
+              <AsyncSelect
+                loadOptions={async () => [
+                  { value: '1', label: 'Aktif' },
+                  { value: '0', label: 'Tidak Aktif' },
+                ]}
+                value={form.watch('status') || '1'}
+                onChange={(val) => form.setValue('status', (val as string) || '1')}
+              />
             </div>
           </div>
         </div>

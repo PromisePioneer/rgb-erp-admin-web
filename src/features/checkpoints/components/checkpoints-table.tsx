@@ -162,7 +162,7 @@ export function CheckpointsTable() {
 
         printWindow.document.write(`
             <!DOCTYPE html>
-            <html>
+            <html lang="en">
             <head>
                 <title>Print QR Code - ${qrCheckpoint?.code}</title>
                 <style>
@@ -289,7 +289,7 @@ export function CheckpointsTable() {
 
                 printWindow.document.write(`
                     <!DOCTYPE html>
-                    <html>
+                    <html lang="en">
                     <head>
                         <title>Print All QR Codes</title>
                         <style>

@@ -83,6 +83,7 @@ import {
 // Icon map
 const iconMap: Record<string, LucideIcon> = {
   'layout-dashboard': LayoutDashboard,
+  'layout': LayoutDashboard,
   'briefcase': Briefcase,
   'tags': Tags,
   'landmark': Landmark,

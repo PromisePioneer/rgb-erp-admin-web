@@ -3,9 +3,10 @@
  * Lists all inventory items with QR code tracking and movement history
  */
 import {useEffect, useState, useCallback, useRef} from 'react'
-import {Eye, QrCodeIcon, Printer, Download, History, User} from 'lucide-react'
+import {Eye, QrCodeIcon, Printer, Download, History, User, Filter, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
+import {Badge} from '@/components/ui/badge'
 import {
     Dialog,
     DialogContent,
@@ -13,6 +14,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog'
 import {DataTable, type DataTableColumn} from '@/components/ui/data-table'
+import {AsyncSelect} from '@/components/async-select'
 import {useInventoryStore} from '@/features/inventory-items'
 import type {InventoryItem} from '../types/inventory-items.types'
 import {QRCodeSVG} from 'qrcode.react'
@@ -345,11 +347,58 @@ export function InventoryTable() {
         pagination,
         fetchItems,
         filters,
+        setFilters,
     } = useInventoryStore()
 
     const [searchInput, setSearchInput] = useState('')
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
     const [showDetail, setShowDetail] = useState(false)
+    const [showFilters, setShowFilters] = useState(false)
+
+    // Filter states
+    const [locationTypeFilter, setLocationTypeFilter] = useState<string | null>(null)
+    const [warehouseFilter, setWarehouseFilter] = useState<number | null>(null)
+    const [statusFilter, setStatusFilter] = useState<string | null>(null)
+
+    // Count active filters
+    const activeFilterCount = [locationTypeFilter, warehouseFilter, statusFilter].filter(Boolean).length
+
+    // Handle filter changes
+    const handleLocationTypeChange = (value: string | null) => {
+        setLocationTypeFilter(value)
+        setWarehouseFilter(null) // Reset warehouse when location type changes
+        if (value) {
+            setFilters({ location_type: value as 'warehouse' | 'area' })
+        } else {
+            setFilters({ location_type: undefined, warehouse_id: undefined })
+        }
+    }
+
+    const handleWarehouseChange = (warehouseId: number | null) => {
+        setWarehouseFilter(warehouseId)
+        if (warehouseId) {
+            setFilters({ warehouse_id: warehouseId })
+        } else {
+            setFilters({ warehouse_id: undefined })
+        }
+    }
+
+    const handleStatusChange = (value: string | null) => {
+        setStatusFilter(value)
+        if (value) {
+            setFilters({ status: value })
+        } else {
+            setFilters({ status: undefined })
+        }
+    }
+
+    const clearAllFilters = () => {
+        setLocationTypeFilter(null)
+        setWarehouseFilter(null)
+        setStatusFilter(null)
+        setSearchInput('')
+        setFilters({ location_type: undefined, warehouse_id: undefined, status: undefined, search: undefined })
+    }
 
     // Fetch items on mount and filter change
     useEffect(() => {
@@ -707,6 +756,92 @@ export function InventoryTable() {
 
     return (
         <div className="space-y-4">
+            {/* Filters & Search */}
+            <div className="flex flex-col gap-3">
+                {/* Filter Toggle & Active Filters Summary */}
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant={showFilters ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setShowFilters(!showFilters)}
+                        >
+                            <Filter className="h-4 w-4 mr-1"/>
+                            Filter
+                            {activeFilterCount > 0 && (
+                                <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
+                                    {activeFilterCount}
+                                </Badge>
+                            )}
+                        </Button>
+                        {activeFilterCount > 0 && (
+                            <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                                <X className="h-4 w-4 mr-1"/>
+                                Clear
+                            </Button>
+                        )}
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                        {pagination.total} items
+                    </span>
+                </div>
+
+                {/* Filter Dropdowns */}
+                {showFilters && (
+                    <div className="flex flex-wrap gap-3 p-4 bg-muted/30 rounded-lg">
+                        {/* Location Type Filter */}
+                        <div className="w-48">
+                            <AsyncSelect
+                                label="Tipe Lokasi"
+                                placeholder="Semua"
+                                loadOptions={async () => [
+                                    { value: 'warehouse', label: '📦 Gudang' },
+                                    { value: 'area', label: '📍 Area' },
+                                ]}
+                                value={locationTypeFilter}
+                                onChange={(val) => handleLocationTypeChange(val as string | null)}
+                            />
+                        </div>
+
+                        {/* Warehouse Filter (only show when location type is warehouse) */}
+                        {locationTypeFilter === 'warehouse' && (
+                            <div className="w-48">
+                                <AsyncSelect
+                                    label="Gudang"
+                                    placeholder="Pilih Gudang"
+                                    loadOptions={async () => {
+                                        try {
+                                            const { data } = await apiClient.get<{success: boolean, data: Array<{id: number, name: string}>}>('/admin/warehouses/select-options')
+                                            return data.data.map(w => ({ value: w.id, label: w.name }))
+                                        } catch {
+                                            return []
+                                        }
+                                    }}
+                                    value={warehouseFilter}
+                                    onChange={(val) => handleWarehouseChange(val as number | null)}
+                                />
+                            </div>
+                        )}
+
+                        {/* Status Filter */}
+                        <div className="w-48">
+                            <AsyncSelect
+                                label="Status"
+                                placeholder="Semua"
+                                loadOptions={async () => [
+                                    { value: 'available', label: 'Tersedia' },
+                                    { value: 'assigned', label: 'Ditugaskan' },
+                                    { value: 'damaged', label: 'Rusak' },
+                                    { value: 'lost', label: 'Hilang' },
+                                ]}
+                                value={statusFilter}
+                                onChange={(val) => handleStatusChange(val as string | null)}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+
             {/* Search & Actions */}
             <div className="flex justify-between items-center">
                 <div className="flex gap-2">
