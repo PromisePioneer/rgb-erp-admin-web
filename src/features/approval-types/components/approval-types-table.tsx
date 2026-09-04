@@ -3,7 +3,7 @@
  * Single table with inline flow display
  */
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Users, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { Badge } from '@/components/ui/badge'
@@ -42,29 +42,40 @@ export function ApprovalTypesTable() {
     }
   }
 
-  // Render approval flow as connected icons
+  // Render approval flow as visual horizontal flow
   const renderFlow = (type: ApprovalType) => {
     if (type.steps_count === 0) {
       return (
         <span className="text-muted-foreground text-sm italic">
-          Belum ada alur
+          Langsung disetujui (tanpa approver)
         </span>
       )
     }
 
     return (
       <div className="flex items-center gap-1 flex-wrap">
+        {/* Start */}
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
+          📝 Submit
+        </span>
+
         {type.steps_summary.map((step, index) => (
           <div key={index} className="flex items-center">
-            <Badge variant="outline" className="gap-1 text-xs">
-              <Users className="h-3 w-3" />
-              {step.approver_name}
+            <span className="text-muted-foreground mx-1">→</span>
+            <Badge variant="outline" className="gap-1 text-xs bg-primary/5">
+              <span className="w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">
+                {index + 1}
+              </span>
+              {step.approver_name || 'Step ' + (index + 1)}
             </Badge>
-            {index < type.steps_summary.length - 1 && (
-              <ChevronRight className="h-3 w-3 text-muted-foreground mx-1" />
-            )}
           </div>
         ))}
+
+        {/* End */}
+        <span className="text-muted-foreground mx-1">→</span>
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full">
+          ✓ Selesai
+        </span>
       </div>
     )
   }

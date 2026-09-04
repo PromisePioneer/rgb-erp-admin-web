@@ -9,9 +9,10 @@
 export interface ApprovalStep {
   id?: number
   level: number
-  approver_kind: 'user' | 'role'
+  approver_kind: 'position' | 'role' | 'employee'
   approver_id: number
   approver_name?: string
+  approver_company?: string
 }
 
 /**
@@ -39,7 +40,7 @@ export interface ApprovalTypeDetail extends ApprovalType {
  * Create/Update payload - single request dengan steps inline
  */
 export interface ApprovalTypePayload {
-  type?: string  // Optional for update
+  type?: string
   name: string
   is_active?: boolean
   steps?: StepPayload[]
@@ -50,17 +51,28 @@ export interface ApprovalTypePayload {
  */
 export interface StepPayload {
   level: number
-  approver_kind: 'user' | 'role'
+  approver_kind: 'position' | 'role' | 'employee'
   approver_id: number
 }
 
 /**
  * Position option untuk dropdown
+ * Tampilkan company name: "DANRU (NON SATPAM)"
  */
 export interface PositionOption {
   id: number
   name: string
+  company_name?: string
   parent_name?: string
+}
+
+/**
+ * Role option untuk dropdown
+ */
+export interface RoleOption {
+  id: number
+  name: string
+  description?: string
 }
 
 /**
@@ -71,4 +83,5 @@ export interface EmployeeOption {
   name: string
   code: string
   position_name?: string
+  company_name?: string
 }

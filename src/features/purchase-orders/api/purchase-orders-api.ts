@@ -83,4 +83,15 @@ export const purchaseOrdersApi = {
     )
     return data
   },
+
+  /**
+   * Submit purchase order for approval
+   * POST /api/admin/purchase-orders/:id/submit
+   */
+  submitForApproval: async (id: number) => {
+    const { data } = await apiClient.post<ApiResponse<{ message: string }>>(
+      `/admin/purchase-orders/${id}/submit`
+    )
+    return data
+  },
 }

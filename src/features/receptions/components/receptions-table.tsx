@@ -120,11 +120,11 @@ export function ReceptionsTable() {
       ),
     },
     {
-      accessorKey: 'order_code',
+      accessorKey: 'purchase_order_code',
       header: 'No. PO',
       cell: (row) => (
         <span className="font-mono text-sm text-muted-foreground">
-          {row.order_code ?? '-'}
+          {row.purchase_order_code ?? '-'}
         </span>
       ),
     },
@@ -147,14 +147,16 @@ export function ReceptionsTable() {
       cell: (row) => (
         <span
           className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-            row.status === 1
+            row.status === 'approved'
               ? 'bg-green-100 text-green-800'
-              : row.status === 2
+              : row.status === 'rejected'
               ? 'bg-red-100 text-red-800'
-              : 'bg-yellow-100 text-yellow-800'
+              : row.status === 'pending'
+              ? 'bg-yellow-100 text-yellow-800'
+              : 'bg-gray-100 text-gray-800'
           }`}
         >
-          {row.status === 1 ? 'Aktif' : row.status === 2 ? 'Dihapus' : 'Draft'}
+          {row.status === 'approved' ? 'Approved' : row.status === 'rejected' ? 'Rejected' : row.status === 'pending' ? 'Pending' : 'Draft'}
         </span>
       ),
     },

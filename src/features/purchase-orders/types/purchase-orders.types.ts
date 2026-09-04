@@ -3,6 +3,14 @@
  * API endpoint: /api/admin/purchase-orders
  */
 
+export interface PurchaseOrderApproval {
+  id: number
+  level: number
+  status: 'pending' | 'approved' | 'rejected'
+  note: string | null
+  acted_at: string | null
+}
+
 export interface PurchaseOrder {
   id: number
   purchase_request_id: number
@@ -11,7 +19,10 @@ export interface PurchaseOrder {
   code: string
   supplier: string | null
   total: number
-  status: number
+  status: string
+  current_level: number
+  can_edit: boolean
+  can_submit: boolean
   created_at: string
   updated_at: string
 }
@@ -27,6 +38,7 @@ export interface PurchaseOrderDetail {
 
 export interface PurchaseOrderFull extends PurchaseOrder {
   details: PurchaseOrderDetail[]
+  approvals: PurchaseOrderApproval[]
 }
 
 export interface PurchaseRequestSelectOption {

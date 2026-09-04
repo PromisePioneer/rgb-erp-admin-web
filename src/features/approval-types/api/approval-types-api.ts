@@ -8,6 +8,7 @@ import type {
   ApprovalTypeDetail,
   ApprovalTypePayload,
   PositionOption,
+  RoleOption,
   EmployeeOption,
 } from '../types/approval-types.types'
 
@@ -76,7 +77,8 @@ export const approvalTypesApi = {
   // === Options ===
 
   /**
-   * Get positions for dropdown (roles in approval context)
+   * Get positions for dropdown (Mobile/Jabatan context)
+   * Returns company_name for display: "DANRU (NON SATPAM)"
    */
   getPositionsOptions: async () => {
     const { data } = await apiClient.get<{ success: boolean; data: PositionOption[] }>(
@@ -86,7 +88,17 @@ export const approvalTypesApi = {
   },
 
   /**
-   * Get employees for dropdown (specific users in approval context)
+   * Get roles for dropdown (Website/Role context)
+   */
+  getRolesOptions: async () => {
+    const { data } = await apiClient.get<{ success: boolean; data: RoleOption[] }>(
+      '/admin/approval-types/options/roles'
+    )
+    return data
+  },
+
+  /**
+   * Get employees for dropdown (specific users)
    */
   getEmployeesOptions: async () => {
     const { data } = await apiClient.get<{ success: boolean; data: EmployeeOption[] }>(

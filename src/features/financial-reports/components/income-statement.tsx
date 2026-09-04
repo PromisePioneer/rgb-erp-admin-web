@@ -104,9 +104,6 @@ export function IncomeStatementReport() {
         setLoading(true)
         try {
             const {data: res} = await apiClient.get(`/admin/financial-reports/income-statement?period_id=${id}`)
-            console.log('API Response:', res.data)
-            console.log('Revenue:', res.data.revenue)
-            console.log('Expense:', res.data.expense)
             setData(res.data)
         } catch (e) {
             console.error('Failed to fetch report:', e)

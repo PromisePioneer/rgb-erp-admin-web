@@ -6,7 +6,7 @@
 export interface ApprovalFlowStep {
   id: number
   level: number
-  approver_kind: 'user' | 'role'
+  approver_kind: 'user' | 'role' | 'position'
   approver_id: number
   approver_label: string
   is_active: boolean
@@ -52,7 +52,7 @@ export interface UpdateApprovalFlowPayload {
   is_active: boolean
   steps: {
     level: number
-    approver_kind: 'user' | 'role'
+    approver_kind: 'user' | 'role' | 'position'
     approver_id: number
   }[]
 }

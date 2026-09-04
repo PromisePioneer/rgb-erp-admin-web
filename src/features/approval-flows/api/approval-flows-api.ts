@@ -56,4 +56,14 @@ export const approvalFlowsApi = {
     )
     return data
   },
+
+  /**
+   * Get positions for select options
+   */
+  getPositionsOptions: async () => {
+    const { data } = await apiClient.get<ApiResponse<SelectOption[]>>(
+      '/admin/approval-flows/positions-select-options'
+    )
+    return data
+  },
 }

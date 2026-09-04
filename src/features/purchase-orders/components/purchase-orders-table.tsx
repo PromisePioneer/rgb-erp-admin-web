@@ -3,7 +3,7 @@
  * Using standardized DataTable
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -20,6 +20,7 @@ import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { usePurchaseOrdersStore } from '../store/purchase-orders-store'
 import { PurchaseOrdersFilters } from './purchase-orders-filters'
 import type { PurchaseOrder } from '../types/purchase-orders.types'
+import { toast } from 'sonner'
 
 export function PurchaseOrdersTable() {
   const navigate = useNavigate()
@@ -30,12 +31,14 @@ export function PurchaseOrdersTable() {
     fetchPurchaseOrders,
     filters,
     bulkDelete,
+    submitForApproval,
     isSubmitting,
   } = usePurchaseOrdersStore()
 
   const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [submittingId, setSubmittingId] = useState<number | null>(null)
 
   // Single source of truth for fetch - debounced, primitive dependencies
   useEffect(() => {
@@ -91,6 +94,19 @@ export function PurchaseOrdersTable() {
 
   const handleEdit = (po: PurchaseOrder) => {
     navigate({ to: '/purchase-orders/$id/edit', params: { id: String(po.id) } })
+  }
+
+  const handleSubmit = async (po: PurchaseOrder) => {
+    setSubmittingId(po.id)
+    try {
+      await submitForApproval(po.id)
+      toast.success(`PO ${po.code} submitted for approval`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to submit'
+      toast.error(message)
+    } finally {
+      setSubmittingId(null)
+    }
   }
 
   // Define columns
@@ -159,18 +175,63 @@ export function PurchaseOrdersTable() {
       accessorKey: 'status',
       header: 'Status',
       cell: (row) => {
-        const statusConfig: Record<number, { label: string; class: string }> = {
-          1: { label: 'Pending', class: 'bg-yellow-100 text-yellow-800' },
-          2: { label: 'Approved', class: 'bg-green-100 text-green-800' },
-          0: { label: 'Rejected', class: 'bg-red-100 text-red-800' },
+        const statusConfig: Record<string, { label: string; class: string }> = {
+          draft: { label: 'Draft', class: 'bg-gray-100 text-gray-800' },
+          pending: { label: 'Pending', class: 'bg-yellow-100 text-yellow-800' },
+          approved: { label: 'Approved', class: 'bg-green-100 text-green-800' },
+          rejected: { label: 'Rejected', class: 'bg-red-100 text-red-800' },
         }
-        const config = statusConfig[row.status] || statusConfig[0]
+        const config = statusConfig[row.status] || statusConfig.draft
         return (
           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${config.class}`}>
             {config.label}
           </span>
         )
       },
+    },
+    {
+      accessorKey: 'current_level',
+      header: 'Level',
+      cell: (row) => (
+        <span className="text-muted-foreground">
+          {row.status === 'pending' ? `Level ${row.current_level}` : '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (row) => (
+        <div className="flex gap-1">
+          {row.can_submit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleSubmit(row)
+              }}
+              disabled={isSubmitting || submittingId === row.id}
+              className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+            >
+              <Send className="h-4 w-4 mr-1"/>
+              {submittingId === row.id ? 'Submitting...' : 'Submit'}
+            </Button>
+          )}
+          {row.can_edit && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleEdit(row)
+              }}
+            >
+              Edit
+            </Button>
+          )}
+        </div>
+      ),
     },
   ]
 

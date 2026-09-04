@@ -74,10 +74,18 @@ import {PatrolReportsTable} from '@/features/patrol-reports'
 import {DailyTaskReportsList} from '@/features/daily-task-reports'
 import {DailyTaskItemsTable} from '@/features/daily-task-items'
 import {ProductsTable} from '@/features/products'
+import {InventoryPage} from '@/features/inventory-items'
 import {FaceEnrollmentsTable} from '@/features/face-enrollments'
 import {PurchaseRequestsTable, PurchaseRequestsForm} from '@/features/purchase-requests'
 import {PurchaseOrdersTable, PurchaseOrdersForm} from '@/features/purchase-orders'
 import {ReceptionsTable, ReceptionsForm} from '@/features/receptions'
+import {FundRequestsTable, FundRequestsForm} from '@/features/fund-requests'
+import {
+    DistributionRequestsTable,
+    DistributionRequestsForm,
+    DistributionRequestsDetail,
+} from '@/features/distribution-requests'
+import {ProductAreasTable} from '@/features/product-areas/components/product-areas-table'
 import {StockOpnameForm} from '@/features/stock-opnames'
 import {MasterDataHub} from '@/features/master-data'
 
@@ -1319,6 +1327,79 @@ const productsRoute = createRoute({
     component: ProductsPage,
 })
 
+// Product Areas
+function ProductAreasPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Product Areas</h2>
+                <p className="text-muted-foreground">Kelola stok produk per Area/Client</p>
+            </div>
+            <ProductAreasTable/>
+        </AuthLayout>
+    )
+}
+
+const productAreasRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/product-areas',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Product', 'View')
+    },
+    component: ProductAreasPage,
+})
+
+// Unified Inventory (Warehouse + Area tracking)
+function InventoryPageWrapper() {
+    return (
+        <AuthLayout>
+            <InventoryPage/>
+        </AuthLayout>
+    )
+}
+
+const inventoryRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/inventory',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Product', 'View')
+    },
+    component: InventoryPageWrapper,
+})
+
+// Inventory Tracking (Legacy - redirects to /inventory)
+function InventoryTrackingPage() {
+    return (
+        <AuthLayout>
+            <InventoryPage/>
+        </AuthLayout>
+    )
+}
+
+const inventoryTrackingRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/inventory-tracking',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Inventory Item', 'View')
+    },
+    component: InventoryTrackingPage,
+})
+
 // Assets
 const assetsRoute = createPlaceholderRoute('/assets', 'Assets', 'Asset')
 const assetsNewRoute = createRoute({
@@ -1482,6 +1563,161 @@ const purchaseOrdersEditRoute = createRoute({
         requirePrivilegeInBeforeLoad('Purchase Order', 'Edit')
     },
     component: PurchaseOrdersEditPage,
+})
+
+// Fund Requests
+function FundRequestsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Fund Request</h2>
+                <p className="text-muted-foreground">Kelola pengajuan dana untuk purchase order</p>
+            </div>
+            <FundRequestsTable/>
+        </AuthLayout>
+    )
+}
+
+const fundRequestsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/fund-requests',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Fund Request', 'View')
+    },
+    component: FundRequestsPage,
+})
+
+function FundRequestsNewPage() {
+    return (
+        <AuthLayout>
+            <FundRequestsForm/>
+        </AuthLayout>
+    )
+}
+
+const fundRequestsNewRoute = createRoute({
+    getParentRoute: () => rootRoute, path: '/fund-requests/new',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Fund Request', 'Add')
+    },
+    component: FundRequestsNewPage,
+})
+
+function FundRequestsEditPage() {
+    return (
+        <AuthLayout>
+            <FundRequestsForm/>
+        </AuthLayout>
+    )
+}
+
+const fundRequestsEditRoute = createRoute({
+    getParentRoute: () => rootRoute, path: '/fund-requests/$id/edit',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Fund Request', 'Edit')
+    },
+    component: FundRequestsEditPage,
+})
+
+// Distribution Requests
+function DistributionRequestsPage() {
+    return (
+        <AuthLayout>
+            <DistributionRequestsTable/>
+        </AuthLayout>
+    )
+}
+
+const distributionRequestsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/distribution-requests',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Distribution Request', 'View')
+    },
+    component: DistributionRequestsPage,
+})
+
+function DistributionRequestsNewPage() {
+    return (
+        <AuthLayout>
+            <DistributionRequestsForm/>
+        </AuthLayout>
+    )
+}
+
+const distributionRequestsNewRoute = createRoute({
+    getParentRoute: () => rootRoute, path: '/distribution-requests/new',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Distribution Request', 'Add')
+    },
+    component: DistributionRequestsNewPage,
+})
+
+function DistributionRequestsDetailPage() {
+    return (
+        <AuthLayout>
+            <DistributionRequestsDetail/>
+        </AuthLayout>
+    )
+}
+
+const distributionRequestsDetailRoute = createRoute({
+    getParentRoute: () => rootRoute, path: '/distribution-requests/$id',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Distribution Request', 'View')
+    },
+    component: DistributionRequestsDetailPage,
+})
+
+function DistributionRequestsEditPage() {
+    return (
+        <AuthLayout>
+            <DistributionRequestsForm/>
+        </AuthLayout>
+    )
+}
+
+const distributionRequestsEditRoute = createRoute({
+    getParentRoute: () => rootRoute, path: '/distribution-requests/$id/edit',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Distribution Request', 'Edit')
+    },
+    component: DistributionRequestsEditPage,
 })
 
 // Receptions
@@ -2320,9 +2556,16 @@ const routeTree = rootRoute.addChildren([
     invoicesRoute,
     payrollRoute,
     productsRoute,
+    // Unified Inventory
+    inventoryRoute,
+    // Product Areas
+    productAreasRoute,
+    inventoryTrackingRoute,
     assetsRoute, assetsNewRoute, assetsEditRoute,
     purchaseRequestsRoute, purchaseRequestsNewRoute, purchaseRequestsEditRoute,
     purchaseOrdersRoute, purchaseOrdersNewRoute, purchaseOrdersEditRoute,
+    fundRequestsRoute, fundRequestsNewRoute, fundRequestsEditRoute,
+    distributionRequestsRoute, distributionRequestsNewRoute, distributionRequestsDetailRoute, distributionRequestsEditRoute,
     receptionsRoute, receptionsNewRoute, receptionsEditRoute,
     stockOpnamesRoute,
     projectsRoute, projectsNewRoute, projectsEditRoute,

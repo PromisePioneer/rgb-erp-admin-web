@@ -3,7 +3,7 @@
  * Includes approve/reject actions with confirmation dialogs
  */
 import { useEffect, useCallback, useState } from 'react'
-import { Check, X, FileText } from 'lucide-react'
+import { Check, X, FileText, Eye, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -15,6 +15,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { useApprovalsStore } from '../store/approvals-store'
 import { ApprovalsFilters } from './approvals-filters'
@@ -35,6 +41,7 @@ export function ApprovalsTable() {
   const [selectedApproval, setSelectedApproval] = useState<Approval | null>(null)
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [showDetail, setShowDetail] = useState(false)
   const [note, setNote] = useState('')
 
   // Fetch approvals on mount
@@ -52,6 +59,11 @@ export function ApprovalsTable() {
     setActionType(action)
     setNote('')
     setShowConfirm(true)
+  }
+
+  const handleViewDetail = (approval: Approval) => {
+    setSelectedApproval(approval)
+    setShowDetail(true)
   }
 
   const handleConfirm = async () => {
@@ -99,6 +111,13 @@ export function ApprovalsTable() {
           <FileText className="h-4 w-4 text-muted-foreground" />
           <span className="font-medium">{row.type_label}</span>
         </div>
+      ),
+    },
+    {
+      accessorKey: 'request_code',
+      header: 'Code',
+      cell: (row) => (
+        <span className="font-mono font-medium">{row.request_code ?? '-'}</span>
       ),
     },
     {
@@ -150,7 +169,18 @@ export function ApprovalsTable() {
       id: 'actions',
       header: 'Actions',
       cell: (row) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleViewDetail(row)
+            }}
+            title="View Details"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -245,6 +275,97 @@ export function ApprovalsTable() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Detail Dialog */}
+      <Dialog open={showDetail} onOpenChange={setShowDetail}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5" />
+              {selectedApproval?.type_label} Details
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedApproval && (
+            <div className="space-y-4">
+              {/* Header Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Code</p>
+                  <p className="font-mono font-medium">{selectedApproval.request_code ?? '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Requester</p>
+                  <p className="font-medium">{selectedApproval.requester?.name ?? '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Date</p>
+                  <p>{formatDate(selectedApproval.request_date)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Amount</p>
+                  <p className="font-medium text-lg">{formatAmount(selectedApproval.amount)}</p>
+                </div>
+              </div>
+
+              {/* Notes / Reason */}
+              {selectedApproval.reason && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Notes</p>
+                  <p className="bg-muted p-3 rounded-md">{selectedApproval.reason}</p>
+                </div>
+              )}
+
+              {/* Supplier */}
+              {selectedApproval.request_details && 'supplier' in selectedApproval.request_details && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Supplier</p>
+                  <p className="font-medium">{selectedApproval.request_details.supplier ?? '-'}</p>
+                </div>
+              )}
+
+              {/* Purchase Request Code (for PO) */}
+              {selectedApproval.request_details && 'purchase_request_code' in selectedApproval.request_details && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Linked Purchase Request</p>
+                  <p className="font-mono">{selectedApproval.request_details.purchase_request_code ?? '-'}</p>
+                </div>
+              )}
+
+              {/* Items Table */}
+              {selectedApproval.request_details && selectedApproval.request_details.items.length > 0 && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Items</p>
+                  <div className="border rounded-md overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="text-left p-2 font-medium">Product</th>
+                          <th className="text-right p-2 font-medium">Qty</th>
+                          <th className="text-right p-2 font-medium">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedApproval.request_details.items.map((item, idx) => (
+                          <tr key={idx} className="border-t">
+                            <td className="p-2">{item.product_name ?? '-'}</td>
+                            <td className="p-2 text-right">{item.qty}</td>
+                            <td className="p-2 text-right">{formatAmount(item.total)}</td>
+                          </tr>
+                        ))}
+                        <tr className="border-t bg-muted/50 font-medium">
+                          <td className="p-2" colSpan={2}>Total</td>
+                          <td className="p-2 text-right">{formatAmount(selectedApproval.amount)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

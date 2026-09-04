@@ -13,6 +13,7 @@ import {
   Globe,
   Moon,
   Sun,
+  Search,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useCompanyStore } from '@/stores/company-store'
@@ -20,6 +21,7 @@ import { useTranslationStore } from '@/stores/translation-store'
 import { SidebarToggle } from './sidebar'
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { companyApi } from '@/features/companies/api/companies-api'
+import { CommandPalette, useCommandPalette } from '@/components/ui/command-palette'
 
 // Get page title from path
 function getPageTitle(path: string): string {
@@ -90,6 +92,7 @@ export function Topbar({ onCollapse }: TopbarProps) {
   const [langMenuOpen, setLangMenuOpen] = useState(false)
   const location = useLocation()
   const pageTitle = getPageTitle(location.pathname)
+  const { open: isCommandPaletteOpen, setOpen: setCommandPaletteOpen } = useCommandPalette()
 
   // Dark mode toggle
   const [isDark, setIsDark] = useState(() => {
@@ -190,6 +193,18 @@ export function Topbar({ onCollapse }: TopbarProps) {
 
       {/* Right side actions */}
       <div className="flex items-center gap-2">
+        {/* Command Palette Search Input - always visible */}
+        <button
+          onClick={() => setCommandPaletteOpen(true)}
+          className="flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-muted/50 hover:bg-muted text-muted-foreground transition-colors"
+        >
+          <Search className="h-4 w-4 shrink-0" />
+          <span className="text-sm">Search menus...</span>
+          <kbd className="pointer-events-none hidden sm:flex h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </button>
+
         {/* Company Selector */}
         <div className="w-[200px]">
           <AsyncSelect
@@ -301,6 +316,9 @@ export function Topbar({ onCollapse }: TopbarProps) {
           )}
         </div>
       </div>
+
+      {/* Command Palette Dialog */}
+      <CommandPalette open={isCommandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
     </header>
   )
 }

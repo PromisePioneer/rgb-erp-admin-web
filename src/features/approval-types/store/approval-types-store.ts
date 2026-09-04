@@ -8,6 +8,7 @@ import type {
   ApprovalTypeDetail,
   ApprovalTypePayload,
   PositionOption,
+  RoleOption,
   EmployeeOption,
 } from '../types/approval-types.types'
 import { approvalTypesApi } from '../api/approval-types-api'
@@ -19,6 +20,7 @@ interface ApprovalTypesState {
 
   // Options for dropdowns
   positionsOptions: PositionOption[]
+  rolesOptions: RoleOption[]
   employeesOptions: EmployeeOption[]
 
   // Loading states
@@ -34,6 +36,7 @@ interface ApprovalTypesState {
 
   // Actions - Options
   fetchPositionsOptions: () => Promise<void>
+  fetchRolesOptions: () => Promise<void>
   fetchEmployeesOptions: () => Promise<void>
 
   // Helpers
@@ -46,6 +49,7 @@ export const useApprovalTypesStore = create<ApprovalTypesState>((set, get) => ({
   items: [],
   selectedType: null,
   positionsOptions: [],
+  rolesOptions: [],
   employeesOptions: [],
   isLoading: false,
   isSubmitting: false,
@@ -63,7 +67,7 @@ export const useApprovalTypesStore = create<ApprovalTypesState>((set, get) => ({
     }
   },
 
-  fetchTypeById: async (id) => {
+  fetchTypeById: async (id: number) => {
     set({ isLoading: true, error: null })
     try {
       const response = await approvalTypesApi.getById(id)
@@ -74,14 +78,12 @@ export const useApprovalTypesStore = create<ApprovalTypesState>((set, get) => ({
     }
   },
 
-  saveType: async (payload, id) => {
+  saveType: async (payload: ApprovalTypePayload, id?: number) => {
     set({ isSubmitting: true, error: null })
     try {
       if (id) {
-        // Update
         await approvalTypesApi.update(id, payload)
       } else {
-        // Create
         await approvalTypesApi.create(payload)
       }
       set({ isSubmitting: false })
@@ -93,7 +95,7 @@ export const useApprovalTypesStore = create<ApprovalTypesState>((set, get) => ({
     }
   },
 
-  deleteType: async (id) => {
+  deleteType: async (id: number) => {
     set({ isSubmitting: true, error: null })
     try {
       await approvalTypesApi.delete(id)
@@ -113,6 +115,15 @@ export const useApprovalTypesStore = create<ApprovalTypesState>((set, get) => ({
       set({ positionsOptions: response.data })
     } catch {
       set({ positionsOptions: [] })
+    }
+  },
+
+  fetchRolesOptions: async () => {
+    try {
+      const response = await approvalTypesApi.getRolesOptions()
+      set({ rolesOptions: response.data })
+    } catch {
+      set({ rolesOptions: [] })
     }
   },
 

@@ -10,7 +10,7 @@ import type {
   CheckpointsPagination,
   CreateCheckpointPayload,
   UpdateCheckpointPayload,
-  ProjectOption,
+  AreaOption,
 } from '../types/checkpoints.types'
 import { checkpointsApi } from '../api/checkpoints-api'
 
@@ -23,7 +23,7 @@ interface CheckpointsState {
   error: string | null
   filters: CheckpointsFilters
   pagination: CheckpointsPagination
-  projectsOptions: ProjectOption[]
+  areasOptions: AreaOption[]
 
   // Actions
   fetchCheckpoints: (params?: CheckpointsFilters) => Promise<void>
@@ -34,8 +34,9 @@ interface CheckpointsState {
   bulkDelete: (ids: number[]) => Promise<void>
   setFilters: (filters: Partial<CheckpointsFilters>) => void
   resetFilters: () => void
-  fetchProjectsOptions: () => Promise<void>
-  fetchNextSequence: (projectId: number) => Promise<number>
+  fetchAreasOptions: () => Promise<void>
+  fetchNextSequence: (areaId: number) => Promise<number>
+  regenerateSecret: (id: number) => Promise<string | null>
   clearError: () => void
   reset: () => void
 }
@@ -61,7 +62,7 @@ export const useCheckpointsStore = create<CheckpointsState>((set, get) => ({
   error: null,
   filters: initialFilters,
   pagination: initialPagination,
-  projectsOptions: [],
+  areasOptions: [],
 
   // Actions
   fetchCheckpoints: async (params?: CheckpointsFilters) => {
@@ -179,22 +180,32 @@ export const useCheckpointsStore = create<CheckpointsState>((set, get) => ({
     set({ filters: initialFilters })
   },
 
-  fetchProjectsOptions: async () => {
+  fetchAreasOptions: async () => {
     try {
-      const response = await checkpointsApi.getProjectsOptions()
-      set({ projectsOptions: response.data })
+      const response = await checkpointsApi.getAreasOptions()
+      set({ areasOptions: response.data })
     } catch (error) {
-      console.error('Failed to fetch projects options:', error)
+      console.error('Failed to fetch areas options:', error)
     }
   },
 
-  fetchNextSequence: async (projectId: number) => {
+  fetchNextSequence: async (areaId: number) => {
     try {
-      const response = await checkpointsApi.getNextSequence(projectId)
+      const response = await checkpointsApi.getNextSequence(areaId)
       return response.data.sequence
     } catch (error) {
       console.error('Failed to fetch next sequence:', error)
       return 1
+    }
+  },
+
+  regenerateSecret: async (id: number) => {
+    try {
+      const response = await checkpointsApi.regenerateSecret(id)
+      return response.data.secret_key
+    } catch (error) {
+      console.error('Failed to regenerate secret:', error)
+      return null
     }
   },
 

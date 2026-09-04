@@ -75,6 +75,9 @@ import {
   ChevronsUpDown,
   LogOut,
   Database,
+  ChevronDown,
+  ChevronRight,
+  List,
 } from "lucide-react"
 
 // Icon map
@@ -119,6 +122,7 @@ const iconMap: Record<string, LucideIcon> = {
   'building': Landmark,
   'bar-chart': TrendingUp,
   'database': Database,
+  'list': List,
 }
 
 // Helper function
@@ -230,11 +234,46 @@ function NavMenu({
 }) {
   const location = useLocation()
   const privileges = useAuthStore((state) => state.privileges)
+  const [expandedMenus, setExpandedMenus] = React.useState<Set<string>>(new Set())
 
   const isActive = (path: string): boolean => {
     const currentPath = location.pathname
     if (currentPath === path) return true
     return path !== '/dashboard' && currentPath.startsWith(path)
+  }
+
+  // Check if any child is active
+  const isChildActive = (children: { path: string }[]): boolean => {
+    return children.some(child => isActive(child.path))
+  }
+
+  // Only expand parent menus on route change
+  React.useEffect(() => {
+    const expandActiveParents = () => {
+      const newExpanded = new Set(expandedMenus)
+      navigationSections.forEach(section => {
+        section.items.forEach(item => {
+          if (item.children && isChildActive(item.children)) {
+            newExpanded.add(item.label)
+          }
+        })
+      })
+      setExpandedMenus(newExpanded)
+    }
+
+    expandActiveParents()
+  }, [location.pathname])
+
+  const toggleMenu = (label: string) => {
+    setExpandedMenus(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(label)) {
+        newSet.delete(label)
+      } else {
+        newSet.add(label)
+      }
+      return newSet
+    })
   }
 
   // Filter sections based on privileges
@@ -247,6 +286,78 @@ function NavMenu({
       }))
       .filter(section => section.items.length > 0)
   }, [privileges])
+
+  // Helper function to render a single item (recursive for nested)
+  const renderItem = (item: any, depth: number = 0) => {
+    const Icon = item.icon ? iconMap[item.icon] : null
+    const hasChildren = item.children && item.children.length > 0
+    const isExpanded = expandedMenus.has(item.label)
+    const childActive = hasChildren && isChildActive(item.children)
+
+    if (hasChildren) {
+      // Parent item with children
+      return (
+        <div key={item.label}>
+          <button
+            onClick={() => toggleMenu(item.label)}
+            className={cn(
+              "flex h-9 w-full items-center gap-2 rounded-md px-2 text-sm transition-colors",
+              (childActive || isExpanded)
+                ? "bg-sidebar-accent/50 text-sidebar-accent-foreground font-medium"
+                : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sidebar-foreground"
+            )}
+          >
+            {Icon && <Icon className="h-4 w-4 shrink-0" />}
+            {!isCollapsed && <span className="flex-1 text-left">{getLabel(item.label)}</span>}
+            {!isCollapsed && (
+              isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+
+          {/* Children items */}
+          {!isCollapsed && isExpanded && (
+            <div className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-2">
+              {item.children.map((child: any) => renderItem(child, depth + 1))}
+            </div>
+          )}
+        </div>
+      )
+    } else {
+      // Regular item
+      const active = isActive(item.path)
+
+      const menuButton = (
+        <Link
+          to={item.path}
+          className={cn(
+            "flex items-center gap-2 h-9 px-2 rounded-md text-sm transition-colors",
+            active
+              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+              : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sidebar-foreground"
+          )}
+        >
+          {Icon && <Icon className="h-4 w-4 shrink-0" />}
+          {!isCollapsed && <span>{getLabel(item.label)}</span>}
+        </Link>
+      )
+
+      if (isCollapsed) {
+        return (
+          <Tooltip key={item.path}>
+            <TooltipTrigger asChild>
+              {menuButton}
+            </TooltipTrigger>
+            <TooltipContent side="right" className="flex items-center gap-2">
+              {Icon && <Icon className="h-4 w-4" />}
+              <span>{getLabel(item.label)}</span>
+            </TooltipContent>
+          </Tooltip>
+        )
+      }
+
+      return <div key={item.path}>{menuButton}</div>
+    }
+  }
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -265,43 +376,7 @@ function NavMenu({
 
               {/* Section Items */}
               <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const Icon = item.icon ? iconMap[item.icon] : null
-                  const active = isActive(item.path)
-
-                  const menuButton = (
-                    <SidebarMenuButton
-                      asChild
-                      className={cn(
-                        "h-9 px-2",
-                        active && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      )}
-                    >
-                      <Link to={item.path} className="flex items-center gap-2">
-                        {Icon && <Icon className="h-4 w-4 shrink-0" />}
-                        {!isCollapsed && <span>{getLabel(item.label)}</span>}
-                      </Link>
-                    </SidebarMenuButton>
-                  )
-
-                  return (
-                    <SidebarMenuItem key={item.path}>
-                      {isCollapsed ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            {menuButton}
-                          </TooltipTrigger>
-                          <TooltipContent side="right" className="flex items-center gap-2">
-                            {Icon && <Icon className="h-4 w-4" />}
-                            <span>{getLabel(item.label)}</span>
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        menuButton
-                      )}
-                    </SidebarMenuItem>
-                  )
-                })}
+                {section.items.map((item) => renderItem(item))}
               </div>
 
               {/* Separator between sections */}
@@ -323,6 +398,24 @@ interface AppSidebarProps {
 export function AppSidebar({ isCollapsed }: AppSidebarProps) {
   const { user } = useAuthStore()
   const { data: settings } = useSettingsStore()
+  const sidebarRef = React.useRef<HTMLDivElement>(null)
+
+  // Restore scroll position from localStorage on mount
+  React.useEffect(() => {
+    if (sidebarRef.current) {
+      const savedScroll = localStorage.getItem('sidebar_scroll_top')
+      if (savedScroll) {
+        sidebarRef.current.scrollTop = parseInt(savedScroll, 10)
+      }
+    }
+  }, [])
+
+  // Save scroll position to localStorage on scroll
+  const handleScroll = () => {
+    if (sidebarRef.current) {
+      localStorage.setItem('sidebar_scroll_top', sidebarRef.current.scrollTop.toString())
+    }
+  }
 
   const userData = {
     name: user?.name || "User",
@@ -358,7 +451,7 @@ export function AppSidebar({ isCollapsed }: AppSidebarProps) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent className="bg-sidebar">
+      <SidebarContent className="bg-sidebar overflow-y-auto" ref={sidebarRef} onScroll={handleScroll}>
         <NavMenu isCollapsed={isCollapsed} />
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">

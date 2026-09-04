@@ -59,11 +59,16 @@ import {
   Globe,
   Menu,
   Database,
+  ChevronDown,
+  ChevronRight,
+  List,
 } from "lucide-react"
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { companyApi } from '@/features/companies/api/companies-api'
 import { Button } from '@/components/ui/button'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { CommandPalette, useCommandPalette } from '@/components/ui/command-palette'
+import { Search } from 'lucide-react'
 
 // Re-export for backward compatibility
 export { AppSidebar as Sidebar } from "@/components/app-sidebar"
@@ -120,6 +125,7 @@ const iconMap: Record<string, LucideIcon> = {
   'building': Landmark,
   'bar-chart': TrendingUp,
   'database': Database,
+  'list': List,
 }
 
 // Mobile navigation menu (inline version for Sheet)
@@ -127,11 +133,29 @@ function NavMenuMobile({ onNavigate }: { onNavigate: () => void }) {
   const location = useLocation()
   const privileges = useAuthStore((state) => state.privileges) || []
   const navigate = useNavigate()
+  const [expandedMenus, setExpandedMenus] = React.useState<Set<string>>(new Set())
 
   const isActive = (path: string): boolean => {
     const currentPath = location.pathname
     if (currentPath === path) return true
     return path !== '/dashboard' && currentPath.startsWith(path)
+  }
+
+  // Check if any child is active
+  const isChildActive = (children: { path: string }[]): boolean => {
+    return children.some(child => isActive(child.path))
+  }
+
+  const toggleMenu = (label: string) => {
+    setExpandedMenus(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(label)) {
+        newSet.delete(label)
+      } else {
+        newSet.add(label)
+      }
+      return newSet
+    })
   }
 
   // Filter sections based on privileges - show all if privileges array is empty
@@ -152,15 +176,67 @@ function NavMenuMobile({ onNavigate }: { onNavigate: () => void }) {
       .filter((section) => section.items.length > 0)
   }, [privileges])
 
-  // Debug: log filtered sections count
-  React.useEffect(() => {
-    console.log('[MobileSidebar] Navigation sections:', filteredSections.length)
-  }, [filteredSections])
-
   const handleNavigation = (path: string) => {
-    console.log('[MobileSidebar] Navigating to:', path)
     onNavigate()
     navigate({ to: path })
+  }
+
+  // Helper function to render a single item (recursive for nested)
+  const renderItem = (item: any, depth: number = 0) => {
+    const Icon = item.icon ? iconMap[item.icon] : null
+    const hasChildren = item.children && item.children.length > 0
+    const isExpanded = expandedMenus.has(item.label)
+    const childActive = hasChildren && isChildActive(item.children)
+
+    if (hasChildren) {
+      // Parent item with children
+      return (
+        <div key={item.label}>
+          <button
+            onClick={() => toggleMenu(item.label)}
+            className={cn(
+              "flex h-10 w-full items-center gap-3 rounded-md px-3 text-sm transition-colors",
+              (childActive || isExpanded)
+                ? "bg-sidebar-accent/50 text-sidebar-accent-foreground font-medium"
+                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            )}
+            style={{ paddingLeft: `${12 + depth * 16}px` }}
+          >
+            {Icon && <Icon className="h-4 w-4 shrink-0" />}
+            <span className="flex-1 text-left truncate">{getLabel(item.label)}</span>
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
+
+          {/* Children items */}
+          {isExpanded && (
+            <div className="mt-1 space-y-0.5">
+              {item.children.map((child: any) => renderItem(child, depth + 1))}
+            </div>
+          )}
+        </div>
+      )
+    } else {
+      // Regular item
+      const active = isActive(item.path)
+
+      return (
+        <button
+          key={item.path}
+          type="button"
+          onClick={() => handleNavigation(item.path)}
+          className={cn(
+            "flex h-10 w-full items-center gap-3 rounded-md px-3 text-sm transition-colors",
+            active
+              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          )}
+          style={{ paddingLeft: `${12 + depth * 16}px` }}
+        >
+          {Icon && <Icon className="h-4 w-4 shrink-0" />}
+          <span className="truncate">{getLabel(item.label)}</span>
+        </button>
+      )
+    }
   }
 
   // Show debug message if no sections
@@ -191,27 +267,7 @@ function NavMenuMobile({ onNavigate }: { onNavigate: () => void }) {
 
               {/* Section Items */}
               <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const Icon = item.icon ? iconMap[item.icon] : null
-                  const active = isActive(item.path)
-
-                  return (
-                    <button
-                      key={item.path}
-                      type="button"
-                      onClick={() => handleNavigation(item.path)}
-                      className={cn(
-                        "flex h-10 w-full items-center gap-3 rounded-md px-3 text-sm text-sidebar-foreground transition-colors",
-                        active
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                      )}
-                    >
-                      {Icon && <Icon className="h-4 w-4 shrink-0" />}
-                      <span className="truncate">{getLabel(item.label)}</span>
-                    </button>
-                  )
-                })}
+                {section.items.map((item) => renderItem(item))}
               </div>
 
               {/* Separator between sections */}
@@ -239,11 +295,8 @@ function MobileSidebar() {
   }
 
   const handleNavigate = () => {
-    console.log('[MobileSidebar] Closing sidebar')
     setOpen(false)
   }
-
-  console.log('[MobileSidebar] Rendering, open:', open)
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -376,6 +429,27 @@ function HeaderClock() {
   )
 }
 
+// Command Palette Button Component
+function CommandPaletteButton() {
+  const { open, setOpen } = useCommandPalette()
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-muted/50 hover:bg-muted text-muted-foreground transition-colors"
+      >
+        <Search className="h-4 w-4 shrink-0" />
+        <span className="text-sm">Search menus...</span>
+        <kbd className="pointer-events-none hidden sm:flex h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+          <span className="text-xs">⌘</span>K
+        </kbd>
+      </button>
+      <CommandPalette open={open} onOpenChange={setOpen} />
+    </>
+  )
+}
+
 export function MainLayout({ children }: MainLayoutProps) {
   const { isCollapsed, toggleCollapse } = useCollapseState()
   const { data: settings } = useSettingsStore()
@@ -446,6 +520,9 @@ export function MainLayout({ children }: MainLayoutProps) {
 
             {/* Right side actions */}
             <div className="flex items-center gap-2">
+              {/* Command Palette Search */}
+              <CommandPaletteButton />
+
               {/* Company Selector - hidden on small mobile */}
               {!isMobile && (
                 <div className="w-[200px]">

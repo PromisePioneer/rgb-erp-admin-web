@@ -12,6 +12,15 @@ import type {
   ProductSelectOption,
 } from '../types/products.types'
 
+// Stock detail per warehouse
+export interface StockDetail {
+  warehouse_id: number
+  warehouse_name: string
+  barcode: string
+  stock: number
+  base_price: number
+}
+
 export const productsApi = {
   /**
    * Get list of products with optional filters
@@ -30,6 +39,17 @@ export const productsApi = {
    */
   getById: async (id: number) => {
     const { data } = await apiClient.get<ApiResponse<Product>>(`/admin/products/${id}`)
+    return data
+  },
+
+  /**
+   * Get stock details for a product by warehouse
+   * GET /api/admin/products/:id/stock
+   */
+  getStock: async (id: number) => {
+    const { data } = await apiClient.get<ApiResponse<StockDetail[]>>(
+      `/admin/products/${id}/stock`
+    )
     return data
   },
 
@@ -75,7 +95,7 @@ export const productsApi = {
    * Get select options for dropdown
    * GET /api/admin/products/select-options
    */
-  getSelectOptions: async (params?: { q?: string; category_id?: number }) => {
+  getSelectOptions: async (params?: { q?: string; category_id?: number; warehouse_id?: number }) => {
     const { data } = await apiClient.get<ApiResponse<ProductSelectOption[]>>(
       '/admin/products/select-options',
       { params }

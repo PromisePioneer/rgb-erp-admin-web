@@ -10,7 +10,7 @@ import type {
   CheckpointsFilters,
   CreateCheckpointPayload,
   UpdateCheckpointPayload,
-  ProjectOption,
+  AreaOption,
 } from '../types/checkpoints.types'
 
 export const checkpointsApi = {
@@ -74,24 +74,35 @@ export const checkpointsApi = {
   },
 
   /**
-   * Get projects for select options
-   * GET /api/admin/checkpoints/projects-select-options
+   * Get areas for select options
+   * GET /api/admin/checkpoints/areas-select-options
    */
-  getProjectsOptions: async () => {
-    const { data } = await apiClient.get<ApiResponse<ProjectOption[]>>(
-      '/admin/checkpoints/projects-select-options'
+  getAreasOptions: async () => {
+    const { data } = await apiClient.get<ApiResponse<AreaOption[]>>(
+      '/admin/checkpoints/areas-select-options'
     )
     return data
   },
 
   /**
-   * Get next sequence number for a project
+   * Get next sequence numbers for an area
    * GET /api/admin/checkpoints/next-sequence
    */
-  getNextSequence: async (projectId: number) => {
+  getNextSequence: async (areaId: number) => {
     const { data } = await apiClient.get<ApiResponse<{ sequence: number }>>(
       '/admin/checkpoints/next-sequence',
-      { params: { project_id: projectId } }
+      { params: { area_id: areaId } }
+    )
+    return data
+  },
+
+  /**
+   * Regenerate secret key for a checkpoint
+   * POST /api/admin/checkpoints/:id/regenerate-secret
+   */
+  regenerateSecret: async (id: number) => {
+    const { data } = await apiClient.post<ApiResponse<{ secret_key: string; message: string }>>(
+      `/admin/checkpoints/${id}/regenerate-secret`
     )
     return data
   },

@@ -12,14 +12,17 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCheckpointsStore } from '../store/checkpoints-store'
+import { useEffect } from 'react'
 
 export function CheckpointsFilters() {
-  const { filters, setFilters, resetFilters, projectsOptions, fetchProjectsOptions } = useCheckpointsStore()
+  const { filters, setFilters, resetFilters, areasOptions, fetchAreasOptions } = useCheckpointsStore()
 
-  // Fetch projects on mount if not loaded
-  if (projectsOptions.length === 0) {
-    fetchProjectsOptions()
-  }
+  // Fetch areas on mount if not loaded
+  useEffect(() => {
+    if (areasOptions.length === 0) {
+      fetchAreasOptions()
+    }
+  }, [areasOptions.length, fetchAreasOptions])
 
   return (
     <div className="flex flex-wrap gap-2 items-center">
@@ -34,21 +37,21 @@ export function CheckpointsFilters() {
       </div>
 
       <Select
-        value={filters.project_id?.toString() ?? 'all'}
+        value={filters.area_id?.toString() ?? 'all'}
         onValueChange={(value) => {
           if (value) {
-            setFilters({ project_id: value === 'all' ? undefined : parseInt(value) })
+            setFilters({ area_id: value === 'all' ? undefined : parseInt(value) })
           }
         }}
       >
         <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="All Projects" />
+          <SelectValue placeholder="All Areas" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Projects</SelectItem>
-          {projectsOptions.map((project) => (
-            <SelectItem key={project.id} value={project.id.toString()}>
-              {project.name}
+          <SelectItem value="all">All Areas</SelectItem>
+          {areasOptions.map((area) => (
+            <SelectItem key={area.id} value={area.id.toString()}>
+              {area.name}
             </SelectItem>
           ))}
         </SelectContent>
@@ -70,7 +73,7 @@ export function CheckpointsFilters() {
         </SelectContent>
       </Select>
 
-      {(filters.search || filters.project_id || filters.status) && (
+      {(filters.search || filters.area_id || filters.status) && (
         <Button variant="ghost" size="sm" onClick={resetFilters}>
           <X className="h-4 w-4 mr-1" />
           Clear

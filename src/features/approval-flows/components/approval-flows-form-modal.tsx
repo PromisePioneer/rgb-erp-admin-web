@@ -33,7 +33,7 @@ interface ApprovalFlowsFormModalProps {
 interface StepFormData {
   id?: number
   level: number
-  approver_kind: 'user' | 'role'
+  approver_kind: 'user' | 'role' | 'position'
   approver_id: number | null
 }
 
@@ -42,9 +42,11 @@ export function ApprovalFlowsFormModal({ flow, onClose }: ApprovalFlowsFormModal
     selectedFlow,
     usersOptions,
     rolesOptions,
+    positionsOptions,
     fetchByType,
     fetchUsersOptions,
     fetchRolesOptions,
+    fetchPositionsOptions,
     updateFlow,
     isSubmitting,
   } = useApprovalFlowsStore()
@@ -56,7 +58,8 @@ export function ApprovalFlowsFormModal({ flow, onClose }: ApprovalFlowsFormModal
     fetchByType(flow.type)
     fetchUsersOptions()
     fetchRolesOptions()
-  }, [flow.type, fetchByType, fetchUsersOptions, fetchRolesOptions])
+    fetchPositionsOptions()
+  }, [flow.type, fetchByType, fetchUsersOptions, fetchRolesOptions, fetchPositionsOptions])
 
   useEffect(() => {
     if (selectedFlow) {
@@ -74,7 +77,7 @@ export function ApprovalFlowsFormModal({ flow, onClose }: ApprovalFlowsFormModal
 
   const handleAddStep = () => {
     const newLevel = steps.length + 1
-    setSteps([...steps, { level: newLevel, approver_kind: 'user', approver_id: null }])
+    setSteps([...steps, { level: newLevel, approver_kind: 'position', approver_id: null }])
   }
 
   const handleRemoveStep = (index: number) => {
@@ -118,8 +121,17 @@ export function ApprovalFlowsFormModal({ flow, onClose }: ApprovalFlowsFormModal
     }
   }
 
-  const getApproverOptions = (kind: 'user' | 'role') => {
-    return kind === 'user' ? usersOptions : rolesOptions
+  const getApproverOptions = (kind: 'user' | 'role' | 'position') => {
+    switch (kind) {
+      case 'user':
+        return usersOptions
+      case 'role':
+        return rolesOptions
+      case 'position':
+        return positionsOptions
+      default:
+        return []
+    }
   }
 
   return (
@@ -181,15 +193,16 @@ export function ApprovalFlowsFormModal({ flow, onClose }: ApprovalFlowsFormModal
                         <Select
                           value={step.approver_kind}
                           onValueChange={(value) =>
-                            handleStepChange(index, 'approver_kind', value as 'user' | 'role')
+                            handleStepChange(index, 'approver_kind', value as 'user' | 'role' | 'position')
                           }
                         >
                           <SelectTrigger className="mt-1">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="position">Position / Jabatan</SelectItem>
                             <SelectItem value="role">Role</SelectItem>
+                            <SelectItem value="user">User</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

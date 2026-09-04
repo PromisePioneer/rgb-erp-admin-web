@@ -94,17 +94,18 @@ export function ReceptionsForm() {
     setFormValues(prev => ({ ...prev, purchase_order_id: poId }))
 
     try {
-      const response = await receptionsApi.getById(poId)
-      const po = response.data
+      const response = await receptionsApi.getPurchaseOrdersSelectOptions()
+      const po = response.data.find((p) => p.id === poId)
 
-      if (po.purchase_order?.details) {
-        // Auto-populate line items from PO
-        setLineItems(po.purchase_order.details.map((d: any) => ({
+      if (po && (po as any).details) {
+        // Auto-populate line items from PO details
+        const details = (po as any).details
+        setLineItems(details.map((d: any) => ({
           product_id: d.product_id,
-          product_name: d.product?.name || `Product #${d.product_id}`,
+          product_name: d.product_name || `Product #${d.product_id}`,
           product_code: d.product?.code || '',
           qty: d.qty,
-          unit_price: d.price || 0,
+          unit_price: d.total / d.qty || 0,
           line_total: d.total,
         })))
       }
@@ -276,7 +277,7 @@ export function ReceptionsForm() {
         date: formValues.date,
         product_id: validLineItems.map(item => item.product_id as number),
         qty: validLineItems.map(item => item.qty),
-        line_total: validLineItems.map(item => item.line_total),
+        unit_cost: validLineItems.map(item => item.unit_price),
       }
 
       if (!isEdit) {

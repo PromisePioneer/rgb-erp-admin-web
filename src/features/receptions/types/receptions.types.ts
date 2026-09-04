@@ -28,9 +28,10 @@ export interface Reception {
   code: string | null
   date: string
   purchase_order_id: number
+  purchase_order_code: string | null
   warehouse_id?: number
   total: number
-  status: number
+  status: string
   order_code?: string
   purchase_order?: PurchaseOrder
   warehouse?: Warehouse
@@ -92,7 +93,7 @@ export interface CreateReceptionPayload {
   date: string
   product_id: number[]
   qty: (number | null)[]
-  line_total: (number | null)[]
+  unit_cost: (number | null)[]
 }
 
 export interface UpdateReceptionPayload {
@@ -101,7 +102,7 @@ export interface UpdateReceptionPayload {
   date?: string
   product_id?: number[]
   qty?: (number | null)[]
-  line_total?: (number | null)[]
+  unit_cost?: (number | null)[]
 }
 
 // Line item for form

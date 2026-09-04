@@ -2,11 +2,11 @@
  * Checkpoints Form Modal Component
  * Create and edit checkpoints in a modal dialog
  */
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2 } from 'lucide-react'
+import { Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,7 +28,7 @@ import type { Checkpoint } from '../types/checkpoints.types'
 import { toast } from 'sonner'
 
 const formSchema = z.object({
-  project_id: z.number().min(1, 'Project is required'),
+  area_id: z.number().min(1, 'Area is required'),
   name: z.string().min(1, 'Name is required'),
   lat: z.string().min(1, 'Latitude is required').refine((val) => {
     const num = parseFloat(val)
@@ -53,26 +53,29 @@ interface CheckpointsFormModalProps {
 export function CheckpointsFormModal({ checkpoint, open, onOpenChange }: CheckpointsFormModalProps) {
   const {
     selectedItem,
-    projectsOptions,
-    fetchProjectsOptions,
+    areasOptions,
+    fetchAreasOptions,
     fetchById,
     fetchNextSequence,
+    regenerateSecret,
     create,
     update,
     isSubmitting,
     clearError,
   } = useCheckpointsStore()
 
+  const [isRegeneratingSecret, setIsRegeneratingSecret] = useState(false)
+
   const isEdit = !!checkpoint
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      project_id: 0,
+      area_id: 0,
       name: '',
       lat: '',
       lng: '',
-      radius_meters: '50',
+      radius_meters: '100',
       status: 'active',
     },
   })
@@ -80,33 +83,33 @@ export function CheckpointsFormModal({ checkpoint, open, onOpenChange }: Checkpo
   // Fetch data on mount
   useEffect(() => {
     if (open) {
-      fetchProjectsOptions()
+      fetchAreasOptions()
       clearError()
 
       if (checkpoint) {
         fetchById(checkpoint.id)
       }
     }
-  }, [open, checkpoint, fetchById, fetchProjectsOptions, clearError])
+  }, [open, checkpoint, fetchById, fetchAreasOptions, clearError])
 
   // Populate form when selectedItem changes (for edit)
   useEffect(() => {
     if (selectedItem && isEdit) {
       form.reset({
-        project_id: selectedItem.project_id,
+        area_id: selectedItem.area_id,
         name: selectedItem.name,
         lat: selectedItem.lat?.toString() ?? '',
         lng: selectedItem.lng?.toString() ?? '',
-        radius_meters: selectedItem.radius_meters?.toString() ?? '50',
+        radius_meters: selectedItem.radius_meters?.toString() ?? '100',
         status: selectedItem.status,
       })
     }
   }, [selectedItem, isEdit, form])
 
-  // Handle project change to get next sequence
-  const handleProjectChange = async (projectId: string) => {
-    const id = parseInt(projectId)
-    form.setValue('project_id', id)
+  // Handle area change to get next sequence
+  const handleAreaChange = async (areaId: string) => {
+    const id = parseInt(areaId)
+    form.setValue('area_id', id)
 
     if (!isEdit) {
       const sequence = await fetchNextSequence(id)
@@ -114,14 +117,29 @@ export function CheckpointsFormModal({ checkpoint, open, onOpenChange }: Checkpo
     }
   }
 
+  const handleRegenerateSecret = async () => {
+    if (!checkpoint) return
+    setIsRegeneratingSecret(true)
+    try {
+      const newSecret = await regenerateSecret(checkpoint.id)
+      if (newSecret) {
+        toast.success('Secret key regenerated')
+      } else {
+        toast.error('Failed to regenerate secret')
+      }
+    } finally {
+      setIsRegeneratingSecret(false)
+    }
+  }
+
   const onSubmit = async (values: FormValues) => {
     try {
       const payload = {
-        project_id: values.project_id,
+        area_id: values.area_id,
         name: values.name,
         lat: parseFloat(values.lat),
         lng: parseFloat(values.lng),
-        radius_meters: values.radius_meters ? parseInt(values.radius_meters) : 50,
+        radius_meters: values.radius_meters ? parseInt(values.radius_meters) : 100,
         status: values.status,
       }
 
@@ -149,30 +167,30 @@ export function CheckpointsFormModal({ checkpoint, open, onOpenChange }: Checkpo
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Project */}
+          {/* Area */}
           <div className="space-y-2">
-            <Label htmlFor="project_id">Project *</Label>
+            <Label htmlFor="area_id">Area *</Label>
             <Select
-              value={form.watch('project_id')?.toString() ?? ''}
+              value={form.watch('area_id')?.toString() ?? ''}
               onValueChange={(value) => {
                 if (value) {
-                  handleProjectChange(value)
+                  handleAreaChange(value)
                 }
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select project" />
+                <SelectValue placeholder="Select area" />
               </SelectTrigger>
               <SelectContent>
-                {projectsOptions.map((project) => (
-                  <SelectItem key={project.id} value={project.id.toString()}>
-                    {project.name}
+                {areasOptions.map((area) => (
+                  <SelectItem key={area.id} value={area.id.toString()}>
+                    {area.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {form.formState.errors.project_id && (
-              <p className="text-sm text-destructive">{form.formState.errors.project_id.message}</p>
+            {form.formState.errors.area_id && (
+              <p className="text-sm text-destructive">{form.formState.errors.area_id.message}</p>
             )}
           </div>
 
@@ -223,7 +241,7 @@ export function CheckpointsFormModal({ checkpoint, open, onOpenChange }: Checkpo
               type="number"
               min="1"
               max="1000"
-              placeholder="50"
+              placeholder="100"
               {...form.register('radius_meters')}
             />
             {form.formState.errors.radius_meters && (
@@ -247,6 +265,37 @@ export function CheckpointsFormModal({ checkpoint, open, onOpenChange }: Checkpo
               </SelectContent>
             </Select>
           </div>
+
+          {/* Secret Key (only for edit) */}
+          {isEdit && selectedItem && (
+            <div className="space-y-2">
+              <Label>Secret Key (for OTP)</Label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 p-2 bg-muted rounded-md font-mono text-sm truncate">
+                  {selectedItem.secret_key || 'No secret key'}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleRegenerateSecret}
+                  disabled={isRegeneratingSecret}
+                  title="Regenerate secret key"
+                >
+                  {isRegeneratingSecret ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {selectedItem.has_secret_key
+                  ? 'Checkpoint uses TOTP for verification'
+                  : 'No secret key - checkpoint can be scanned without OTP'}
+              </p>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-4">

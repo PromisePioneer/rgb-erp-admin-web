@@ -34,6 +34,12 @@ export const receptionsApi = {
       date: string
       supplier_name: string | null
       total: number
+      details: Array<{
+        product_id: number
+        product_name: string | null
+        qty: number
+        total: number
+      }>
     }>>>('/admin/receptions/purchase-orders-select-options', {
       params: search ? { q: search } : undefined,
     })
