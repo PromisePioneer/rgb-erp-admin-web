@@ -134,7 +134,7 @@ export function EmployeesTable() {
     },
     {
       accessorKey: 'role_name',
-      header: 'Position',
+      header: 'Role',
       cell: (row) => (
         <span className="text-muted-foreground">
           {row.role_name ?? '-'}
