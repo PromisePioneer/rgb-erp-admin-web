@@ -3,7 +3,8 @@
  * Using standardized DataTable with row selection and modal form
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { Plus, Trash2, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -22,6 +23,7 @@ import { RolesFilters } from './roles-filters'
 import type { Role } from '../types/roles.types'
 
 export function RolesTable() {
+  const navigate = useNavigate()
   const {
     items,
     isLoading,
@@ -137,6 +139,25 @@ export function RolesTable() {
       accessorKey: 'status',
       header: 'Status',
       cell: (row) => getStatusBadge(row.status),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate({ to: '/roles/$id/privileges', params: { id: String(row.id) } })
+            }}
+          >
+            <Shield className="h-4 w-4 mr-1" />
+            Privilege
+          </Button>
+        </div>
+      ),
     },
   ]
 
