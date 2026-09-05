@@ -144,6 +144,12 @@ function NavUser({
     name: string
     email: string
     avatar: string
+    role?: string
+    employee?: {
+      code: string
+      position: string | null
+      photo: string | null
+    }
   }
 }) {
   const { logout } = useAuthStore()
@@ -421,7 +427,9 @@ export function AppSidebar({ isCollapsed }: AppSidebarProps) {
   const userData = {
     name: user?.name || "User",
     email: user?.email || "user@example.com",
-    avatar: "/avatars/default.jpg",
+    avatar: user?.employee?.photo || "/avatars/default.jpg",
+    role: user?.role?.name,
+    employee: user?.employee || undefined,
   }
 
   return (

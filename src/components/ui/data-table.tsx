@@ -21,7 +21,7 @@ export interface DataTableColumn<T> {
   accessorKey?: keyof T
   id?: string
   header: string
-  cell?: (row: T) => ReactNode
+  cell?: (row: T, meta?: { rowIndex: number }) => ReactNode
   className?: string
 }
 
@@ -34,6 +34,8 @@ interface DataTableProps<T> {
   emptyMessage?: string
   className?: string
   rowKey?: keyof T
+  // Row click handler
+  onRowClick?: (row: T) => void
   // Row selection props
   enableRowSelection?: boolean
   selectedIds?: Set<number | string>
@@ -51,6 +53,7 @@ export function DataTable<T extends { [key: string]: any }>({
   emptyMessage = 'No data found',
   className,
   rowKey = 'id' as keyof T,
+  onRowClick,
   enableRowSelection = false,
   selectedIds = new Set(),
   onSelectionChange,
@@ -162,8 +165,9 @@ export function DataTable<T extends { [key: string]: any }>({
                 return (
                   <TableRow
                     key={rowId}
-                    className={cn(isSelected && 'bg-muted/50')}
+                    className={cn(isSelected && 'bg-muted/50', onRowClick && 'cursor-pointer')}
                     data-selected={isSelected}
+                    onClick={() => onRowClick?.(row)}
                   >
                     {enableRowSelection && (
                       <TableCell onClick={(e) => e.stopPropagation()}>

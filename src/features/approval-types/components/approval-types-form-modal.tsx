@@ -46,7 +46,7 @@ interface Template {
     name: string
     icon: React.ElementType
     description: string
-    steps: Array<{ approver_kind: 'position' | 'role' | 'employee'; label: string }>
+    steps: Array<{ approver_kind: 'role' | 'employee'; label: string }>
 }
 
 // Pre-built templates for AWAM users
@@ -57,8 +57,8 @@ const TEMPLATES: Template[] = [
         icon: Briefcase,
         description: 'Cuti karyawan, izin, sakit',
         steps: [
-            {approver_kind: 'position', label: 'Supervisor Jabatan'},
-            {approver_kind: 'position', label: 'Manager Jabatan'},
+            {approver_kind: 'role', label: 'Supervisor Role'},
+            {approver_kind: 'role', label: 'Manager Role'},
         ],
     },
     {
@@ -67,8 +67,8 @@ const TEMPLATES: Template[] = [
         icon: Clock,
         description: 'Surat keterangan lembur',
         steps: [
-            {approver_kind: 'position', label: 'Supervisor Jabatan'},
-            {approver_kind: 'position', label: 'Manager Jabatan'},
+            {approver_kind: 'role', label: 'Supervisor Role'},
+            {approver_kind: 'role', label: 'Manager Role'},
         ],
     },
     {
@@ -77,9 +77,9 @@ const TEMPLATES: Template[] = [
         icon: FileText,
         description: 'Reimbursement, biaya operasional',
         steps: [
-            {approver_kind: 'position', label: 'Supervisor Jabatan'},
+            {approver_kind: 'role', label: 'Supervisor Role'},
             {approver_kind: 'role', label: 'Finance Role'},
-            {approver_kind: 'position', label: 'Manager Jabatan'},
+            {approver_kind: 'role', label: 'Manager Role'},
         ],
     },
     {
@@ -88,7 +88,7 @@ const TEMPLATES: Template[] = [
         icon: ShoppingCart,
         description: 'Permintaan pembelian barang',
         steps: [
-            {approver_kind: 'position', label: 'Supervisor Jabatan'},
+            {approver_kind: 'role', label: 'Supervisor Role'},
             {approver_kind: 'role', label: 'Manager Site Role'},
         ],
     },
@@ -98,8 +98,8 @@ const TEMPLATES: Template[] = [
         icon: Truck,
         description: 'Klaim asuransi, refund',
         steps: [
-            {approver_kind: 'position', label: 'Supervisor Jabatan'},
-            {approver_kind: 'position', label: 'HRD Jabatan'},
+            {approver_kind: 'role', label: 'Supervisor Role'},
+            {approver_kind: 'role', label: 'HRD Role'},
             {approver_kind: 'role', label: 'Finance Role'},
         ],
     },
@@ -109,8 +109,8 @@ const TEMPLATES: Template[] = [
         icon: Building2,
         description: 'Update data pribadi, keluarga',
         steps: [
-            {approver_kind: 'position', label: 'Supervisor Jabatan'},
-            {approver_kind: 'position', label: 'HRD Jabatan'},
+            {approver_kind: 'role', label: 'Supervisor Role'},
+            {approver_kind: 'role', label: 'HRD Role'},
         ],
     },
 ]
@@ -120,10 +120,8 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
         saveType,
         isSubmitting,
         fetchTypeById,
-        positionsOptions,
         rolesOptions,
         employeesOptions,
-        fetchPositionsOptions,
         fetchRolesOptions,
         fetchEmployeesOptions,
     } = useApprovalTypesStore()
@@ -138,7 +136,6 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
 
     // Load options on mount
     useEffect(() => {
-        fetchPositionsOptions()
         fetchRolesOptions()
         fetchEmployeesOptions()
     }, [])
@@ -162,7 +159,7 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
                 setSteps(
                     detail.steps.map((s) => ({
                         level: s.level,
-                        approver_kind: s.approver_kind as 'position' | 'role' | 'employee',
+                        approver_kind: s.approver_kind as 'role' | 'employee',
                         approver_id: s.approver_id,
                     }))
                 )
@@ -190,7 +187,7 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
     }
 
     const addStep = () => {
-        setSteps([...steps, {level: steps.length + 1, approver_kind: 'position', approver_id: 0}])
+        setSteps([...steps, {level: steps.length + 1, approver_kind: 'role', approver_id: 0}])
     }
 
     const removeStep = (index: number) => {
@@ -198,7 +195,7 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
         setSteps(newSteps)
     }
 
-    const updateStepKind = (index: number, kind: 'position' | 'role' | 'employee') => {
+    const updateStepKind = (index: number, kind: 'role' | 'employee') => {
         const newSteps = [...steps]
         newSteps[index] = {...newSteps[index], approver_kind: kind, approver_id: 0}
         setSteps(newSteps)
@@ -251,23 +248,6 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
     }
 
     // Load options functions for AsyncSelect
-    const loadPositions = useCallback(
-        async (search: string): Promise<SelectOption[]> => {
-            return positionsOptions
-                .filter(
-                    (p) =>
-                        p.name.toLowerCase().includes(search.toLowerCase()) ||
-                        p.company_name?.toLowerCase().includes(search.toLowerCase())
-                )
-                .map((p) => ({
-                    value: p.id,
-                    label: p.name,
-                    description: p.company_name || undefined,
-                }))
-        },
-        [positionsOptions]
-    )
-
     const loadRoles = useCallback(
         async (search: string): Promise<SelectOption[]> => {
             return rolesOptions
@@ -292,13 +272,13 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
                     (e) =>
                         e.name.toLowerCase().includes(search.toLowerCase()) ||
                         e.code?.toLowerCase().includes(search.toLowerCase()) ||
-                        e.position_name?.toLowerCase().includes(search.toLowerCase())
+                        e.role_name?.toLowerCase().includes(search.toLowerCase())
                 )
                 .map((e) => ({
                     value: e.id,
                     label: e.name,
-                    description: e.position_name
-                        ? `${e.position_name}${e.company_name ? ` (${e.company_name})` : ''}`
+                    description: e.role_name
+                        ? `${e.role_name}${e.company_name ? ` (${e.company_name})` : ''}`
                         : e.company_name || undefined,
                 }))
         },
@@ -306,10 +286,8 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
     )
 
     // Get approver options based on kind
-    const getApproverOptions = (kind: 'position' | 'role' | 'employee') => {
+    const getApproverOptions = (kind: 'role' | 'employee') => {
         switch (kind) {
-            case 'position':
-                return loadPositions
             case 'role':
                 return loadRoles
             case 'employee':
@@ -320,10 +298,8 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
     }
 
     // Get placeholder based on kind
-    const getApproverPlaceholder = (kind: 'position' | 'role' | 'employee') => {
+    const getApproverPlaceholder = (kind: 'role' | 'employee') => {
         switch (kind) {
-            case 'position':
-                return 'Pilih Jabatan...'
             case 'role':
                 return 'Pilih Role...'
             case 'employee':
@@ -334,14 +310,12 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
     }
 
     // Get label for kind
-    const getKindLabel = (kind: 'position' | 'role' | 'employee') => {
+    const getKindLabel = (kind: 'role' | 'employee') => {
         switch (kind) {
-            case 'position':
-                return 'Jabatan (Mobile)'
             case 'role':
-                return 'Role (Website)'
+                return 'Role'
             case 'employee':
-                return 'Karyawan (User)'
+                return 'Karyawan'
             default:
                 return kind
         }
@@ -494,11 +468,9 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
                                                 <ArrowRight className="h-4 w-4 text-muted-foreground"/>
                                                 <div
                                                     className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm ${
-                                                        s.approver_kind === 'position'
-                                                            ? 'bg-purple-100 text-purple-800'
-                                                            : s.approver_kind === 'role'
-                                                                ? 'bg-amber-100 text-amber-800'
-                                                                : 'bg-green-100 text-green-800'
+                                                        s.approver_kind === 'role'
+                                                            ? 'bg-amber-100 text-amber-800'
+                                                            : 'bg-green-100 text-green-800'
                                                     }`}
                                                 >
                                                     <Users className="h-4 w-4"/>
@@ -554,19 +526,7 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
                                                         <Label className="text-xs text-muted-foreground mb-1 block">
                                                             Tipe Approver
                                                         </Label>
-                                                        <div className="grid grid-cols-3 gap-1">
-                                                            <Button
-                                                                size="sm"
-                                                                variant={
-                                                                    stepItem.approver_kind === 'position'
-                                                                        ? 'default'
-                                                                        : 'outline'
-                                                                }
-                                                                onClick={() => updateStepKind(index, 'position')}
-                                                            >
-                                                                <Briefcase className="h-3 w-3 mr-1"/>
-                                                                Jabatan
-                                                            </Button>
+                                                        <div className="grid grid-cols-2 gap-1">
                                                             <Button
                                                                 size="sm"
                                                                 variant={
@@ -592,11 +552,6 @@ export function ApprovalTypesFormModal({type, onClose}: ApprovalTypesFormModalPr
                                                                 User
                                                             </Button>
                                                         </div>
-                                                        <p className="text-xs text-muted-foreground mt-1">
-                                                            {stepItem.approver_kind === 'position' && 'Untuk pengajuan dari Mobile'}
-                                                            {stepItem.approver_kind === 'role' && 'Untuk pengajuan dari Website'}
-                                                            {stepItem.approver_kind === 'employee' && 'User tertentu'}
-                                                        </p>
                                                     </div>
 
                                                     {/* Approver Select */}

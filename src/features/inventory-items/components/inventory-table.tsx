@@ -3,7 +3,7 @@
  * Lists all inventory items with QR code tracking and movement history
  */
 import {useEffect, useState, useCallback, useRef} from 'react'
-import {Eye, QrCodeIcon, Printer, Download, History, User, Filter, X} from 'lucide-react'
+import {Eye, QrCodeIcon, Printer, Download, History, User, Filter, X, Trash2} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
 import {Badge} from '@/components/ui/badge'
@@ -20,6 +20,16 @@ import type {InventoryItem} from '../types/inventory-items.types'
 import {QRCodeSVG} from 'qrcode.react'
 import {apiClient} from '@/lib/api-client'
 import {toast} from 'sonner'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 // Types for movement history
 interface ItemMovement {
@@ -348,17 +358,37 @@ export function InventoryTable() {
         fetchItems,
         filters,
         setFilters,
+        bulkDelete,
     } = useInventoryStore()
 
     const [searchInput, setSearchInput] = useState('')
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
     const [showDetail, setShowDetail] = useState(false)
     const [showFilters, setShowFilters] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
+    const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
 
     // Filter states
     const [locationTypeFilter, setLocationTypeFilter] = useState<string | null>(null)
     const [warehouseFilter, setWarehouseFilter] = useState<number | null>(null)
     const [statusFilter, setStatusFilter] = useState<string | null>(null)
+
+    const handleSelectionChange = (newSelectedIds: Set<number | string>) => {
+        setSelectedIds(newSelectedIds)
+    }
+
+    const handleBulkDelete = async () => {
+        const ids = Array.from(selectedIds).map(Number)
+        if (ids.length === 0) return
+        try {
+            await bulkDelete(ids)
+            toast.success(`${ids.length} item(s) deleted`)
+            setSelectedIds(new Set())
+            setShowBulkDeleteDialog(false)
+        } catch (err: any) {
+            toast.error(err.message || 'Delete failed')
+        }
+    }
 
     // Count active filters
     const activeFilterCount = [locationTypeFilter, warehouseFilter, statusFilter].filter(Boolean).length
@@ -418,6 +448,13 @@ export function InventoryTable() {
     }, [fetchItems, filters])
 
     const handleViewDetail = (item: InventoryItem) => {
+        setSelectedItem(item)
+        setShowDetail(true)
+    }
+
+    const handleEdit = (item: InventoryItem) => {
+        // TODO: Navigate to edit page or open edit modal
+        // For now, open detail modal as placeholder
         setSelectedItem(item)
         setShowDetail(true)
     }
@@ -733,25 +770,6 @@ export function InventoryTable() {
                 </span>
             ),
         },
-        {
-            id: 'actions',
-            header: '',
-            cell: (row) => (
-                <div className="flex gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            handleViewDetail(row)
-                        }}
-                        title="View Details & History"
-                    >
-                        <Eye className="h-4 w-4"/>
-                    </Button>
-                </div>
-            ),
-        },
     ]
 
     return (
@@ -869,7 +887,44 @@ export function InventoryTable() {
                 isLoading={isLoading}
                 onPageChange={handlePageChange}
                 emptyMessage="Tidak ada item ditemukan"
+                onRowClick={handleEdit}
+                enableRowSelection
+                selectedIds={selectedIds}
+                onSelectionChange={handleSelectionChange}
+                bulkActions={
+                    selectedIds.size > 0 && (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setShowBulkDeleteDialog(true)}
+                        >
+                            <Trash2 className="h-4 w-4 mr-1"/>
+                            Delete {selectedIds.size} item(s)
+                        </Button>
+                    )
+                }
             />
+
+            {/* Bulk Delete Confirmation Dialog */}
+            <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Inventory Items</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete {selectedIds.size} selected item(s)? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleBulkDelete}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* Detail Modal */}
             <ItemDetailModal

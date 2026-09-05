@@ -56,4 +56,13 @@ export const patrolReportsApi = {
     )
     return data
   },
+
+  /**
+   * Bulk delete patrol sessions
+   * POST /api/admin/patrol-reports/bulk-delete
+   */
+  bulkDelete: async (ids: number[]) => {
+    const { data } = await apiClient.post<ApiResponse<void>>('/admin/patrol-reports/bulk-delete', { ids })
+    return data
+  },
 }

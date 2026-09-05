@@ -50,3 +50,32 @@ export function canViewMenu(menu: string): boolean {
   const { privileges } = useAuthStore.getState()
   return privileges.some((p) => p.startsWith(`${menu},`))
 }
+
+// ====================
+// Mobile Privilege Helpers
+// ====================
+
+/**
+ * Check if user has a specific mobile privilege (hook version)
+ * @param key - Mobile privilege key (e.g., 'patrol', 'leave', 'payroll')
+ */
+export function useCanAccessMobile(key: string): boolean {
+  const { mobilePrivileges } = useAuthStore()
+  return mobilePrivileges.includes(key)
+}
+
+/**
+ * Check mobile privilege without hooks
+ */
+export function checkMobilePrivilege(key: string): boolean {
+  const { mobilePrivileges } = useAuthStore.getState()
+  return mobilePrivileges.includes(key)
+}
+
+/**
+ * Check if user has any mobile privilege
+ */
+export function hasMobileAccess(): boolean {
+  const { mobilePrivileges } = useAuthStore.getState()
+  return mobilePrivileges.length > 0
+}

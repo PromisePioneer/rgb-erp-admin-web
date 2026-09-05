@@ -37,4 +37,9 @@ export const fundRequestsApi = {
   delete: async (id: number) => {
     await apiClient.delete(`/admin/fund-requests/${id}`)
   },
+
+  bulkDelete: async (ids: number[]) => {
+    const { data } = await apiClient.post<ApiResponse<{ deleted: number }>>('/admin/fund-requests/bulk-delete', { ids })
+    return data
+  },
 }

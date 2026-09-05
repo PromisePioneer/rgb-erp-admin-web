@@ -3,6 +3,12 @@
  * API endpoint: /api/admin/roles
  */
 
+export interface RoleOption {
+  id: number
+  name: string
+  text: string
+}
+
 export interface Role {
   id: number
   name: string

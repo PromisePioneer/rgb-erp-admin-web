@@ -3,7 +3,7 @@
  * List view with delete functionality
  */
 import { useEffect, useState } from 'react'
-import { Eye, Trash2, Shield, User } from 'lucide-react'
+import { Shield, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -73,7 +73,8 @@ export function FaceEnrollmentsTable() {
     }
   }
 
-  const handleViewDetail = (id: number) => {
+  const handleEdit = (id: number) => {
+    // Navigate to edit page or open edit modal
     setDetailId(id)
     setDetailOpen(true)
   }
@@ -89,6 +90,53 @@ export function FaceEnrollmentsTable() {
 
   const totalPages = pagination.last_page
   const currentPage = pagination.current_page
+
+  // Define table columns
+  const columns = [
+    {
+      id: 'index',
+      header: '#',
+        cell: (_item, { rowIndex }) => (
+          <span className="font-mono text-xs">
+            {(pagination.current_page - 1) * pagination.per_page + rowIndex + 1}
+          </span>
+        ),
+      },
+      {
+        id: 'employee',
+        header: 'Employee',
+        cell: (item) => (
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="font-medium">{item.employee?.name || '-'}</p>
+              <p className="text-xs text-muted-foreground">
+                {item.employee?.code || 'No code'}
+              </p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: 'provider',
+        header: 'Provider',
+        cell: (item) => <Badge variant="outline">{item.provider || 'Unknown'}</Badge>,
+      },
+      {
+        id: 'photos',
+        header: 'Photos',
+        cell: (item) => <span className="font-mono">{item.photo_count || 0}</span>,
+      },
+      {
+        id: 'enrolled',
+        header: 'Enrolled',
+        cell: (item) => (
+          <span className="text-muted-foreground">{formatDate(item.enrolled_at)}</span>
+        ),
+      },
+    ]
 
   return (
     <div className="space-y-4">
@@ -107,12 +155,11 @@ export function FaceEnrollmentsTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">#</TableHead>
-              <TableHead>Employee</TableHead>
-              <TableHead>Provider</TableHead>
-              <TableHead>Photos</TableHead>
-              <TableHead>Enrolled</TableHead>
-              <TableHead className="w-[120px]">Action</TableHead>
+              {columns.map((col) => (
+                <TableHead key={col.id} className={col.id === 'actions' ? 'w-[100px]' : ''}>
+                  {col.header}
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -120,82 +167,30 @@ export function FaceEnrollmentsTable() {
               // Loading skeleton
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell>
-                    <Skeleton className="h-4 w-4" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-[150px]" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-[80px]" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-[40px]" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-[100px]" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-8 w-[80px]" />
-                  </TableCell>
+                  {columns.map((col) => (
+                    <TableCell key={col.id}>
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  ))}
                 </TableRow>
               ))
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={columns.length} className="text-center py-8 text-muted-foreground">
                   <Shield className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p>No face enrollments found</p>
                 </TableCell>
               </TableRow>
             ) : (
-              items.map((enrollment, index) => (
-                <TableRow key={enrollment.id}>
-                  <TableCell className="font-mono text-xs">
-                    {(pagination.current_page - 1) * pagination.per_page + index + 1}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{enrollment.employee?.name || '-'}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {enrollment.employee?.code || 'No code'}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{enrollment.provider || 'Unknown'}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-mono">{enrollment.photo_count || 0}</span>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(enrollment.enrolled_at)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewDetail(enrollment.id)}
-                        title="View Details"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeleteId(enrollment.id)}
-                        title="Delete"
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+              items.map((enrollment, rowIndex) => (
+                <TableRow key={enrollment.id} onClick={() => handleEdit(enrollment.id)} className="cursor-pointer hover:bg-muted/50">
+                  {columns.map((col) => (
+                    <TableCell key={col.id}>
+                      {col.cell
+                        ? col.cell(enrollment, { rowIndex })
+                        : String((enrollment as Record<string, unknown>)[col.id ?? ''] ?? '-')}
+                    </TableCell>
+                  ))}
                 </TableRow>
               ))
             )}

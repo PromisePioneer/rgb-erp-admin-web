@@ -7,7 +7,6 @@ import type {
   ApprovalType,
   ApprovalTypeDetail,
   ApprovalTypePayload,
-  PositionOption,
   RoleOption,
   EmployeeOption,
 } from '../types/approval-types.types'
@@ -65,6 +64,13 @@ export const approvalTypesApi = {
   },
 
   /**
+   * Bulk delete approval types
+   */
+  bulkDelete: async (ids: number[]) => {
+    await apiClient.post('/admin/approval-types/bulk-delete', { ids })
+  },
+
+  /**
    * Get active types for dropdown
    */
   getActive: async () => {
@@ -77,18 +83,7 @@ export const approvalTypesApi = {
   // === Options ===
 
   /**
-   * Get positions for dropdown (Mobile/Jabatan context)
-   * Returns company_name for display: "DANRU (NON SATPAM)"
-   */
-  getPositionsOptions: async () => {
-    const { data } = await apiClient.get<{ success: boolean; data: PositionOption[] }>(
-      '/admin/approval-types/options/positions'
-    )
-    return data
-  },
-
-  /**
-   * Get roles for dropdown (Website/Role context)
+   * Get roles for dropdown
    */
   getRolesOptions: async () => {
     const { data } = await apiClient.get<{ success: boolean; data: RoleOption[] }>(

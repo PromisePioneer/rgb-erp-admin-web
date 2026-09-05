@@ -70,6 +70,5 @@ export interface CoordinatorOption {
   id: number
   name: string
   code: string
-  position_name: string
   text: string
 }

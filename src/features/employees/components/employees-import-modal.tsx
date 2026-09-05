@@ -2,7 +2,7 @@
  * Import Employees Modal Component
  * Allows bulk import of employees from Excel/CSV file
  */
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -14,8 +14,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import AsyncSelect from '@/components/async-select'
 import { employeesApi } from '../api/employees-api'
 import { useEmployeesStore } from '../store/employees-store'
+import { rolesApi } from '@/features/roles'
 
 interface EmployeesImportModalProps {
   open: boolean
@@ -30,6 +33,7 @@ export function EmployeesImportModal({ open, onOpenChange }: EmployeesImportModa
   const [state, setState] = useState<ImportState>('idle')
   const [importedCount, setImportedCount] = useState<number>(0)
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const resetState = useCallback(() => {
@@ -37,6 +41,7 @@ export function EmployeesImportModal({ open, onOpenChange }: EmployeesImportModa
     setState('idle')
     setImportedCount(0)
     setErrorMessage('')
+    setSelectedRoleId(null)
   }, [])
 
   const handleOpenChange = useCallback(
@@ -141,7 +146,7 @@ export function EmployeesImportModal({ open, onOpenChange }: EmployeesImportModa
     setErrorMessage('')
 
     try {
-      const response = await employeesApi.import(file)
+      const response = await employeesApi.import(file, selectedRoleId ?? undefined)
       setImportedCount(response.data.imported)
       setState('success')
       toast.success(response.data.message)
@@ -154,7 +159,16 @@ export function EmployeesImportModal({ open, onOpenChange }: EmployeesImportModa
       setState('error')
       toast.error(message)
     }
-  }, [file, fetchEmployees])
+  }, [file, selectedRoleId, fetchEmployees])
+
+  // Load roles for dropdown
+  const loadRoles = useCallback(async (search: string) => {
+    const response = await rolesApi.getSelectOptions({ q: search })
+    return response.data.map((item) => ({
+      value: item.id,
+      label: item.name,
+    }))
+  }, [])
 
   const handleClose = useCallback(() => {
     handleOpenChange(false)
@@ -184,6 +198,21 @@ export function EmployeesImportModal({ open, onOpenChange }: EmployeesImportModa
               <Download className="h-4 w-4 mr-1" />
               Template CSV
             </Button>
+          </div>
+
+          {/* Role Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="role-select">Role untuk User (opsional)</Label>
+            <AsyncSelect
+              id="role-select"
+              value={selectedRoleId}
+              onChange={(value) => setSelectedRoleId(value as number | null)}
+              loadOptions={loadRoles}
+              placeholder="Pilih role..."
+            />
+            <p className="text-xs text-muted-foreground">
+              User account akan dibuat otomatis untuk setiap employee yang diimport
+            </p>
           </div>
 
           {/* File Upload Area */}

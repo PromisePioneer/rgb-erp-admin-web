@@ -9,7 +9,7 @@
 export interface ApprovalStep {
   id?: number
   level: number
-  approver_kind: 'position' | 'role' | 'employee'
+  approver_kind: 'role' | 'employee'
   approver_id: number
   approver_name?: string
   approver_company?: string
@@ -51,19 +51,8 @@ export interface ApprovalTypePayload {
  */
 export interface StepPayload {
   level: number
-  approver_kind: 'position' | 'role' | 'employee'
+  approver_kind: 'role' | 'employee'
   approver_id: number
-}
-
-/**
- * Position option untuk dropdown
- * Tampilkan company name: "DANRU (NON SATPAM)"
- */
-export interface PositionOption {
-  id: number
-  name: string
-  company_name?: string
-  parent_name?: string
 }
 
 /**
@@ -82,6 +71,6 @@ export interface EmployeeOption {
   id: number
   name: string
   code: string
-  position_name?: string
+  role_name?: string
   company_name?: string
 }

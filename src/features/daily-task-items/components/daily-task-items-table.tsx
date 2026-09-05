@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useDailyTaskItemsStore } from "../store/daily-task-items-store"
 import { dailyTaskItemsApi } from "../api/daily-task-items-api"
-import { positionsApi, type PositionOption } from "../api/positions-api"
+import { rolesApi, type RoleOption } from "@/features/roles"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -14,15 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Dialog,
   DialogContent,
@@ -44,8 +35,9 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { Plus, Search, Trash2, Pencil, X } from "lucide-react"
-import { STATUS_ACTIVE, STATUS_INACTIVE } from "../types/daily-task-items.types"
+import { Plus, Search, Trash2, X } from "lucide-react"
+import { STATUS_ACTIVE, STATUS_INACTIVE, type DailyTaskItem } from "../types/daily-task-items.types"
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 
 const STATUS_COLORS: Record<number, string> = {
   [STATUS_ACTIVE]: "bg-green-100 text-green-800",
@@ -67,7 +59,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Nama harus diisi"),
   description: z.string().optional().nullable(),
   status: z.enum(["active", "inactive"]),
-  position_id: z.number().optional().nullable(),
+  role_id: z.number().optional().nullable(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -90,15 +82,15 @@ export function DailyTaskItemsTable() {
   // Local state
   const [searchValue, setSearchValue] = useState(filters.search || "")
   const [statusFilter, setStatusFilter] = useState<string>(filters.status === undefined ? "all" : (filters.status === STATUS_ACTIVE ? "active" : "inactive"))
-  const [positionFilter, setPositionFilter] = useState<string>(filters.position_id === undefined ? "all" : String(filters.position_id))
+  const [roleFilter, setRoleFilter] = useState<string>(filters.role_id === undefined ? "all" : String(filters.role_id))
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showFormModal, setShowFormModal] = useState(false)
   const [formMode, setFormMode] = useState<"create" | "edit">("create")
   const [editingId, setEditingId] = useState<number | null>(null)
 
-  // Positions dropdown state
-  const [positions, setPositions] = useState<PositionOption[]>([])
+  // Roles dropdown state
+  const [roles, setRoles] = useState<RoleOption[]>([])
 
   // Form
   const form = useForm<FormValues>({
@@ -107,26 +99,26 @@ export function DailyTaskItemsTable() {
       name: "",
       description: "",
       status: "active",
-      position_id: undefined,
+      role_id: undefined,
     },
   })
 
-  // Fetch positions for dropdown
-  const fetchPositions = useCallback(async () => {
+  // Fetch roles for dropdown
+  const fetchRoles = useCallback(async () => {
     try {
-      const response = await positionsApi.getSelectOptions()
+      const response = await rolesApi.getSelectOptions()
       if (response.success) {
-        setPositions(response.data)
+        setRoles(response.data)
       }
     } catch (error) {
-      console.error("Failed to fetch positions:", error)
+      console.error("Failed to fetch roles:", error)
     }
   }, [])
 
   // Fetch on mount
   useEffect(() => {
     fetchItems()
-    fetchPositions()
+    fetchRoles()
   }, [])
 
   // Handle search
@@ -148,14 +140,14 @@ export function DailyTaskItemsTable() {
     [filters]
   )
 
-  // Handle position filter
-  const handlePositionFilter = useCallback(
+  // Handle role filter
+  const handleRoleFilter = useCallback(
     (value: string | null) => {
       const val = value || "all"
-      setPositionFilter(val)
-      const positionId = val === "all" ? undefined : Number(val)
-      setFilters({ position_id: positionId })
-      fetchItems({ ...filters, position_id: positionId, page: 1 })
+      setRoleFilter(val)
+      const roleId = val === "all" ? undefined : Number(val)
+      setFilters({ role_id: roleId })
+      fetchItems({ ...filters, role_id: roleId, page: 1 })
     },
     [filters]
   )
@@ -173,36 +165,14 @@ export function DailyTaskItemsTable() {
   const handleResetFilters = useCallback(() => {
     setSearchValue("")
     setStatusFilter("all")
-    setPositionFilter("all")
+    setRoleFilter("all")
     resetFilters()
     fetchItems({})
   }, [])
 
-  // Select all
-  const handleSelectAll = useCallback(() => {
-    if (selectedIds.size === items.length) {
-      setSelectedIds(new Set())
-    } else {
-      setSelectedIds(new Set(items.map((item) => item.id)))
-    }
-  }, [items, selectedIds])
-
-  // Select one
-  const handleSelectOne = useCallback((id: number) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-      return next
-    })
-  }, [])
-
   // Open create modal
   const handleAddNew = () => {
-    form.reset({ name: "", description: "", status: "active", position_id: undefined })
+    form.reset({ name: "", description: "", status: "active", role_id: undefined })
     setFormMode("create")
     setEditingId(null)
     setShowFormModal(true)
@@ -217,7 +187,7 @@ export function DailyTaskItemsTable() {
           name: response.data.name,
           description: response.data.description || "",
           status: statusToString(response.data.status) as "active" | "inactive", // Convert number to string
-          position_id: response.data.position_id || undefined,
+          role_id: response.data.role_id || undefined,
         })
         setFormMode("edit")
         setEditingId(id)
@@ -263,7 +233,37 @@ export function DailyTaskItemsTable() {
   }
 
   // Has active filters
-  const hasActiveFilters = searchValue || statusFilter !== "all" || positionFilter !== "all"
+  const hasActiveFilters = searchValue || statusFilter !== "all" || roleFilter !== "all"
+
+  // Column definitions
+  const columns: DataTableColumn<DailyTaskItem>[] = [
+    {
+      accessorKey: 'name',
+      header: 'Nama',
+    },
+    {
+      accessorKey: 'role_name',
+      header: 'Role',
+      cell: (row) => row.role_name || '-',
+    },
+    {
+      accessorKey: 'description',
+      header: 'Deskripsi',
+      cell: (row) => row.description || '-',
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: (row) => (
+        <Badge className={STATUS_COLORS[row.status]}>
+          {STATUS_LABELS[row.status]}
+        </Badge>
+      ),
+    },
+  ]
+
+  // Create edit handler for onRowClick
+  const handleRowEdit = (item: DailyTaskItem) => handleEdit(item.id)
 
   return (
     <div className="space-y-4">
@@ -282,16 +282,16 @@ export function DailyTaskItemsTable() {
             />
           </div>
 
-          {/* Position Filter */}
-          <Select value={positionFilter} onValueChange={handlePositionFilter}>
+          {/* Role Filter */}
+          <Select value={roleFilter} onValueChange={handleRoleFilter}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Posisi" />
+              <SelectValue placeholder="Role" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua Posisi</SelectItem>
-              {positions.map((pos) => (
-                <SelectItem key={pos.id} value={String(pos.id)}>
-                  {pos.name}
+              <SelectItem value="all">Semua Role</SelectItem>
+              {roles.map((role) => (
+                <SelectItem key={role.id} value={String(role.id)}>
+                  {role.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -325,142 +325,18 @@ export function DailyTaskItemsTable() {
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama untuk mengedit data
-      </p>
-
       {/* Table */}
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <input
-                  type="checkbox"
-                  checked={items.length > 0 && selectedIds.size === items.length}
-                  onChange={handleSelectAll}
-                  className="rounded border-gray-300"
-                />
-              </TableHead>
-              <TableHead>Nama</TableHead>
-              <TableHead>Posisi</TableHead>
-              <TableHead>Deskripsi</TableHead>
-              <TableHead className="w-24">Status</TableHead>
-              <TableHead className="w-24">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell>
-                    <Skeleton className="h-4 w-4" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-48" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-5 w-16" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-8 w-16" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : items.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  Tidak ada data
-                </TableCell>
-              </TableRow>
-            ) : (
-              items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(item.id)}
-                      onChange={() => handleSelectOne(item.id)}
-                      className="rounded border-gray-300"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <button
-                      onClick={() => handleEdit(item.id)}
-                      className="text-blue-600 hover:underline text-left"
-                    >
-                      {item.name}
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {item.position_name || "-"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {item.description || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={STATUS_COLORS[item.status]}>
-                      {STATUS_LABELS[item.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(item.id)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Pagination */}
-      {pagination.total > 0 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Menampilkan {(pagination.current_page - 1) * pagination.per_page + 1} -{" "}
-            {Math.min(pagination.current_page * pagination.per_page, pagination.total)} dari{" "}
-            {pagination.total}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(pagination.current_page - 1)}
-              disabled={pagination.current_page <= 1}
-            >
-              Previous
-            </Button>
-            <span className="text-sm">
-              Halaman {pagination.current_page} dari {pagination.last_page}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(pagination.current_page + 1)}
-              disabled={pagination.current_page >= pagination.last_page}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Actions */}
-      {selectedIds.size > 0 && (
-        <div className="flex items-center gap-2 p-4 bg-muted rounded-lg">
-          <span className="text-sm">{selectedIds.size} item dipilih</span>
+      <DataTable
+        columns={columns}
+        data={items}
+        pagination={pagination}
+        isLoading={isLoading}
+        onPageChange={handlePageChange}
+        emptyMessage="Tidak ada data"
+        enableRowSelection
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+        bulkActions={
           <Button
             variant="destructive"
             size="sm"
@@ -469,8 +345,9 @@ export function DailyTaskItemsTable() {
             <Trash2 className="h-4 w-4 mr-1" />
             Hapus Terpilih
           </Button>
-        </div>
-      )}
+        }
+        onRowClick={handleRowEdit}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
@@ -515,15 +392,15 @@ export function DailyTaskItemsTable() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Posisi</label>
+              <label className="text-sm font-medium">Role</label>
               <select
-                {...form.register("position_id", { valueAsNumber: true })}
+                {...form.register("role_id", { valueAsNumber: true })}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                <option value="">Pilih Posisi (Opsional)</option>
-                {positions.map((pos) => (
-                  <option key={pos.id} value={pos.id}>
-                    {pos.name}
+                <option value="">Pilih Role (Opsional)</option>
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
                   </option>
                 ))}
               </select>

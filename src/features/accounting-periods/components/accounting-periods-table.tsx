@@ -1,9 +1,10 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { RefreshCw, Lock, Unlock } from 'lucide-react'
+import { RefreshCw, Lock, Unlock, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { createActionColumn, withActionColumn, getActionHint } from '@/components/ui/data-table-actions'
 import { useAccountingPeriodsStore, type AccountingPeriod } from '../store/accounting-periods-store'
 
 function formatDate(d: string) {
@@ -39,6 +40,19 @@ export function AccountingPeriodsTable() {
       console.error('Failed to reopen period:', e)
     }
   }
+
+  const handleEdit = (period: AccountingPeriod) => {
+    // TODO: Navigate to edit page or open edit dialog
+    console.log('Edit period:', period.id)
+  }
+
+  const actionColumn = createActionColumn<AccountingPeriod>({
+    onEdit: handleEdit,
+    itemName: 'period',
+    showIcon: true,
+  })
+
+  const actionHint = getActionHint('period')
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -98,6 +112,7 @@ export function AccountingPeriodsTable() {
         <p className="text-sm text-blue-800">
           <strong>Informasi:</strong> Periode baru terbentuk otomatis saat ada transaksi pertama di bulan tersebut (misal: input aset, hitung penyusutan, dll).
           Anda <strong>tidak perlu membuat periode secara manual</strong>. Gunakan tombol <strong>"Tutup"</strong> di bawah untuk mengunci periode yang lapornya sudah difinalisasi.
+          <br /><span className="text-blue-600">{actionHint}</span>
         </p>
       </div>
 
@@ -119,7 +134,7 @@ export function AccountingPeriodsTable() {
                     <th className="px-4 py-2 text-left font-medium">Tanggal Mulai</th>
                     <th className="px-4 py-2 text-left font-medium">Tanggal Selesai</th>
                     <th className="px-4 py-2 text-center font-medium">Status</th>
-                    <th className="px-4 py-2 text-center font-medium">Aksi</th>
+                    <th className="px-4 py-2 text-center font-medium w-[80px]">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -137,32 +152,45 @@ export function AccountingPeriodsTable() {
                       <td className="px-4 py-3 text-center">
                         {getStatusBadge(period.status || 'open')}
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        {period.status === 'open' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setClosePeriodId(period.id)}
-                            disabled={isSubmitting}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEdit(period)
+                            }}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-muted transition-colors cursor-pointer"
+                            title={`Edit ${period.label || `Bulan ${period.month}`}`}
                           >
-                            <Lock className="h-4 w-4 mr-2" />
-                            Tutup
-                          </Button>
-                        )}
-                        {period.status === 'closed' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleReopen(period.id)}
-                            disabled={isSubmitting}
-                          >
-                            <Unlock className="h-4 w-4 mr-2" />
-                            Buka Kembali
-                          </Button>
-                        )}
-                        {period.status === 'locked' && (
-                          <span className="text-xs text-muted-foreground">Tidak bisa diubah</span>
-                        )}
+                            <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                          </button>
+                          {period.status === 'open' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setClosePeriodId(period.id)}
+                              disabled={isSubmitting}
+                            >
+                              <Lock className="h-4 w-4 mr-2" />
+                              Tutup
+                            </Button>
+                          )}
+                          {period.status === 'closed' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReopen(period.id)}
+                              disabled={isSubmitting}
+                            >
+                              <Unlock className="h-4 w-4 mr-2" />
+                              Buka Kembali
+                            </Button>
+                          )}
+                          {period.status === 'locked' && (
+                            <span className="text-xs text-muted-foreground">Tidak bisa diubah</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

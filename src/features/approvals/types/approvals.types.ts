@@ -27,7 +27,7 @@ export interface Approval {
   id: number
   level: number
   status: 'pending' | 'approved' | 'rejected'
-  approver_kind: 'user' | 'role' | 'position'
+  approver_kind: 'user' | 'role'
   approver_id: number
   approvable_type: string
   approvable_id: number

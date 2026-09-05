@@ -35,6 +35,10 @@ export const provincesApi = {
     await apiClient.delete(`/admin/provinces/${id}`)
   },
 
+  bulkDelete: async (ids: number[]) => {
+    await apiClient.post('/admin/provinces/bulk-delete', { ids })
+  },
+
   getSelectOptions: async (params?: { q?: string }) => {
     const { data } = await apiClient.get<ApiResponse<{ id: number; name: string; text: string }[]>>('/admin/provinces/select-options', { params })
     return data

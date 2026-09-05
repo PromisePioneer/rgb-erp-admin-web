@@ -55,7 +55,6 @@ import {
   Settings,
   PanelLeft,
   PanelLeftClose,
-  Bell,
   Globe,
   Menu,
   Database,
@@ -69,6 +68,8 @@ import { Button } from '@/components/ui/button'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { CommandPalette, useCommandPalette } from '@/components/ui/command-palette'
 import { Search } from 'lucide-react'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { NotificationBell } from '@/components/layout/notification-bell'
 
 // Re-export for backward compatibility
 export { AppSidebar as Sidebar } from "@/components/app-sidebar"
@@ -576,9 +577,10 @@ export function MainLayout({ children }: MainLayoutProps) {
               </div>
 
               {/* Notifications */}
-              <button className="relative p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-                <Bell className="h-5 w-5" />
-              </button>
+              <NotificationBell />
+
+              {/* Theme Toggle */}
+              <ThemeToggle />
             </div>
           </header>
 

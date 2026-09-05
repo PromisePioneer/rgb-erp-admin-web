@@ -2,20 +2,11 @@
  * Distribution Requests Table Component
  * List view with filters, pagination, and row actions
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Pencil, Eye, Send } from 'lucide-react'
+import { Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   Select,
   SelectContent,
@@ -33,9 +24,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { toast } from 'sonner'
 import { useDistributionRequestsStore } from '../store/distribution-requests-store'
-import type { DistributionRequestStatus } from '../types/distribution-requests.types'
+import type { DistributionRequestStatus, DistributionRequest } from '../types/distribution-requests.types'
 
 // Status badge component
 function StatusBadge({ status }: { status: DistributionRequestStatus }) {
@@ -88,7 +80,8 @@ export function DistributionRequestsTable() {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatuses, setSelectedStatuses] = useState<DistributionRequestStatus | 'all'>('all')
-  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
 
   // Initial fetch
   useEffect(() => {
@@ -115,20 +108,10 @@ export function DistributionRequestsTable() {
     fetchItems({ ...filters, page })
   }
 
-  // Handle row selection
-  const toggleSelectAll = () => {
-    if (selectedIds.length === items.length) {
-      setSelectedIds([])
-    } else {
-      setSelectedIds(items.map((item) => item.id))
-    }
-  }
-
-  const toggleSelectRow = (id: number) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    )
-  }
+  // Handle row selection change
+  const handleSelectionChange = useCallback((newSelectedIds: Set<number | string>) => {
+    setSelectedIds(newSelectedIds)
+  }, [])
 
   // Handle delete
   const handleDelete = async (id: number) => {
@@ -143,15 +126,16 @@ export function DistributionRequestsTable() {
 
   // Handle bulk delete
   const handleBulkDelete = async () => {
-    if (selectedIds.length === 0) {
+    const ids = Array.from(selectedIds).map(Number)
+    if (ids.length === 0) {
       toast.error('Select items to delete')
       return
     }
 
     try {
-      await bulkDelete(selectedIds)
-      toast.success(`${selectedIds.length} distribution request(s) deleted successfully`)
-      setSelectedIds([])
+      await bulkDelete(ids)
+      toast.success(`${ids.length} distribution request(s) deleted successfully`)
+      setSelectedIds(new Set())
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to delete'
       toast.error(message)
@@ -163,8 +147,8 @@ export function DistributionRequestsTable() {
     navigate({ to: `/distribution-requests/${id}` })
   }
 
-  const handleEdit = (id: number) => {
-    navigate({ to: `/distribution-requests/${id}/edit` })
+  const handleEdit = (item: DistributionRequest) => {
+    navigate({ to: `/distribution-requests/${item.id}/edit` })
   }
 
   // Clear error
@@ -174,14 +158,49 @@ export function DistributionRequestsTable() {
     }
   }, [error])
 
+  // Column definitions
+  const columns: DataTableColumn<DistributionRequest>[] = [
+    {
+      accessorKey: 'code',
+      header: 'Code',
+      cell: (row) => <span className="font-mono font-medium">{row.code}</span>,
+    },
+    {
+      accessorKey: 'date',
+      header: 'Tanggal',
+      cell: (row) => formatDate(row.date),
+    },
+    {
+      accessorKey: 'warehouse_source_name',
+      header: 'Sumber',
+    },
+    {
+      accessorKey: 'destination_display',
+      header: 'Tujuan',
+      cell: (row) => (
+        <span className="truncate max-w-[200px] block" title={row.destination_display || '-'}>
+          {row.destination_display || '-'}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'total',
+      header: 'Total',
+      className: 'text-right',
+      cell: (row) => formatCurrency(row.total),
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
+  ]
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Distribution Requests</h1>
-          <p className="text-muted-foreground">Kelola request distribusi barang</p>
-        </div>
+        <h1 className="text-2xl font-bold">Distribution Requests</h1>
         <Button onClick={() => navigate({ to: '/distribution-requests/new' })}>
           <Send className="h-4 w-4 mr-2" />
           New Distribution
@@ -226,207 +245,46 @@ export function DistributionRequestsTable() {
         </div>
       </div>
 
-      {/* Bulk Actions */}
-      {selectedIds.length > 0 && (
-        <div className="bg-muted rounded-lg border p-3 flex items-center justify-between">
-          <span className="text-sm">
-            {selectedIds.length} item(s) selected
-          </span>
-          <div className="flex gap-2">
-            <AlertDialog>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Selected</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Delete {selectedIds.length} distribution request(s)?
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleBulkDelete}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
-      )}
-
       {/* Table */}
-      <div className="rounded-md border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[40px]">
-                <Input
-                  type="checkbox"
-                  checked={selectedIds.length === items.length && items.length > 0}
-                  onChange={toggleSelectAll}
-                  className="h-4 w-4"
-                />
-              </TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead>Tanggal</TableHead>
-              <TableHead>Sumber</TableHead>
-              <TableHead>Tujuan</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-[120px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              // Loading skeleton
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell>
-                    <Skeleton className="h-4 w-4" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-24" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-20" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-40" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-24 ml-auto" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-5 w-16" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-8 w-full" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : items.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
-                  <div className="text-muted-foreground">
-                    <p className="text-lg font-medium">No data</p>
-                    <p className="text-sm">No distribution requests found</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <Input
-                      type="checkbox"
-                      checked={selectedIds.includes(item.id)}
-                      onChange={() => toggleSelectRow(item.id)}
-                      className="h-4 w-4"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-mono font-medium">{item.code}</span>
-                  </TableCell>
-                  <TableCell>{formatDate(item.date)}</TableCell>
-                  <TableCell>{item.warehouse_source_name || '-'}</TableCell>
-                  <TableCell>
-                    <span className="truncate max-w-[200px] block" title={item.destination_display || '-'}>
-                      {item.destination_display || '-'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(item.total)}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={item.status} />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleView(item.id)}
-                        title="View"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {item.can_edit && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(item.id)}
-                            title="Edit"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Delete this distribution request?
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(item.id)}>Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <DataTable
+        columns={columns}
+        data={items}
+        pagination={pagination}
+        isLoading={isLoading}
+        onPageChange={handlePageChange}
+        emptyMessage="No distribution requests found"
+        onRowClick={handleEdit}
+        enableRowSelection
+        selectedIds={selectedIds}
+        onSelectionChange={handleSelectionChange}
+        bulkActions={
+          selectedIds.size > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowBulkDeleteDialog(true)}
+            >
+              Delete {selectedIds.size} item(s)
+            </Button>
+          )
+        }
+      />
 
-      {/* Pagination */}
-      {pagination.total > 0 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {items.length} of {pagination.total} entries
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(pagination.current_page - 1)}
-              disabled={pagination.current_page <= 1}
-            >
-              Previous
-            </Button>
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, pagination.last_page) }, (_, i) => {
-                const page = pagination.current_page - 2 + i
-                if (page < 1 || page > pagination.last_page) return null
-                return (
-                  <Button
-                    key={page}
-                    variant={pagination.current_page === page ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handlePageChange(page)}
-                  >
-                    {page}
-                  </Button>
-                )
-              })}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(pagination.current_page + 1)}
-              disabled={pagination.current_page >= pagination.last_page}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Bulk Delete Dialog */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Selected</AlertDialogTitle>
+            <AlertDialogDescription>
+              Delete {selectedIds.size} distribution request(s)?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

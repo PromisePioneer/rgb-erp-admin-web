@@ -29,6 +29,7 @@ interface PatrolReportsState {
   fetchById: (sessionId: number) => Promise<void>
   fetchStats: () => Promise<void>
   fetchProjects: () => Promise<void>
+  bulkDelete: (ids: number[]) => Promise<void>
   setFilters: (filters: Partial<PatrolReportsFilters>) => void
   resetFilters: () => void
   clearError: () => void
@@ -124,6 +125,19 @@ export const usePatrolReportsStore = create<PatrolReportsState>((set, get) => ({
       set({ projects: response.data })
     } catch (error) {
       console.error('Failed to fetch projects:', error)
+    }
+  },
+
+  bulkDelete: async (ids: number[]) => {
+    set({ isLoading: true, error: null })
+    try {
+      await patrolReportsApi.bulkDelete(ids)
+      await get().fetchSessions()
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to delete patrol sessions'
+      set({ error: message, isLoading: false })
+      throw error
     }
   },
 

@@ -3,7 +3,7 @@
  * Includes approve/reject actions with confirmation dialogs
  */
 import { useEffect, useCallback, useState } from 'react'
-import { Check, X, FileText, Eye, FileSpreadsheet } from 'lucide-react'
+import { FileText, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -165,51 +165,6 @@ export function ApprovalsTable() {
         </span>
       ),
     },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: (row) => (
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleViewDetail(row)
-            }}
-            title="View Details"
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleAction(row, 'approve')
-            }}
-            disabled={isActing}
-          >
-            <Check className="h-4 w-4 mr-1" />
-            Approve
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleAction(row, 'reject')
-            }}
-            disabled={isActing}
-          >
-            <X className="h-4 w-4 mr-1" />
-            Reject
-          </Button>
-        </div>
-      ),
-    },
   ]
 
   return (
@@ -223,6 +178,7 @@ export function ApprovalsTable() {
         isLoading={isLoading}
         onPageChange={handlePageChange}
         emptyMessage="No pending approvals"
+        onRowClick={handleViewDetail}
       />
 
       {/* Confirmation Dialog */}

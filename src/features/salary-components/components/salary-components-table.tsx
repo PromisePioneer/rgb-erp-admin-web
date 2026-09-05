@@ -104,62 +104,55 @@ export function SalaryComponentsTable() {
 
   // Define columns
   const columns: DataTableColumn<SalaryComponent>[] = [
-    {
-      accessorKey: 'name',
-      header: 'Component Name',
-      cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-          className="font-medium text-primary hover:underline text-left cursor-pointer"
-        >
-          {row.name}
-        </button>
-      ),
-    },
-    {
-      accessorKey: 'type',
-      header: 'Type',
-      cell: (row) => (
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            row.type === 'earning'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}
-        >
-          {row.type === 'earning' ? 'Earning' : 'Deduction'}
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'value',
-      header: 'Value',
-      cell: (row) => (
-        <span className="font-mono font-medium">
-          {formatCurrency(row.value)}
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'status',
-      header: 'Status',
-      cell: (row) => (
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            row.status === 1
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}
-        >
-          {row.status === 1 ? 'Active' : 'Inactive'}
-        </span>
-      ),
-    },
-  ]
+      {
+        accessorKey: 'name',
+        header: 'Component Name',
+        cell: (row) => (
+          <span className="font-medium text-left">
+            {row.name}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'type',
+        header: 'Type',
+        cell: (row) => (
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              row.type === 'earning'
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}
+          >
+            {row.type === 'earning' ? 'Earning' : 'Deduction'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'value',
+        header: 'Value',
+        cell: (row) => (
+          <span className="font-mono font-medium">
+            {formatCurrency(row.value)}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: (row) => (
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              row.status === 1
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}
+          >
+            {row.status === 1 ? 'Active' : 'Inactive'}
+          </span>
+        ),
+      },
+    ]
 
   // Bulk actions
   const bulkActions = (
@@ -186,11 +179,6 @@ export function SalaryComponentsTable() {
         </Button>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama untuk mengedit data
-      </p>
-
       <DataTable
         columns={columns}
         data={items}
@@ -202,6 +190,7 @@ export function SalaryComponentsTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

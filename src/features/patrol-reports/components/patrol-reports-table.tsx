@@ -3,8 +3,19 @@
  * READ-ONLY - displays patrol session data with detail modal
  */
 import { useEffect, useCallback, useState } from 'react'
-import { Eye, CheckCircle, AlertCircle, XCircle, Clock } from 'lucide-react'
+import { CheckCircle, AlertCircle, XCircle, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import {
   Dialog,
@@ -26,9 +37,13 @@ export function PatrolReportsTable() {
     fetchById,
     selectedItem,
     filters,
+    bulkDelete,
   } = usePatrolReportsStore()
 
   const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Fetch sessions on mount and when filters change
   useEffect(() => {
@@ -52,6 +67,24 @@ export function PatrolReportsTable() {
   const handleViewDetail = async (session: PatrolSession) => {
     await fetchById(session.id)
     setShowDetailModal(true)
+  }
+
+  const handleEdit = handleViewDetail
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds).map(Number)
+    if (ids.length === 0) return
+    setIsDeleting(true)
+    try {
+      await bulkDelete(ids)
+      toast.success(`${ids.length} session(s) deleted`)
+      setSelectedIds(new Set())
+      setShowBulkDeleteDialog(false)
+    } catch {
+      toast.error('Delete failed')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   // Format date/time
@@ -160,23 +193,6 @@ export function PatrolReportsTable() {
         </span>
       ),
     },
-    {
-      id: 'actions',
-      header: '',
-      cell: (row) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleViewDetail(row)
-          }}
-        >
-          <Eye className="h-4 w-4 mr-1" />
-          Detail
-        </Button>
-      ),
-    },
   ]
 
   return (
@@ -222,6 +238,17 @@ export function PatrolReportsTable() {
         isLoading={isLoading}
         onPageChange={handlePageChange}
         emptyMessage="No patrol sessions found"
+        onRowClick={handleEdit}
+        enableRowSelection
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+        bulkActions={
+          selectedIds.size > 0 && (
+            <Button variant="destructive" size="sm" onClick={() => setShowBulkDeleteDialog(true)}>
+              Delete {selectedIds.size} item(s)
+            </Button>
+          )
+        }
       />
 
       {/* Detail Modal */}
@@ -353,6 +380,28 @@ export function PatrolReportsTable() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Hapus Massal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus {selectedIds.size} patrol session(s)? Tindakan tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowBulkDeleteDialog(false)}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Menghapus...' : 'Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

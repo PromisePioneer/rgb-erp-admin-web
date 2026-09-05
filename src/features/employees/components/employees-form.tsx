@@ -11,7 +11,7 @@ import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
 import {Skeleton} from '@/components/ui/skeleton'
 import {AsyncSelect, type SelectOption} from '@/components/async-select'
-import {positionsApi} from '@/features/positions/api/positions-api'
+import {rolesApi} from '@/features/roles'
 import {provincesApi} from '@/features/provinces/api/provinces-api'
 import {employeesApi} from '../api/employees-api'
 import {areasApi} from '@/features/areas/api/areas-api'
@@ -21,8 +21,8 @@ import {useEmployeeCode} from '@/features/employees'
 import {EmployeeCodeField} from '@/features/employees'
 import type {CreateEmployeePayload} from '@/features/employees'
 
-// Position names that REQUIRE client_id, area_id, pos_id
-const REQUIRED_PLACEMENT_POSITIONS = [
+// Role names that REQUIRE client_id, area_id, pos_id
+const REQUIRED_PLACEMENT_ROLES = [
     'Security Guard',
     'Chief',
     'Danru',
@@ -82,11 +82,11 @@ export function EmployeesForm() {
         position: string;
         notes: string;
     }>>([])
-    const [selectedPositionName, setSelectedPositionName] = useState<string | null>(null)
+    const [selectedRoleName, setSelectedRoleName] = useState<string | null>(null)
     const [photoPreview, setPhotoPreview] = useState<string | null>(null)
 
-    // Check if selected position requires placement fields
-    const isPlacementRequired = REQUIRED_PLACEMENT_POSITIONS.includes(selectedPositionName || '')
+    // Check if selected role requires placement fields
+    const isPlacementRequired = REQUIRED_PLACEMENT_ROLES.includes(selectedRoleName || '')
 
     // Employee code generation
     const {
@@ -106,7 +106,7 @@ export function EmployeesForm() {
     const form = useForm<CreateEmployeePayload>({
         defaultValues: {
             company_id: undefined,
-            position_id: undefined,
+            role_id: undefined,
             province_id: undefined,
             client_id: undefined,
             area_id: undefined,
@@ -163,7 +163,7 @@ export function EmployeesForm() {
         if (isEdit && selectedItem) {
             form.reset({
                 company_id: selectedItem.company_id ?? undefined,
-                position_id: selectedItem.position_id ?? undefined,
+                role_id: selectedItem.role_id ?? undefined,
                 province_id: selectedItem.province_id ?? undefined,
                 client_id: selectedItem.client_id ?? undefined,
                 area_id: selectedItem.area_id ?? undefined,
@@ -205,8 +205,8 @@ export function EmployeesForm() {
                 status: selectedItem.status ?? 1,
             })
 
-            // Set selected position name for conditional validation
-            setSelectedPositionName(selectedItem.position_name || null)
+            // Set selected role name for conditional validation
+            setSelectedRoleName(selectedItem.role_name || null)
 
             // Set photo preview if exists
             if (selectedItem.photo) {
@@ -414,9 +414,9 @@ export function EmployeesForm() {
         }
     }
 
-    // Load positions for dropdown
-    const loadPositions = async (search: string): Promise<SelectOption[]> => {
-        const response = await positionsApi.getSelectOptions({q: search})
+    // Load roles for dropdown
+    const loadRoles = async (search: string): Promise<SelectOption[]> => {
+        const response = await rolesApi.getSelectOptions({q: search})
         return response.data.map((item) => ({
             value: item.id,
             label: item.name,
@@ -782,32 +782,32 @@ export function EmployeesForm() {
                     <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Position</label>
+                            <label className="text-sm font-medium">Role</label>
                             <AsyncSelect
-                                value={form.watch('position_id') ?? null}
+                                value={form.watch('role_id') ?? null}
                                 onChange={async (value) => {
-                                    const positionId = value as number | null
-                                    form.setValue('position_id', positionId as number | null | undefined, {shouldValidate: true})
+                                    const roleId = value as number | null
+                                    form.setValue('role_id', roleId as number | null | undefined, {shouldValidate: true})
 
-                                    // Get position name from selected item or API
-                                    if (positionId) {
-                                        const positions = await loadPositions('')
-                                        const selectedPosition = positions.find(p => p.value === positionId)
-                                        const positionName = selectedPosition?.label || null
-                                        setSelectedPositionName(positionName)
+                                    // Get role name from selected item or API
+                                    if (roleId) {
+                                        const roles = await loadRoles('')
+                                        const selectedRole = roles.find(r => r.value === roleId)
+                                        const roleName = selectedRole?.label || null
+                                        setSelectedRoleName(roleName)
 
                                         // Reset placement fields if not required
-                                        if (!REQUIRED_PLACEMENT_POSITIONS.includes(positionName || '')) {
+                                        if (!REQUIRED_PLACEMENT_ROLES.includes(roleName || '')) {
                                             form.setValue('client_id', undefined)
                                             form.setValue('area_id', undefined)
                                             form.setValue('pos_id', undefined)
                                         }
                                     } else {
-                                        setSelectedPositionName(null)
+                                        setSelectedRoleName(null)
                                     }
                                 }}
-                                loadOptions={loadPositions}
-                                placeholder="Select position..."
+                                loadOptions={loadRoles}
+                                placeholder="Select role..."
                                 className="w-full"
                             />
                         </div>
@@ -816,7 +816,7 @@ export function EmployeesForm() {
                         <div className="space-y-2">
                             <label className="text-sm font-medium">
                                 Client (Placement) {isPlacementRequired && <span className="text-red-500">*</span>}
-                                {!isPlacementRequired && selectedPositionName && (
+                                {!isPlacementRequired && selectedRoleName && (
                                     <span
                                         className="text-muted-foreground font-normal ml-1">(Optional for Back Office)</span>
                                 )}

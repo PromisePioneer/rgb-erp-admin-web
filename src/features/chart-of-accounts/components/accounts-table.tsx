@@ -1,14 +1,17 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { ChevronRight, ChevronDown, RefreshCw, Plus, Pencil, Trash2, RotateCcw } from 'lucide-react'
+import { ChevronRight, ChevronDown, RefreshCw, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { AsyncSelect } from '@/components/async-select'
 import { apiClient } from '@/lib/api-client'
 import { useAccountsStore, type Account } from '../store/accounts-store'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 
 const TYPE_COLORS: Record<string, string> = {
   asset: 'text-blue-600',
@@ -48,19 +51,34 @@ interface AccountRowProps {
   onEdit: (account: Account) => void
   onDelete: (id: number) => void
   onRestore: (id: number) => void
+  selectedIds: Set<number>
+  onToggleSelect: (id: number) => void
 }
 
-function AccountRow({ account, level, expanded, onToggle, hasChildren, onEdit, onDelete, onRestore }: AccountRowProps) {
+function AccountRow({ account, level, expanded, onToggle, hasChildren, onEdit, onDelete, onRestore, selectedIds, onToggleSelect }: AccountRowProps) {
   const normalBalance = account.normal_balance || 'debit'
   const isDeleted = !!account.deleted_at
+  const isSelected = selectedIds.has(account.id)
 
   return (
     <>
-      <tr className={`border-b transition-colors ${isDeleted ? 'opacity-50' : 'hover:bg-muted/50'}`}>
+      <tr className={`border-b transition-colors ${isDeleted ? 'opacity-50' : 'hover:bg-muted/50'} ${!isDeleted ? 'cursor-pointer' : ''}`}
+          onClick={(e) => {
+            // Don't trigger edit if clicking checkbox
+            if ((e.target as HTMLElement).closest('input')) return
+            !isDeleted && onEdit(account)
+          }}>
+        <td className="px-4 py-3 w-[40px]">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(account.id)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </td>
         <td className="px-4 py-3">
           <div className="flex items-center" style={{ paddingLeft: level * 24 }}>
             <button
-              onClick={() => hasChildren && onToggle(account.id)}
+              onClick={(e) => { e.stopPropagation(); hasChildren && onToggle(account.id) }}
               className="p-1 hover:bg-muted rounded mr-2"
               disabled={!hasChildren}
             >
@@ -97,37 +115,25 @@ function AccountRow({ account, level, expanded, onToggle, hasChildren, onEdit, o
           </span>
         </td>
         <td className="px-4 py-3 text-center">
-          <div className="flex justify-center gap-1">
-            {isDeleted ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onRestore(account.id)}
-                title="Restore"
-              >
-                <RotateCcw className="h-4 w-4 text-green-600" />
-              </Button>
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEdit(account)}
-                  title="Edit"
-                >
-                  <Pencil className="h-4 w-4 text-blue-600" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDelete(account.id)}
-                  title="Delete"
-                >
-                  <Trash2 className="h-4 w-4 text-red-600" />
-                </Button>
-              </>
-            )}
-          </div>
+          {isDeleted ? (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onRestore(account.id) }}
+              className="inline-flex items-center justify-center px-2 py-1 rounded hover:bg-muted transition-colors cursor-pointer text-xs"
+              title="Restore"
+            >
+              Restore
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDelete(account.id) }}
+              className="inline-flex items-center justify-center px-2 py-1 rounded hover:bg-muted transition-colors cursor-pointer text-xs text-muted-foreground hover:text-red-600"
+              title="Delete"
+            >
+              Delete
+            </button>
+          )}
         </td>
       </tr>
       {expanded && account.children?.map(child => (
@@ -141,6 +147,8 @@ function AccountRow({ account, level, expanded, onToggle, hasChildren, onEdit, o
           onEdit={onEdit}
           onDelete={onDelete}
           onRestore={onRestore}
+          selectedIds={selectedIds}
+          onToggleSelect={onToggleSelect}
         />
       ))}
     </>
@@ -330,52 +338,17 @@ function AccountFormModal({ open, onOpenChange, editAccount }: AccountFormModalP
   )
 }
 
-// Delete Confirmation Modal
-interface DeleteModalProps {
-  open: boolean
-  onClose: () => void
-  account: Account | null
-  onConfirm: () => Promise<void>
-  isDeleting: boolean
-}
-
-function DeleteModal({ open, onClose, account, onConfirm, isDeleting }: DeleteModalProps) {
-  if (!account) return null
-
-  const childCount = account.children?.length || 0
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Hapus Akun</DialogTitle>
-          <DialogDescription>
-            Hapus <strong>{account.code} - {account.name}</strong>?
-            {childCount > 0 && (
-              <p className="mt-2 text-orange-600 font-medium">
-                ⚠️ {childCount} akun anak juga akan dihapus (soft delete)
-              </p>
-            )}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Batal</Button>
-          <Button variant="destructive" onClick={onConfirm} disabled={isDeleting}>
-            {isDeleting ? 'Menghapus...' : 'Hapus'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 // Main Table
 export function AccountsTable() {
-  const { items, isLoading, isSubmitting, fetchAccounts, softDelete, restore, setFilters, filters } = useAccountsStore()
+  const { items, isLoading, isSubmitting, fetchAccounts, softDelete, restore, setFilters, filters, bulkDelete } = useAccountsStore()
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [formOpen, setFormOpen] = useState(false)
   const [editAccount, setEditAccount] = useState<Account | null>(null)
   const [deleteAccount, setDeleteAccount] = useState<Account | null>(null)
+  const [restoreAccount, setRestoreAccount] = useState<Account | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
 
   useEffect(() => {
     fetchAccounts({ ...filters, with_trashed: true })
@@ -389,22 +362,59 @@ export function AccountsTable() {
     })
   }
 
+  const handleToggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set<number>()
+      const collectIds = (accounts: Account[]) => {
+        accounts.forEach(acc => {
+          if (!acc.deleted_at) allIds.add(acc.id)
+          if (acc.children) collectIds(acc.children)
+        })
+      }
+      collectIds(items)
+      setSelectedIds(allIds)
+    } else {
+      setSelectedIds(new Set())
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    setIsBulkDeleting(true)
+    try {
+      await bulkDelete(Array.from(selectedIds))
+      setSelectedIds(new Set())
+      setShowBulkDeleteDialog(false)
+      toast.success(`${selectedIds.size} akun dihapus`)
+      fetchAccounts({ ...filters, with_trashed: true })
+    } catch (e) {
+      toast.error('Gagal menghapus')
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
+
   const handleEdit = (acc: Account) => {
     setEditAccount(acc)
     setFormOpen(true)
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => {
     const acc = findAccount(items, id)
     setDeleteAccount(acc)
   }
 
-  const handleRestore = async (id: number) => {
-    try {
-      await restore(id)
-    } catch (e) {
-      console.error('Restore failed:', e)
-    }
+  const handleRestore = (id: number) => {
+    const acc = findAccount(items, id)
+    setRestoreAccount(acc)
   }
 
   const handleFormClose = (open: boolean) => {
@@ -422,6 +432,16 @@ export function AccountsTable() {
     }
   }
 
+  const handleRestoreConfirm = async () => {
+    if (!restoreAccount) return
+    try {
+      await restore(restoreAccount.id)
+      setRestoreAccount(null)
+    } catch (e) {
+      console.error('Restore failed:', e)
+    }
+  }
+
   const findAccount = (accounts: Account[], id: number): Account | null => {
     for (const acc of accounts) {
       if (acc.id === id) return acc
@@ -433,8 +453,33 @@ export function AccountsTable() {
     return null
   }
 
+  const countActiveAccounts = (accounts: Account[]): number => {
+    let count = 0
+    accounts.forEach(acc => {
+      if (!acc.deleted_at) count++
+      if (acc.children) count = count + countActiveAccounts(acc.children)
+    })
+    return count
+  }
+
+  const isAllSelected = selectedIds.size > 0 && selectedIds.size === countActiveAccounts(items)
+
   return (
     <div className="space-y-4">
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 rounded-md border">
+          <span className="text-sm font-medium">{selectedIds.size} dipilih</span>
+          <div className="flex-1" />
+          <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
+            Batal
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => setShowBulkDeleteDialog(true)}>
+            Hapus {selectedIds.size} Item
+          </Button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Chart of Accounts</h2>
         <div className="flex gap-2">
@@ -469,24 +514,30 @@ export function AccountsTable() {
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
+              <th className="px-4 py-3 w-[40px]">
+                <Checkbox
+                  checked={isAllSelected}
+                  onCheckedChange={handleSelectAll}
+                />
+              </th>
               <th className="px-4 py-3 text-left font-medium">Kode</th>
               <th className="px-4 py-3 text-left font-medium">Nama Akun</th>
               <th className="px-4 py-3 text-left font-medium">Tipe</th>
               <th className="px-4 py-3 text-center font-medium">Status</th>
               <th className="px-4 py-3 text-center font-medium">Normal</th>
-              <th className="px-4 py-3 text-center font-medium">Aksi</th>
+              <th className="px-4 py-3 text-center font-medium w-[80px]">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                   Memuat...
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                   Tidak ada akun
                 </td>
               </tr>
@@ -502,6 +553,8 @@ export function AccountsTable() {
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   onRestore={handleRestore}
+                  selectedIds={selectedIds}
+                  onToggleSelect={handleToggleSelect}
                 />
               ))
             )}
@@ -515,13 +568,75 @@ export function AccountsTable() {
         editAccount={editAccount}
       />
 
-      <DeleteModal
-        open={!!deleteAccount}
-        onClose={() => setDeleteAccount(null)}
-        account={deleteAccount}
-        onConfirm={handleDeleteConfirm}
-        isDeleting={isSubmitting}
-      />
+      {/* Bulk Delete Dialog */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Akun</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hapus {selectedIds.size} akun yang dipilih?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowBulkDeleteDialog(false)}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isBulkDeleting ? 'Menghapus...' : 'Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deleteAccount} onOpenChange={(open) => !open && setDeleteAccount(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Akun</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteAccount && (
+                <>
+                  Hapus <strong>{deleteAccount.code} - {deleteAccount.name}</strong>?
+                  {(deleteAccount.children?.length || 0) > 0 && (
+                    <p className="mt-2 text-orange-600 font-medium">
+                      ⚠️ {(deleteAccount.children?.length || 0)} akun anak juga akan dihapus (soft delete)
+                    </p>
+                  )}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteAccount(null)}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Restore Dialog */}
+      <AlertDialog open={!!restoreAccount} onOpenChange={(open) => !open && setRestoreAccount(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore Akun</AlertDialogTitle>
+            <AlertDialogDescription>
+              {restoreAccount && (
+                <>Kembalikan <strong>{restoreAccount.code} - {restoreAccount.name}</strong>?</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setRestoreAccount(null)}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRestoreConfirm}>Restore</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

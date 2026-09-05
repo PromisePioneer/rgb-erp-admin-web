@@ -32,6 +32,7 @@ interface InventoryState {
   moveItem: (payload: MoveItemPayload) => Promise<void>
   returnItem: (payload: ReturnItemPayload) => Promise<void>
   updateStatus: (payload: UpdateStatusPayload) => Promise<void>
+  bulkDelete: (ids: number[]) => Promise<void>
   fetchSummary: (productId?: number) => Promise<void>
   setFilters: (filters: Partial<InventoryFilters>) => void
   resetFilters: () => void
@@ -139,6 +140,20 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       await get().fetchItems()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update status'
+      set({ error: message, isSubmitting: false })
+      throw error
+    }
+  },
+
+  bulkDelete: async (ids: number[]) => {
+    set({ isSubmitting: true, error: null })
+    try {
+      await inventoryApi.bulkDelete(ids)
+      set({ isSubmitting: false })
+      // Refresh list
+      await get().fetchItems()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete items'
       set({ error: message, isSubmitting: false })
       throw error
     }

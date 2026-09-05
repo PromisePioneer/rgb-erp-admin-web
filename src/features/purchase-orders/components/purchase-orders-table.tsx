@@ -3,7 +3,7 @@
  * Using standardized DataTable
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Trash2, Send } from 'lucide-react'
+import { Plus, Trash2, Send, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -110,7 +110,7 @@ export function PurchaseOrdersTable() {
   }
 
   // Define columns
-  const columns: DataTableColumn<PurchaseOrder>[] = [
+  const baseColumns: DataTableColumn<PurchaseOrder>[] = [
     {
       accessorKey: 'date',
       header: 'Date',
@@ -128,16 +128,9 @@ export function PurchaseOrdersTable() {
       accessorKey: 'code',
       header: 'Code',
       cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-          className="font-mono text-sm font-medium text-primary hover:underline text-left cursor-pointer"
-        >
+        <span className="font-mono text-sm font-medium text-primary">
           {row.code}
-        </button>
+        </span>
       ),
     },
     {
@@ -198,42 +191,9 @@ export function PurchaseOrdersTable() {
         </span>
       ),
     },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: (row) => (
-        <div className="flex gap-1">
-          {row.can_submit && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleSubmit(row)
-              }}
-              disabled={isSubmitting || submittingId === row.id}
-              className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-            >
-              <Send className="h-4 w-4 mr-1"/>
-              {submittingId === row.id ? 'Submitting...' : 'Submit'}
-            </Button>
-          )}
-          {row.can_edit && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleEdit(row)
-              }}
-            >
-              Edit
-            </Button>
-          )}
-        </div>
-      ),
-    },
   ]
+
+  const columns = baseColumns
 
   // Bulk actions
   const bulkActions = (
@@ -260,11 +220,6 @@ export function PurchaseOrdersTable() {
         </Button>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada tombol edit untuk mengedit data
-      </p>
-
       <DataTable
         columns={columns}
         data={items}
@@ -276,6 +231,7 @@ export function PurchaseOrdersTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

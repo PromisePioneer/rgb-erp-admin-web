@@ -345,16 +345,9 @@ export function ProductsTable() {
             header: 'Name',
             cell: (row) => (
                 <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            handleEdit(row)
-                        }}
-                        className="font-medium text-primary hover:underline text-left cursor-pointer"
-                    >
+                    <span className="font-medium text-left">
                         {row.name}
-                    </button>
+                    </span>
                 </div>
             ),
         },
@@ -419,6 +412,8 @@ export function ProductsTable() {
         },
     ]
 
+    const columnsWithActions = columns
+
     // Bulk actions
     const bulkActions = (
         <div className="flex gap-2">
@@ -444,13 +439,8 @@ export function ProductsTable() {
                 </Button>
             </div>
 
-            {/* Click to edit hint */}
-            <p className="text-xs text-muted-foreground">
-                Klik pada nama untuk mengedit data
-            </p>
-
             <DataTable
-                columns={columns}
+                columns={columnsWithActions}
                 data={items}
                 pagination={pagination}
                 isLoading={isLoading}
@@ -460,6 +450,7 @@ export function ProductsTable() {
                 selectedIds={selectedIds}
                 onSelectionChange={setSelectedIds}
                 bulkActions={bulkActions}
+                onRowClick={handleEdit}
             />
 
             {/* Form Modal */}

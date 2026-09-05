@@ -6,11 +6,13 @@ import { apiClient } from '@/lib/api-client'
 import type {
   ApiResponse,
   Role,
+  RoleOption,
   RolesFilters,
   CreateRolePayload,
   UpdateRolePayload,
 } from '../types/roles.types'
 import type { RolePrivilegesResponse, UpdatePrivilegesPayload } from '../types/roles-privileges.types'
+import type { RoleMobilePrivilegesResponse, UpdateMobilePrivilegesPayload } from '../types/role-mobile-privileges.types'
 
 export const rolesApi = {
   /**
@@ -111,6 +113,41 @@ export const rolesApi = {
     const { data } = await apiClient.put<{ success: boolean; data: { message: string } }>(
       `/admin/roles/${roleId}/privileges`,
       payload
+    )
+    return data
+  },
+
+  /**
+   * Get mobile privileges for a role
+   * GET /admin/roles/:id/mobile-privileges
+   */
+  getMobilePrivileges: async (roleId: number) => {
+    const { data } = await apiClient.get<{ success: boolean; data: RoleMobilePrivilegesResponse }>(
+      `/admin/roles/${roleId}/mobile-privileges`
+    )
+    return data
+  },
+
+  /**
+   * Update mobile privileges for a role
+   * PUT /admin/roles/:id/mobile-privileges
+   */
+  updateMobilePrivileges: async (roleId: number, payload: UpdateMobilePrivilegesPayload) => {
+    const { data } = await apiClient.put<{ success: boolean; data: { message: string } }>(
+      `/admin/roles/${roleId}/mobile-privileges`,
+      payload
+    )
+    return data
+  },
+
+  /**
+   * Get select options for dropdown
+   * GET /admin/roles/select-options
+   */
+  getSelectOptions: async (params?: { q?: string; selected?: number }) => {
+    const { data } = await apiClient.get<ApiResponse<RoleOption[]>>(
+      '/admin/roles/select-options',
+      { params }
     )
     return data
   },

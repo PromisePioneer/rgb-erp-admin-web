@@ -5,11 +5,22 @@ import {Button} from '@/components/ui/button'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
 import {Badge} from '@/components/ui/badge'
 import {Input} from '@/components/ui/input'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {useFixedAssetsStore, type FixedAsset} from '@/features/fixed-assets'
 import {FixedAssetFormModal} from '@/features/fixed-assets'
 import {DisposeAssetModal} from './dispose-asset-modal'
 import {DepreciationHistoryModal} from '@/features/fixed-assets'
 import {toast} from 'sonner'
+import {DataTable, type DataTableColumn} from '@/components/ui/data-table'
 
 function formatCurrency(v: number) {
     return new Intl.NumberFormat('id-ID', {
@@ -33,9 +44,12 @@ export function FixedAssetsTable() {
         isLoading,
         fetchAssets,
         deleteAsset,
+        bulkDelete,
         setFilters,
         filters,
-        calculateDepreciationBatch
+        calculateDepreciationBatch,
+        pagination,
+        isSubmitting,
     } = useFixedAssetsStore()
 
     const [search, setSearch] = useState('')
@@ -45,6 +59,9 @@ export function FixedAssetsTable() {
     const [historyModalOpen, setHistoryModalOpen] = useState(false)
     const [batchResult, setBatchResult] = useState<any>(null)
     const [isCalculatingDepreciation, setIsCalculatingDepreciation] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
+    const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     useEffect(() => {
         fetchAssets()
@@ -127,15 +144,20 @@ export function FixedAssetsTable() {
         fetchAssets()
     }
 
-    // Filter assets by search
-    const filteredAssets = search
-        ? assets.filter(
-            a =>
-                a.name.toLowerCase().includes(search.toLowerCase()) ||
-                a.code.toLowerCase().includes(search.toLowerCase()) ||
-                a.category.toLowerCase().includes(search.toLowerCase())
-        )
-        : assets
+    const handleBulkDelete = async () => {
+        const ids = Array.from(selectedIds).map(Number)
+        if (ids.length === 0) return
+        setIsDeleting(true)
+        try {
+            await bulkDelete(ids)
+            setSelectedIds(new Set())
+            setShowBulkDeleteDialog(false)
+        } catch {
+            // Error handled by store
+        } finally {
+            setIsDeleting(false)
+        }
+    }
 
     // Calculate accumulated depreciation from acquisition_date to now
     const calculateAccumulatedDepreciation = (asset: FixedAsset) => {
@@ -173,13 +195,68 @@ export function FixedAssetsTable() {
 
     const getAssetDisplayDepreciation = (asset: FixedAsset) => calculateAccumulatedDepreciation(asset)
     const getAssetDisplayBookValue = (asset: FixedAsset) => calculateBookValue(asset);
+
+    // Filter assets by search
+    const filteredAssets = search
+        ? assets.filter(
+            a =>
+                a.name.toLowerCase().includes(search.toLowerCase()) ||
+                a.code.toLowerCase().includes(search.toLowerCase()) ||
+                a.category.toLowerCase().includes(search.toLowerCase())
+        )
+        : assets
+
+    // Column definitions
+    const columns: DataTableColumn<FixedAsset>[] = [
+        {
+            accessorKey: 'code',
+            header: 'Kode',
+            className: 'font-mono text-xs',
+        },
+        {
+            accessorKey: 'name',
+            header: 'Nama Aset',
+            className: 'font-medium',
+        },
+        {
+            accessorKey: 'category',
+            header: 'Kategori',
+        },
+        {
+            accessorKey: 'acquisition_date',
+            header: 'Tgl Perolehan',
+            cell: (row) => formatDate(row.acquisition_date),
+        },
+        {
+            accessorKey: 'acquisition_cost',
+            header: 'Harga Perolehan',
+            className: 'text-right font-mono',
+            cell: (row) => formatCurrency(row.acquisition_cost),
+        },
+        {
+            header: 'Akumulasi Penyusutan',
+            className: 'text-right font-mono text-orange-600',
+            cell: (row) => `(${formatCurrency(getAssetDisplayDepreciation(row))})`,
+        },
+        {
+            header: 'Nilai Buku',
+            className: 'text-right font-mono font-medium text-green-600',
+            cell: (row) => formatCurrency(getAssetDisplayBookValue(row)),
+        },
+        {
+            accessorKey: 'status',
+            header: 'Status',
+            className: 'text-center',
+            cell: (row) => getStatusBadge(row.status),
+        },
+    ]
+
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-xl font-bold">Aktiva Tetap</h2>
-                    <p className="text-sm text-muted-foreground">Fixed assets & depreciation</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => fetchAssets()} disabled={isLoading}>
@@ -240,102 +317,50 @@ export function FixedAssetsTable() {
             </div>
 
             {/* Table */}
-            <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                    <thead className="bg-muted/50">
-                    <tr>
-                        <th className="px-4 py-3 text-left font-medium">Kode</th>
-                        <th className="px-4 py-3 text-left font-medium">Nama Aset</th>
-                        <th className="px-4 py-3 text-left font-medium">Kategori</th>
-                        <th className="px-4 py-3 text-left font-medium">Tgl Perolehan</th>
-                        <th className="px-4 py-3 text-right font-medium">Harga Perolehan</th>
-                        <th className="px-4 py-3 text-right font-medium">Akumulasi Penyusutan</th>
-                        <th className="px-4 py-3 text-right font-medium">Nilai Buku</th>
-                        <th className="px-4 py-3 text-center font-medium">Status</th>
-                        <th className="px-4 py-3 text-center font-medium">Aksi</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {isLoading ? (
-                        <tr>
-                            <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
-                                Memuat...
-                            </td>
-                        </tr>
-                    ) : filteredAssets.length === 0 ? (
-                        <tr>
-                            <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
-                                Tidak ada data aktiva tetap
-                            </td>
-                        </tr>
-                    ) : (
-                        filteredAssets.map(asset => {
-                            const displayAccumulated = getAssetDisplayDepreciation(asset)
-                            const displayBookValue = getAssetDisplayBookValue(asset)
-                            return (
-                                <tr key={asset.id} className="border-b hover:bg-muted/50">
-                                    <td className="px-4 py-3 font-mono text-xs">{asset.code}</td>
-                                    <td className="px-4 py-3 font-medium">{asset.name}</td>
-                                    <td className="px-4 py-3">{asset.category}</td>
-                                    <td className="px-4 py-3">{formatDate(asset.acquisition_date)}</td>
-                                    <td className="px-4 py-3 text-right font-mono">{formatCurrency(asset.acquisition_cost)}</td>
-                                    <td className="px-4 py-3 text-right font-mono text-orange-600">
-                                        ({formatCurrency(displayAccumulated)})
-                                    </td>
-                                    <td className="px-4 py-3 text-right font-mono font-medium text-green-600">
-                                        {formatCurrency(displayBookValue)}
-                                    </td>
-                                    <td className="px-4 py-3 text-center">{getStatusBadge(asset.status)}</td>
-                                    <td className="px-4 py-3 text-center">
-                                        <div className="flex items-center justify-center gap-1">
-                                            {asset.status === 'active' && (
-                                                <>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleViewHistory(asset)}
-                                                        title="Riwayat Penyusutan"
-                                                        className="text-blue-600 hover:text-blue-700"
-                                                    >
-                                                        <History className="h-4 w-4"/>
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleEdit(asset)}
-                                                        title="Edit"
-                                                    >
-                                                        <Pencil className="h-4 w-4"/>
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleDispose(asset)}
-                                                        title="Lepaskan"
-                                                        className="text-orange-600 hover:text-orange-700"
-                                                    >
-                                                        <TrendingDown className="h-4 w-4"/>
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleDelete(asset)}
-                                                        title="Hapus"
-                                                        className="text-red-600 hover:text-red-700"
-                                                    >
-                                                        <Trash2 className="h-4 w-4"/>
-                                                    </Button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            )
-                        })
-                    )}
-                    </tbody>
-                </table>
-            </div>
+            <DataTable
+                columns={columns}
+                data={filteredAssets}
+                pagination={pagination}
+                isLoading={isLoading}
+                onPageChange={(page) => fetchAssets({ page })}
+                emptyMessage="Tidak ada data aktiva tetap"
+                onRowClick={handleEdit}
+                enableRowSelection
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+                bulkActions={
+                    selectedIds.size > 0 && (
+                        <Button variant="destructive" size="sm" onClick={() => setShowBulkDeleteDialog(true)}>
+                            Hapus {selectedIds.size} item(s)
+                        </Button>
+                    )
+                }
+            />
+
+            {/* Additional Actions for Active Assets */}
+            {filteredAssets.some(a => a.status === 'active') && (
+                <div className="border rounded-lg p-4 bg-muted/20">
+                    <p className="text-sm font-medium mb-2">Aksi Tambahan:</p>
+                    <div className="flex gap-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <History className="h-4 w-4"/>
+                            <span>Riwayat Penyusutan - lihat detail penyusutan per bulan</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <TrendingDown className="h-4 w-4"/>
+                            <span>Lepaskan - untuk aset yang dihapus dari penggunaan</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Pencil className="h-4 w-4"/>
+                            <span>Edit - klik ikon pensil pada baris untuk mengubah</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Trash2 className="h-4 w-4"/>
+                            <span>Hapus - hapus aset permanen</span>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Depreciation Info */}
             <div className="border rounded-lg p-4 bg-muted/20">
@@ -445,6 +470,28 @@ export function FixedAssetsTable() {
                     asset={selectedAsset}
                 />
             )}
+
+            {/* Bulk Delete Confirmation */}
+            <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Konfirmasi Hapus Massal</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apakah Anda yakin ingin menghapus {selectedIds.size} aktiva tetap? Tindakan tidak dapat dibatalkan.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setShowBulkDeleteDialog(false)}>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleBulkDelete}
+                            disabled={isDeleting || isSubmitting}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {isDeleting ? 'Menghapus...' : 'Hapus'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

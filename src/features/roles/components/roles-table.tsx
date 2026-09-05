@@ -3,8 +3,7 @@
  * Using standardized DataTable with row selection and modal form
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Trash2, Shield } from 'lucide-react'
-import { useNavigate } from '@tanstack/react-router'
+import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -23,7 +22,6 @@ import { RolesFilters } from './roles-filters'
 import type { Role } from '../types/roles.types'
 
 export function RolesTable() {
-  const navigate = useNavigate()
   const {
     items,
     isLoading,
@@ -119,16 +117,7 @@ export function RolesTable() {
       accessorKey: 'name',
       header: 'Name',
       cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-          className="font-medium text-primary hover:underline text-left cursor-pointer"
-        >
-          {row.name}
-        </button>
+        <span className="font-medium text-left">{row.name}</span>
       ),
     },
     {
@@ -149,24 +138,9 @@ export function RolesTable() {
       header: 'Status',
       cell: (row) => getStatusBadge(row.status),
     },
-    {
-      header: 'Actions',
-      cell: (row: Role) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            navigate({ to: '/roles/$id/privileges', params: { id: row.id.toString() } })
-          }}
-          className="text-muted-foreground hover:text-primary h-8 px-2"
-        >
-          <Shield className="h-4 w-4 mr-1" />
-          Privileges
-        </Button>
-      ),
-    },
   ]
+
+  // Columns without action column
 
   // Bulk actions
   const bulkActions = (
@@ -193,11 +167,6 @@ export function RolesTable() {
         </Button>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama untuk mengedit data
-      </p>
-
       <DataTable
         columns={columns}
         data={items}
@@ -209,6 +178,7 @@ export function RolesTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

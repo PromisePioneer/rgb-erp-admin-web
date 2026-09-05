@@ -16,7 +16,6 @@ interface ApprovalFlowsState {
   selectedFlow: ApprovalFlow | null
   usersOptions: SelectOption[]
   rolesOptions: SelectOption[]
-  positionsOptions: SelectOption[]
   isLoading: boolean
   isSubmitting: boolean
   error: string | null
@@ -26,7 +25,6 @@ interface ApprovalFlowsState {
   fetchByType: (type: string) => Promise<void>
   fetchUsersOptions: () => Promise<void>
   fetchRolesOptions: () => Promise<void>
-  fetchPositionsOptions: () => Promise<void>
   updateFlow: (type: string, payload: UpdateApprovalFlowPayload) => Promise<void>
   clearError: () => void
 }
@@ -37,7 +35,6 @@ export const useApprovalFlowsStore = create<ApprovalFlowsState>((set, get) => ({
   selectedFlow: null,
   usersOptions: [],
   rolesOptions: [],
-  positionsOptions: [],
   isLoading: false,
   isSubmitting: false,
   error: null,
@@ -90,15 +87,6 @@ export const useApprovalFlowsStore = create<ApprovalFlowsState>((set, get) => ({
       set({ rolesOptions: response.data })
     } catch (error) {
       console.error('Failed to fetch roles options:', error)
-    }
-  },
-
-  fetchPositionsOptions: async () => {
-    try {
-      const response = await approvalFlowsApi.getPositionsOptions()
-      set({ positionsOptions: response.data })
-    } catch (error) {
-      console.error('Failed to fetch positions options:', error)
     }
   },
 

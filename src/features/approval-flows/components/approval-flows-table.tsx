@@ -4,7 +4,6 @@
  */
 import { useEffect, useState } from 'react'
 import { Settings2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { useApprovalFlowsStore } from '../store/approval-flows-store'
 import { ApprovalFlowsFormModal } from './approval-flows-form-modal'
@@ -100,32 +99,10 @@ export function ApprovalFlowsTable() {
         </div>
       ),
     },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: (row) => (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-        >
-          <Settings2 className="h-4 w-4 mr-1" />
-          Edit
-        </Button>
-      ),
-    },
   ]
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Settings2 className="h-4 w-4" />
-        <span>Configure approval workflows for different request types</span>
-      </div>
-
       <DataTable
         columns={columns}
         data={items}
@@ -133,6 +110,7 @@ export function ApprovalFlowsTable() {
         isLoading={isLoading}
         onPageChange={handlePageChange}
         emptyMessage="No approval flows configured"
+        onRowClick={handleEdit}
       />
 
       {showModal && editingFlow && (

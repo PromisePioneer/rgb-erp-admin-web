@@ -83,6 +83,11 @@ export function BankAccountsTable() {
     setShowFormModal(true)
   }
 
+  const handleEdit = (item: BankAccount) => {
+    setEditItem(item)
+    setShowFormModal(true)
+  }
+
   // Define columns
   const columns: DataTableColumn<BankAccount>[] = [
     {
@@ -158,11 +163,12 @@ export function BankAccountsTable() {
         pagination={pagination}
         isLoading={isLoading}
         onPageChange={handlePageChange}
-        emptyMessage="No bank accounts found"
+        emptyMessage="No bank accounts found."
         enableRowSelection
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Form Modal */}

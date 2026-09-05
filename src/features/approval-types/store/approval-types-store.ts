@@ -7,7 +7,6 @@ import type {
   ApprovalType,
   ApprovalTypeDetail,
   ApprovalTypePayload,
-  PositionOption,
   RoleOption,
   EmployeeOption,
 } from '../types/approval-types.types'
@@ -19,7 +18,6 @@ interface ApprovalTypesState {
   selectedType: ApprovalTypeDetail | null
 
   // Options for dropdowns
-  positionsOptions: PositionOption[]
   rolesOptions: RoleOption[]
   employeesOptions: EmployeeOption[]
 
@@ -33,9 +31,9 @@ interface ApprovalTypesState {
   fetchTypeById: (id: number) => Promise<void>
   saveType: (payload: ApprovalTypePayload, id?: number) => Promise<void>
   deleteType: (id: number) => Promise<void>
+  bulkDelete: (ids: number[]) => Promise<void>
 
   // Actions - Options
-  fetchPositionsOptions: () => Promise<void>
   fetchRolesOptions: () => Promise<void>
   fetchEmployeesOptions: () => Promise<void>
 
@@ -48,7 +46,6 @@ export const useApprovalTypesStore = create<ApprovalTypesState>((set, get) => ({
   // Initial state
   items: [],
   selectedType: null,
-  positionsOptions: [],
   rolesOptions: [],
   employeesOptions: [],
   isLoading: false,
@@ -108,16 +105,20 @@ export const useApprovalTypesStore = create<ApprovalTypesState>((set, get) => ({
     }
   },
 
-  // === Options Actions ===
-  fetchPositionsOptions: async () => {
+  bulkDelete: async (ids: number[]) => {
+    set({ isSubmitting: true, error: null })
     try {
-      const response = await approvalTypesApi.getPositionsOptions()
-      set({ positionsOptions: response.data })
-    } catch {
-      set({ positionsOptions: [] })
+      await approvalTypesApi.bulkDelete(ids)
+      set({ isSubmitting: false })
+      await get().fetchTypes()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete approval types'
+      set({ error: message, isSubmitting: false })
+      throw error
     }
   },
 
+  // === Options Actions ===
   fetchRolesOptions: async () => {
     try {
       const response = await approvalTypesApi.getRolesOptions()

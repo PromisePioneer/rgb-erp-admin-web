@@ -70,4 +70,16 @@ export const payrollApi = {
     )
     return data
   },
+
+  /**
+   * Bulk delete payroll records
+   * POST /api/admin/payroll/bulk-delete
+   */
+  bulkDelete: async (ids: number[]) => {
+    const { data } = await apiClient.post<ApiResponse<{ deleted: number }>>(
+      '/admin/payroll/bulk-delete',
+      { ids }
+    )
+    return data
+  },
 }

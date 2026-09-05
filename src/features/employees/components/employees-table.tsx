@@ -3,7 +3,7 @@
  * Using standardized DataTable with row selection
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Trash2, UserPlus, CreditCard, Upload } from 'lucide-react'
+import { Trash2, UserPlus, Upload } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
@@ -42,10 +42,10 @@ export function EmployeesTable() {
   // Single source of truth for fetch - debounced, primitive dependencies
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchEmployees({ search: filters.search, company_id: filters.company_id, page: 1, per_page: 15 })
+      fetchEmployees({ search: filters.search, page: 1, per_page: 15 })
     }, 300)
     return () => clearTimeout(timer)
-  }, [filters.search, filters.company_id])
+  }, [filters.search])
 
   // Reset selection when data changes
   useEffect(() => {
@@ -62,8 +62,8 @@ export function EmployeesTable() {
 
   const handlePageChange = useCallback((newPage: number) => {
     if (newPage < 1 || newPage > pagination.last_page) return
-    fetchEmployees({ search: filters.search, company_id: filters.company_id, page: newPage, per_page: 15 })
-  }, [fetchEmployees, filters.search, filters.company_id, pagination.last_page])
+    fetchEmployees({ search: filters.search, page: newPage, per_page: 15 })
+  }, [fetchEmployees, filters.search, pagination.last_page])
 
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return
@@ -83,13 +83,8 @@ export function EmployeesTable() {
     navigate({ to: '/employees/new' })
   }
 
-  const handleRowClick = (employee: Employee) => {
+  const handleEdit = (employee: Employee) => {
     navigate({ to: '/employees/$id/edit', params: { id: String(employee.id) } })
-  }
-
-  const handleGenerateIdCard = (employee: Employee) => {
-    // Open in new tab or download directly
-    window.open(`/api/admin/employees/${employee.id}/id-card`, '_blank')
   }
 
   // Define columns
@@ -125,40 +120,24 @@ export function EmployeesTable() {
       accessorKey: 'name',
       header: 'Name',
       cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleRowClick(row)
-          }}
-          className="font-medium text-primary hover:underline text-left cursor-pointer"
-        >
-          {row.name}
-        </button>
+        <span className="font-medium">{row.name}</span>
       ),
     },
     {
       accessorKey: 'company_name',
       header: 'Company',
       cell: (row) => (
-          <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleRowClick(row)
-              }}
-              className="font-medium text-primary hover:underline text-left cursor-pointer"
-          >
-            {row.company_name}
-          </button>
+        <span className="text-muted-foreground">
+          {row.company_name ?? '-'}
+        </span>
       ),
     },
     {
-      accessorKey: 'position_name',
+      accessorKey: 'role_name',
       header: 'Position',
       cell: (row) => (
         <span className="text-muted-foreground">
-          {row.position_name ?? '-'}
+          {row.role_name ?? '-'}
         </span>
       ),
     },
@@ -213,23 +192,6 @@ export function EmployeesTable() {
         </span>
       ),
     },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: (row) => (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleGenerateIdCard(row)
-          }}
-        >
-          <CreditCard className="h-4 w-4 mr-1" />
-          ID Card
-        </Button>
-      ),
-    },
   ]
 
   // Bulk actions
@@ -263,11 +225,6 @@ export function EmployeesTable() {
         </div>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama untuk mengedit data
-      </p>
-
       <DataTable
         columns={columns}
         data={items}
@@ -279,6 +236,7 @@ export function EmployeesTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

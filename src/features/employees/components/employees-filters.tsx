@@ -1,13 +1,11 @@
 /**
  * Employees Filters Component
- * Search controls with company dropdown
+ * Search controls only
  */
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { useEmployeesStore } from '../store/employees-store'
-import { companyApi } from '@/features/companies/api/companies-api'
 
 export function EmployeesFilters() {
   const {
@@ -20,28 +18,11 @@ export function EmployeesFilters() {
     setFilters({ search: e.target.value || undefined })
   }
 
-  const handleCompanyChange = (value: number | string | null) => {
-    if (!value) {
-      setFilters({ company_id: undefined })
-    } else {
-      setFilters({ company_id: Number(value) })
-    }
-  }
-
   const handleReset = () => {
     resetFilters()
   }
 
-  const hasActiveFilters = filters.search || filters.company_id
-
-  // Load companies for dropdown
-  const loadCompanies = async (search: string): Promise<SelectOption[]> => {
-    const response = await companyApi.getSelectOptions({ q: search })
-    return response.map((item) => ({
-      value: item.id,
-      label: item.name,
-    }))
-  }
+  const hasActiveFilters = filters.search
 
   return (
     <div className="flex flex-wrap gap-3 items-end">
@@ -51,15 +32,6 @@ export function EmployeesFilters() {
         value={filters.search ?? ''}
         onChange={handleSearchChange}
         className="w-[280px]"
-      />
-
-      {/* Company Dropdown - Async Select */}
-      <AsyncSelect
-        value={filters.company_id ?? null}
-        onChange={handleCompanyChange}
-        loadOptions={loadCompanies}
-        placeholder="All Companies"
-        className="w-[200px]"
       />
 
       {/* Reset Button */}

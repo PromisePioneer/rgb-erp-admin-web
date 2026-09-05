@@ -18,14 +18,14 @@ interface ApprovalFlowsFormModalProps {
 }
 
 export function ApprovalFlowsFormModal({ typeId, onClose }: ApprovalFlowsFormModalProps) {
-  const { selectedType, fetchTypeById, saveType, fetchPositionsOptions, fetchEmployeesOptions, positionsOptions, employeesOptions, isSubmitting } = useApprovalTypesStore()
+  const { selectedType, fetchTypeById, saveType, fetchRolesOptions, fetchEmployeesOptions, rolesOptions, employeesOptions, isSubmitting } = useApprovalTypesStore()
   const [steps, setSteps] = useState<ApprovalStep[]>([])
 
   useEffect(() => {
     fetchTypeById(typeId)
-    fetchPositionsOptions()
+    fetchRolesOptions()
     fetchEmployeesOptions()
-  }, [typeId, fetchTypeById, fetchPositionsOptions, fetchEmployeesOptions])
+  }, [typeId, fetchTypeById, fetchRolesOptions, fetchEmployeesOptions])
 
   useEffect(() => {
     if (selectedType?.steps_summary) {
@@ -143,15 +143,15 @@ export function ApprovalFlowsFormModal({ typeId, onClose }: ApprovalFlowsFormMod
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="role">By Position</SelectItem>
-                            <SelectItem value="user">By Employee</SelectItem>
+                            <SelectItem value="role">Role</SelectItem>
+                            <SelectItem value="user">Employee</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="col-span-2 space-y-1.5">
                         <Label className="text-xs">
-                          {step.approver_kind === 'role' ? 'Position' : 'Employee'}
+                          {step.approver_kind === 'role' ? 'Role' : 'Employee'}
                         </Label>
                         <Select
                           value={step.approver_id ? step.approver_id.toString() : ''}
@@ -162,15 +162,15 @@ export function ApprovalFlowsFormModal({ typeId, onClose }: ApprovalFlowsFormMod
                           </SelectTrigger>
                           <SelectContent>
                             {step.approver_kind === 'role' ? (
-                              positionsOptions.map((pos) => (
-                                <SelectItem key={pos.id} value={pos.id.toString()}>
-                                  {pos.name}
+                              rolesOptions.map((role) => (
+                                <SelectItem key={role.id} value={role.id.toString()}>
+                                  {role.name}
                                 </SelectItem>
                               ))
                             ) : (
                               employeesOptions.map((emp) => (
                                 <SelectItem key={emp.id} value={emp.id.toString()}>
-                                  {emp.name} - {emp.position_name || 'No Position'}
+                                  {emp.name} - {emp.role_name || 'No Role'}
                                 </SelectItem>
                               ))
                             )}

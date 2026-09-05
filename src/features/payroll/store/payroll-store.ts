@@ -35,6 +35,7 @@ interface PayrollState {
   fetchById: (id: number) => Promise<void>
   generatePayroll: (month: number, year: number) => Promise<void>
   generateThr: (year: number) => Promise<void>
+  bulkDelete: (ids: number[]) => Promise<void>
   setFilters: (filters: Partial<PayrollFilters>) => void
   resetFilters: () => void
   clearError: () => void
@@ -132,6 +133,21 @@ export const usePayrollStore = create<PayrollState>((set, get) => ({
       const message =
         error instanceof Error ? error.message : 'Failed to generate THR'
       set({ generateError: message, isGenerating: false })
+      throw error
+    }
+  },
+
+  bulkDelete: async (ids: number[]) => {
+    set({ isLoading: true, error: null })
+    try {
+      await payrollApi.bulkDelete(ids)
+      set({ isLoading: false })
+      // Refresh list
+      await get().fetchPayroll()
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to delete payroll'
+      set({ error: message, isLoading: false })
       throw error
     }
   },

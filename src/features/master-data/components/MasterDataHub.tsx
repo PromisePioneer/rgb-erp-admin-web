@@ -68,17 +68,6 @@ const masterDataItems: MasterDataItem[] = [
     isImplemented: true,
   },
   {
-    id: 'positions',
-    name: 'Positions',
-    nameId: 'Posisi',
-    description: 'Data position',
-    descriptionId: 'Data posisi',
-    icon: Users,
-    path: '/positions',
-    countKey: 'positions',
-    isImplemented: true,
-  },
-  {
     id: 'employees',
     name: 'Employees',
     nameId: 'Karyawan',

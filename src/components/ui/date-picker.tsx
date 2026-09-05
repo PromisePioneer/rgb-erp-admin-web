@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { format, parseISO, isValid, startOfMonth } from "date-fns"
+import { format, parseISO, isValid } from "date-fns"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { CalendarIcon } from "lucide-react"
@@ -55,23 +55,21 @@ export function DatePicker({
 
   return (
     <Popover>
-      <PopoverTrigger asChild disabled={disabled}>
-        <button
-          type="button"
-          className={cn(
-            "w-full flex items-center justify-between font-normal h-10 px-3 py-2 text-sm rounded-md border bg-background",
-            "hover:bg-accent hover:text-accent-foreground",
-            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted",
-            !selectedDate && "text-muted-foreground",
-            className
-          )}
-        >
-          <span className="flex items-center truncate">
-            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-            <span className="truncate">{displayValue}</span>
-          </span>
-        </button>
+      <PopoverTrigger
+        disabled={disabled}
+        className={cn(
+          "w-full flex items-center justify-between font-normal h-10 px-3 py-2 text-sm rounded-md border bg-background",
+          "hover:bg-accent hover:text-accent-foreground",
+          "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+          "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted",
+          !selectedDate && "text-muted-foreground",
+          className
+        )}
+      >
+        <span className="flex items-center truncate">
+          <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+          <span className="truncate">{displayValue}</span>
+        </span>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar

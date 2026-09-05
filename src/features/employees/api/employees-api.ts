@@ -159,11 +159,16 @@ export const employeesApi = {
    * POST /api/admin/employees/import
    *
    * @param file - Excel/CSV file (xlsx, xls, csv, txt)
+   * @param roleId - Optional role ID to assign to created users
    * @returns Object with imported count and message
    */
-  import: async (file: File) => {
+  import: async (file: File, roleId?: number) => {
     const formData = new FormData()
     formData.append('file', file)
+
+    if (roleId) {
+      formData.append('role_id', String(roleId))
+    }
 
     const { data } = await apiClient.post<{ success: boolean; data: { imported: number; message: string } }>(
       '/admin/employees/import',
@@ -182,6 +187,7 @@ export const employeesApi = {
    * GET /api/admin/employees/template
    */
   getTemplateUrl: () => {
-    return `${import.meta.env.VITE_API_URL || '/api'}/admin/employees/template`
+    const baseUrl = import.meta.env.VITE_API_URL || ''
+    return `${baseUrl}/api/admin/employees/template`
   },
 }

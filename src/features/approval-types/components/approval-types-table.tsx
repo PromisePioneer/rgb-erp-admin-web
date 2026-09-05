@@ -3,19 +3,31 @@
  * Single table with inline flow display
  */
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Users } from 'lucide-react'
+import { Plus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 import { useApprovalTypesStore } from '../store/approval-types-store'
 import { ApprovalTypesFormModal } from './approval-types-form-modal'
 import type { ApprovalType } from '../types/approval-types.types'
-import { toast } from 'sonner'
 
 export function ApprovalTypesTable() {
-  const { items, fetchTypes, deleteType, isLoading } = useApprovalTypesStore()
+  const { items, fetchTypes, isLoading, bulkDelete, isSubmitting } = useApprovalTypesStore()
   const [showModal, setShowModal] = useState(false)
   const [editingType, setEditingType] = useState<ApprovalType | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
 
   useEffect(() => {
     fetchTypes()
@@ -31,14 +43,20 @@ export function ApprovalTypesTable() {
     setShowModal(true)
   }
 
-  const handleDelete = async (type: ApprovalType) => {
-    if (!confirm(`Hapus jenis pengajuan "${type.name}"?`)) return
+  const handleSelectionChange = (newSelectedIds: Set<number | string>) => {
+    setSelectedIds(newSelectedIds)
+  }
 
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds).map(Number)
+    if (ids.length === 0) return
     try {
-      await deleteType(type.id)
-      toast.success('Jenis pengajuan berhasil dihapus')
+      await bulkDelete(ids)
+      toast.success(`${ids.length} items deleted`)
+      setSelectedIds(new Set())
+      setShowBulkDeleteDialog(false)
     } catch {
-      toast.error('Gagal menghapus jenis pengajuan')
+      toast.error('Delete failed')
     }
   }
 
@@ -105,29 +123,6 @@ export function ApprovalTypesTable() {
         </Badge>
       ),
     },
-    {
-      id: 'actions',
-      header: 'Aksi',
-      cell: (row) => (
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleEdit(row)}
-          >
-            Edit
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={() => handleDelete(row)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
   ]
 
   return (
@@ -150,6 +145,17 @@ export function ApprovalTypesTable() {
         isLoading={isLoading}
         onPageChange={() => {}}
         emptyMessage="Belum ada jenis pengajuan. Klik 'Tambah Jenis' untuk membuat."
+        onRowClick={handleEdit}
+        enableRowSelection
+        selectedIds={selectedIds}
+        onSelectionChange={handleSelectionChange}
+        bulkActions={
+          selectedIds.size > 0 && (
+            <Button variant="destructive" size="sm" onClick={() => setShowBulkDeleteDialog(true)}>
+              Delete {selectedIds.size} item(s)
+            </Button>
+          )
+        }
       />
 
       {showModal && (
@@ -161,6 +167,24 @@ export function ApprovalTypesTable() {
           }}
         />
       )}
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Selected</AlertDialogTitle>
+            <AlertDialogDescription>
+              Delete {selectedIds.size} items?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowBulkDeleteDialog(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive" disabled={isSubmitting}>
+              {isSubmitting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

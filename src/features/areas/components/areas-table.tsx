@@ -137,18 +137,7 @@ export function AreasTable({ clientId, clientName }: AreasTableProps) {
     {
       accessorKey: 'name',
       header: 'Nama Area',
-      cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-          className="font-medium text-primary hover:underline text-left cursor-pointer"
-        >
-          {row.name}
-        </button>
-      ),
+      cell: (row) => <span className="font-medium">{row.name}</span>,
     },
     ...(clientId
       ? []
@@ -239,10 +228,6 @@ export function AreasTable({ clientId, clientName }: AreasTableProps) {
         </Button>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama area untuk mengedit data, klik jumlah pos untuk mengelola pos
-      </p>
 
       <DataTable
         columns={columns}
@@ -255,6 +240,7 @@ export function AreasTable({ clientId, clientName }: AreasTableProps) {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

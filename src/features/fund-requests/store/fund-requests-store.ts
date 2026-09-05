@@ -24,6 +24,7 @@ interface Actions {
   update: (id: number, payload: any) => Promise<void>
   submitForApproval: (id: number) => Promise<void>
   remove: (id: number) => Promise<void>
+  bulkRemove: (ids: number[]) => Promise<void>
   setFilters: (filters: Partial<FundRequestFilters>) => void
   resetFilters: () => void
   clearError: () => void
@@ -107,6 +108,18 @@ export const useFundRequestsStore = create<State & Actions>((set, get) => ({
     set({ isSubmitting: true, error: null })
     try {
       await fundRequestsApi.delete(id)
+      set({ isSubmitting: false })
+      await get().fetchFundRequests()
+    } catch (err: any) {
+      set({ error: err.message, isSubmitting: false })
+      throw err
+    }
+  },
+
+  bulkRemove: async (ids) => {
+    set({ isSubmitting: true, error: null })
+    try {
+      await fundRequestsApi.bulkDelete(ids)
       set({ isSubmitting: false })
       await get().fetchFundRequests()
     } catch (err: any) {

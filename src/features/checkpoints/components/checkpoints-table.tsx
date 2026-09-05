@@ -3,7 +3,7 @@
  * Full CRUD with DataTable and modal form
  */
 import {useEffect, useCallback, useState, useRef} from 'react'
-import {Plus, Trash2, Edit, MapPin, Key, QrCodeIcon, Printer} from 'lucide-react'
+import {Plus, Trash2, MapPin, Key, QrCodeIcon, Printer} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {
     AlertDialog,
@@ -454,46 +454,6 @@ export function CheckpointsTable() {
         </span>
             ),
         },
-        {
-            id: 'actions',
-            header: 'Actions',
-            cell: (row) => (
-                <div className="flex gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            handleShowQR(row)
-                        }}
-                        title="Show QR Code"
-                    >
-                        <QrCodeIcon className="h-4 w-4"/>
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            handleEdit(row)
-                        }}
-                    >
-                        <Edit className="h-4 w-4"/>
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            handleDelete(row)
-                        }}
-                        className="text-destructive hover:text-destructive"
-                    >
-                        <Trash2 className="h-4 w-4"/>
-                    </Button>
-                </div>
-            ),
-        },
     ]
 
     // Bulk actions
@@ -538,6 +498,7 @@ export function CheckpointsTable() {
                 selectedIds={selectedIds}
                 onSelectionChange={setSelectedIds}
                 bulkActions={bulkActions}
+                onRowClick={handleEdit}
             />
 
             {/* Delete Confirmation Dialog */}

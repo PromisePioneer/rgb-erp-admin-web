@@ -2,7 +2,7 @@
  * Panic Alerts Table Component
  * READ-ONLY - no create/edit/delete actions
  */
-import {useEffect, useCallback} from 'react'
+import {useEffect, useCallback, useState} from 'react'
 import {AlertTriangle, Phone} from 'lucide-react'
 import {DataTable, type DataTableColumn} from '@/components/ui/data-table'
 import {usePanicAlertsStore} from '@/features/panic-alerts'
@@ -18,6 +18,9 @@ export function PanicAlertsTable() {
         filters,
     } = usePanicAlertsStore()
 
+    // Selection state (for future bulk actions if needed)
+    const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
+
     // Single source of truth for fetch - debounced, primitive dependencies
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -25,6 +28,10 @@ export function PanicAlertsTable() {
         }, 300)
         return () => clearTimeout(timer)
     }, [filters.search])
+
+    const handleSelectionChange = (newSelectedIds: Set<number | string>) => {
+        setSelectedIds(newSelectedIds)
+    }
 
     const handlePageChange = useCallback((newPage: number) => {
         if (newPage < 1 || newPage > pagination.last_page) return
@@ -42,6 +49,12 @@ export function PanicAlertsTable() {
             minute: '2-digit',
         })
     }
+
+    // Handle edit action
+    const handleEdit = useCallback((alert: PanicAlert) => {
+        console.log('Edit alert:', alert.id)
+        // Navigate to edit page or open modal
+    }, [])
 
     // Define columns
     const columns: DataTableColumn<PanicAlert>[] = [
@@ -120,12 +133,6 @@ export function PanicAlertsTable() {
         <div className="space-y-4">
             <PanicAlertsFilters/>
 
-            {/* Alert indicator */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <AlertTriangle className="h-4 w-4 text-amber-500"/>
-                <span>Read-only: Panic alerts are automatically recorded from mobile app</span>
-            </div>
-
             <DataTable
                 columns={columns}
                 data={items}
@@ -133,6 +140,10 @@ export function PanicAlertsTable() {
                 isLoading={isLoading}
                 onPageChange={handlePageChange}
                 emptyMessage="No panic alerts found"
+                onRowClick={handleEdit}
+                enableRowSelection
+                selectedIds={selectedIds}
+                onSelectionChange={handleSelectionChange}
             />
         </div>
     )

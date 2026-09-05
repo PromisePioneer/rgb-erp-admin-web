@@ -95,4 +95,16 @@ export const inventoryApi = {
     )
     return data
   },
+
+  /**
+   * Bulk delete inventory items
+   * POST /api/admin/inventory-items/bulk-delete
+   */
+  bulkDelete: async (ids: number[]) => {
+    const { data } = await apiClient.post<ApiResponse<{ deleted: number }>>(
+      '/admin/inventory-items/bulk-delete',
+      { ids }
+    )
+    return data
+  },
 }

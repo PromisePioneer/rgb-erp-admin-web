@@ -25,8 +25,6 @@ import {MainLayout} from '@/components/layout'
 import {SettingsForm} from '@/features/settings'
 import {UsersTable} from '@/features/users'
 import {ClientTypesTable} from '@/features/client-types'
-import {PositionsTable} from '@/features/positions'
-import {PositionPrivilegesForm} from '@/features/position-privileges'
 import {BanksTable} from '@/features/banks'
 import {DocumentsTable} from '@/features/documents'
 import {ShiftsTable} from '@/features/shifts'
@@ -633,56 +631,6 @@ const usersRoute = createRoute({
         requirePrivilegeInBeforeLoad('User', 'View')
     },
     component: UsersPage,
-})
-
-// Positions
-function PositionsPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Positions</h2>
-                <p className="text-muted-foreground">Manage position information</p>
-            </div>
-            <PositionsTable/>
-        </AuthLayout>
-    )
-}
-
-const positionsRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/positions',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Position', 'View')
-    },
-    component: PositionsPage,
-})
-
-// Position Privileges
-function PositionPrivilegesPage() {
-    return (
-        <AuthLayout>
-            <PositionPrivilegesForm/>
-        </AuthLayout>
-    )
-}
-
-const positionPrivilegesRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/positions/$id/privileges',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Position', 'Edit')
-    },
-    component: PositionPrivilegesPage,
 })
 
 // Banks
@@ -2534,8 +2482,6 @@ const routeTree = rootRoute.addChildren([
     rolesRoute,
     rolePrivilegesRoute,
     clientTypesRoute,
-    positionsRoute,
-    positionPrivilegesRoute,
     banksRoute,
     documentsRoute,
     shiftsRoute,
