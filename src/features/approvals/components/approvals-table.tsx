@@ -4,7 +4,6 @@
  */
 import { useEffect, useCallback, useState } from 'react'
 import { FileText, FileSpreadsheet } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +38,7 @@ export function ApprovalsTable() {
   } = useApprovalsStore()
 
   const [selectedApproval, setSelectedApproval] = useState<Approval | null>(null)
-  const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null)
+  const [actionType] = useState<'approve' | 'reject' | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [showDetail, setShowDetail] = useState(false)
   const [note, setNote] = useState('')
@@ -53,13 +52,6 @@ export function ApprovalsTable() {
     if (newPage < 1 || newPage > pagination.last_page) return
     fetchApprovals({ ...filters, page: newPage })
   }, [fetchApprovals, filters, pagination.last_page])
-
-  const handleAction = (approval: Approval, action: 'approve' | 'reject') => {
-    setSelectedApproval(approval)
-    setActionType(action)
-    setNote('')
-    setShowConfirm(true)
-  }
 
   const handleViewDetail = (approval: Approval) => {
     setSelectedApproval(approval)

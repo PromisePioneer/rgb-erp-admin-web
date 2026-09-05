@@ -2,7 +2,7 @@
  * Import Employees Modal Component
  * Allows bulk import of employees from Excel/CSV file
  */
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -204,7 +204,6 @@ export function EmployeesImportModal({ open, onOpenChange }: EmployeesImportModa
           <div className="space-y-2">
             <Label htmlFor="role-select">Role untuk User (opsional)</Label>
             <AsyncSelect
-              id="role-select"
               value={selectedRoleId}
               onChange={(value) => setSelectedRoleId(value as number | null)}
               loadOptions={loadRoles}

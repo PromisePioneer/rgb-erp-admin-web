@@ -3,7 +3,7 @@
  * Displays payroll list with filters and generation controls
  */
 import { useEffect, useState } from 'react'
-import { FileText, RefreshCw, Trash2 } from 'lucide-react'
+import { RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { AsyncSelect } from '@/components/async-select'
@@ -156,7 +156,7 @@ export function PayrollTable() {
   // Add days column for monthly type
   if (filters.type === 'monthly') {
     baseColumns.push({
-      accessorKey: 'days',
+      id: 'days',
       header: 'Days',
       className: 'w-[100px]',
       cell: (row: PayrollRow) => (

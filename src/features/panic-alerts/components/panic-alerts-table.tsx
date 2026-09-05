@@ -3,7 +3,7 @@
  * READ-ONLY - no create/edit/delete actions
  */
 import {useEffect, useCallback, useState} from 'react'
-import {AlertTriangle, Phone} from 'lucide-react'
+import {Phone} from 'lucide-react'
 import {DataTable, type DataTableColumn} from '@/components/ui/data-table'
 import {usePanicAlertsStore} from '@/features/panic-alerts'
 import {PanicAlertsFilters} from './panic-alerts-filters'

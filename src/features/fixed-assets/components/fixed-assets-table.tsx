@@ -43,12 +43,10 @@ export function FixedAssetsTable() {
         assets,
         isLoading,
         fetchAssets,
-        deleteAsset,
         bulkDelete,
         setFilters,
         filters,
         calculateDepreciationBatch,
-        pagination,
         isSubmitting,
     } = useFixedAssetsStore()
 
@@ -62,6 +60,15 @@ export function FixedAssetsTable() {
     const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
     const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [currentPage] = useState(1)
+
+    // Local pagination
+    const pagination = {
+        current_page: currentPage,
+        per_page: 15,
+        total: assets.length,
+        last_page: Math.ceil(assets.length / 15) || 1,
+    }
 
     useEffect(() => {
         fetchAssets()
@@ -92,21 +99,6 @@ export function FixedAssetsTable() {
         setFormModalOpen(true)
     }
 
-    const handleDelete = async (asset: FixedAsset) => {
-        if (!confirm(`Hapus aktiva "${asset.name}" (${asset.code})?`)) return
-
-        try {
-            await deleteAsset(asset.id)
-        } catch (e) {
-            // Error handled by store
-        }
-    }
-
-    const handleDispose = (asset: FixedAsset) => {
-        setSelectedAsset(asset)
-        setDisposeModalOpen(true)
-    }
-
     const handleFormClose = () => {
         setFormModalOpen(false)
         setSelectedAsset(null)
@@ -115,11 +107,6 @@ export function FixedAssetsTable() {
     const handleDisposeClose = () => {
         setDisposeModalOpen(false)
         setSelectedAsset(null)
-    }
-
-    const handleViewHistory = (asset: FixedAsset) => {
-        setSelectedAsset(asset)
-        setHistoryModalOpen(true)
     }
 
     const handleBatchDepreciation = async () => {

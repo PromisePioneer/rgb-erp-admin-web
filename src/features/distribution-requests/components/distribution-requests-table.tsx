@@ -73,7 +73,6 @@ export function DistributionRequestsTable() {
     filters,
     pagination,
     fetchItems,
-    remove,
     bulkDelete,
     setFilters,
   } = useDistributionRequestsStore()
@@ -113,17 +112,6 @@ export function DistributionRequestsTable() {
     setSelectedIds(newSelectedIds)
   }, [])
 
-  // Handle delete
-  const handleDelete = async (id: number) => {
-    try {
-      await remove(id)
-      toast.success('Distribution request deleted successfully')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete'
-      toast.error(message)
-    }
-  }
-
   // Handle bulk delete
   const handleBulkDelete = async () => {
     const ids = Array.from(selectedIds).map(Number)
@@ -140,11 +128,6 @@ export function DistributionRequestsTable() {
       const message = error instanceof Error ? error.message : 'Failed to delete'
       toast.error(message)
     }
-  }
-
-  // Navigate to detail/edit
-  const handleView = (id: number) => {
-    navigate({ to: `/distribution-requests/${id}` })
   }
 
   const handleEdit = (item: DistributionRequest) => {

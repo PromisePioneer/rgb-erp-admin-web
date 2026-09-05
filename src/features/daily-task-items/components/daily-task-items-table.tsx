@@ -83,7 +83,7 @@ export function DailyTaskItemsTable() {
   const [searchValue, setSearchValue] = useState(filters.search || "")
   const [statusFilter, setStatusFilter] = useState<string>(filters.status === undefined ? "all" : (filters.status === STATUS_ACTIVE ? "active" : "inactive"))
   const [roleFilter, setRoleFilter] = useState<string>(filters.role_id === undefined ? "all" : String(filters.role_id))
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showFormModal, setShowFormModal] = useState(false)
   const [formMode, setFormMode] = useState<"create" | "edit">("create")
@@ -223,7 +223,7 @@ export function DailyTaskItemsTable() {
   // Bulk delete
   const handleBulkDelete = async () => {
     try {
-      await bulkDelete(Array.from(selectedIds))
+      await bulkDelete(Array.from(selectedIds).map(Number))
       toast.success(`${selectedIds.size} item berhasil dihapus`)
       setSelectedIds(new Set())
       setShowDeleteConfirm(false)

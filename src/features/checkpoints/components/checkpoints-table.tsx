@@ -32,7 +32,6 @@ export function CheckpointsTable() {
         fetchCheckpoints,
         filters,
         bulkDelete,
-        remove,
         isSubmitting,
     } = useCheckpointsStore()
 
@@ -44,8 +43,8 @@ export function CheckpointsTable() {
 
     // QR Preview Modal State
     const [showQRModal, setShowQRModal] = useState(false)
-    const [qrCheckpoint, setQrCheckpoint] = useState<{code: string, name: string, qr_content: string} | null>(null)
-    const [isLoadingQR, setIsLoadingQR] = useState(false)
+    const [qrCheckpoint] = useState<{code: string, name: string, qr_content: string} | null>(null)
+    const [isLoadingQR] = useState(false)
     const qrPrintRef = useRef<HTMLDivElement>(null)
 
     // Single source of truth for fetch - debounced, primitive dependencies
@@ -95,15 +94,6 @@ export function CheckpointsTable() {
         }
     }
 
-    const handleDelete = async (checkpoint: Checkpoint) => {
-        try {
-            await remove(checkpoint.id)
-            toast.success('Checkpoint deleted')
-        } catch {
-            toast.error('Failed to delete checkpoint')
-        }
-    }
-
     const handleEdit = (checkpoint: Checkpoint) => {
         setEditingCheckpoint(checkpoint)
         setShowFormModal(true)
@@ -117,36 +107,6 @@ export function CheckpointsTable() {
     const handleCloseModal = () => {
         setShowFormModal(false)
         setEditingCheckpoint(null)
-    }
-
-    // Handle show QR code
-    const handleShowQR = async (checkpoint: Checkpoint) => {
-        if (!checkpoint.has_secret_key) {
-            toast.error('Checkpoint has no secret key. Edit checkpoint to generate one.')
-            return
-        }
-
-        setIsLoadingQR(true)
-        setShowQRModal(true)
-        try {
-            const {data} = await apiClient.get<{
-                success: boolean,
-                data: { qr_content: string, checkpoint: { code: string, name: string } }
-            }>(
-                `/admin/checkpoints/${checkpoint.id}/qr`
-            )
-            setQrCheckpoint({
-                code: data.data.checkpoint.code,
-                name: data.data.checkpoint.name,
-                qr_content: data.data.qr_content,
-            })
-        } catch (error) {
-            console.error('Failed to load QR:', error)
-            toast.error('Failed to load QR code')
-            setShowQRModal(false)
-        } finally {
-            setIsLoadingQR(false)
-        }
     }
 
     // Print QR code

@@ -193,7 +193,7 @@ export function PurchaseRequestsTable() {
             ),
         },
         {
-            accessorKey: 'submit',
+            accessorKey: 'id',
             header: '',
             cell: (row) => row.can_submit ? (
                 <Button

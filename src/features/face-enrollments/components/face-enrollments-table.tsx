@@ -3,6 +3,7 @@
  * List view with delete functionality
  */
 import { useEffect, useState } from 'react'
+import type { FaceEnrollment } from '../types/face-enrollments.types'
 import { Shield, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -92,13 +93,17 @@ export function FaceEnrollmentsTable() {
   const currentPage = pagination.current_page
 
   // Define table columns
-  const columns = [
+  const columns: Array<{
+    id: string
+    header: string
+    cell: (item: FaceEnrollment, meta?: { rowIndex: number }) => React.ReactNode
+  }> = [
     {
       id: 'index',
       header: '#',
-        cell: (_item, { rowIndex }) => (
+        cell: (_item, meta) => (
           <span className="font-mono text-xs">
-            {(pagination.current_page - 1) * pagination.per_page + rowIndex + 1}
+            {(pagination.current_page - 1) * pagination.per_page + (meta?.rowIndex ?? 0) + 1}
           </span>
         ),
       },
@@ -188,7 +193,7 @@ export function FaceEnrollmentsTable() {
                     <TableCell key={col.id}>
                       {col.cell
                         ? col.cell(enrollment, { rowIndex })
-                        : String((enrollment as Record<string, unknown>)[col.id ?? ''] ?? '-')}
+                        : String((enrollment as unknown as Record<string, unknown>)[col.id ?? ''] ?? '-')}
                     </TableCell>
                   ))}
                 </TableRow>

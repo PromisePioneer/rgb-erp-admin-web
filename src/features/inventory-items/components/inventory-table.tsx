@@ -3,7 +3,7 @@
  * Lists all inventory items with QR code tracking and movement history
  */
 import {useEffect, useState, useCallback, useRef} from 'react'
-import {Eye, QrCodeIcon, Printer, Download, History, User, Filter, X, Trash2} from 'lucide-react'
+import {QrCodeIcon, Printer, Download, History, User, Filter, X, Trash2} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
 import {Badge} from '@/components/ui/badge'
@@ -446,11 +446,6 @@ export function InventoryTable() {
     const handlePageChange = useCallback((newPage: number) => {
         fetchItems({...filters, page: newPage})
     }, [fetchItems, filters])
-
-    const handleViewDetail = (item: InventoryItem) => {
-        setSelectedItem(item)
-        setShowDetail(true)
-    }
 
     const handleEdit = (item: InventoryItem) => {
         // TODO: Navigate to edit page or open edit modal

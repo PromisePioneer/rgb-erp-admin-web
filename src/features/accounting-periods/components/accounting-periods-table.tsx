@@ -4,7 +4,7 @@ import { RefreshCw, Lock, Unlock, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
-import { createActionColumn, withActionColumn, getActionHint } from '@/components/ui/data-table-actions'
+import { getActionHint } from '@/components/ui/data-table-actions'
 import { useAccountingPeriodsStore, type AccountingPeriod } from '../store/accounting-periods-store'
 
 function formatDate(d: string) {
@@ -45,12 +45,6 @@ export function AccountingPeriodsTable() {
     // TODO: Navigate to edit page or open edit dialog
     console.log('Edit period:', period.id)
   }
-
-  const actionColumn = createActionColumn<AccountingPeriod>({
-    onEdit: handleEdit,
-    itemName: 'period',
-    showIcon: true,
-  })
 
   const actionHint = getActionHint('period')
 

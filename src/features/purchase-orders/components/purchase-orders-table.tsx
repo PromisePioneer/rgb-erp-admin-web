@@ -3,7 +3,7 @@
  * Using standardized DataTable
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Trash2, Send, Pencil } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -20,7 +20,6 @@ import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { usePurchaseOrdersStore } from '../store/purchase-orders-store'
 import { PurchaseOrdersFilters } from './purchase-orders-filters'
 import type { PurchaseOrder } from '../types/purchase-orders.types'
-import { toast } from 'sonner'
 
 export function PurchaseOrdersTable() {
   const navigate = useNavigate()
@@ -31,14 +30,12 @@ export function PurchaseOrdersTable() {
     fetchPurchaseOrders,
     filters,
     bulkDelete,
-    submitForApproval,
     isSubmitting,
   } = usePurchaseOrdersStore()
 
   const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [submittingId, setSubmittingId] = useState<number | null>(null)
 
   // Single source of truth for fetch - debounced, primitive dependencies
   useEffect(() => {
@@ -94,19 +91,6 @@ export function PurchaseOrdersTable() {
 
   const handleEdit = (po: PurchaseOrder) => {
     navigate({ to: '/purchase-orders/$id/edit', params: { id: String(po.id) } })
-  }
-
-  const handleSubmit = async (po: PurchaseOrder) => {
-    setSubmittingId(po.id)
-    try {
-      await submitForApproval(po.id)
-      toast.success(`PO ${po.code} submitted for approval`)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to submit'
-      toast.error(message)
-    } finally {
-      setSubmittingId(null)
-    }
   }
 
   // Define columns

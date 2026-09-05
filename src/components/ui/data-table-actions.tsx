@@ -24,7 +24,7 @@ export function createActionColumn<T extends { id: number | string; name?: strin
   showIcon = true,
 }: ActionColumnOptions<T>): DataTableColumn<T> {
   return {
-    accessorKey: 'action',
+    accessorKey: 'id' as keyof T,
     header: '',
     className: 'w-[50px]',
     cell: (row: T) => (

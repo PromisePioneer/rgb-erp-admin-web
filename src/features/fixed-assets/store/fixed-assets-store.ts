@@ -42,6 +42,8 @@ interface FixedAssetsFilters {
   status?: string
   search?: string
   category?: string
+  page?: number
+  per_page?: number
 }
 
 interface FixedAssetsState {

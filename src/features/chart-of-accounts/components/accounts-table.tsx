@@ -71,7 +71,7 @@ function AccountRow({ account, level, expanded, onToggle, hasChildren, onEdit, o
         <td className="px-4 py-3 w-[40px]">
           <Checkbox
             checked={isSelected}
-            onCheckedChange={() => onToggleSelect(account.id)}
+            onChange={() => onToggleSelect(account.id)}
             onClick={(e) => e.stopPropagation()}
           />
         </td>
@@ -340,7 +340,7 @@ function AccountFormModal({ open, onOpenChange, editAccount }: AccountFormModalP
 
 // Main Table
 export function AccountsTable() {
-  const { items, isLoading, isSubmitting, fetchAccounts, softDelete, restore, setFilters, filters, bulkDelete } = useAccountsStore()
+  const { items, isLoading, fetchAccounts, softDelete, restore, setFilters, filters, bulkDelete } = useAccountsStore()
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [formOpen, setFormOpen] = useState(false)
   const [editAccount, setEditAccount] = useState<Account | null>(null)
@@ -517,7 +517,7 @@ export function AccountsTable() {
               <th className="px-4 py-3 w-[40px]">
                 <Checkbox
                   checked={isAllSelected}
-                  onCheckedChange={handleSelectAll}
+                  onChange={() => handleSelectAll}
                 />
               </th>
               <th className="px-4 py-3 text-left font-medium">Kode</th>

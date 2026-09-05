@@ -9,6 +9,7 @@ import type {
   PayrollYearsResponse,
   GeneratePayrollPayload,
   GenerateThrPayload,
+  ApiResponse,
 } from '../types/payroll.types'
 
 export const payrollApi = {

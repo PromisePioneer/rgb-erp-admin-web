@@ -3,7 +3,6 @@
  * Read-only view with edit button to open modal
  */
 import { useEffect, useState } from 'react'
-import { Settings2 } from 'lucide-react'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { useApprovalFlowsStore } from '../store/approval-flows-store'
 import { ApprovalFlowsFormModal } from './approval-flows-form-modal'
