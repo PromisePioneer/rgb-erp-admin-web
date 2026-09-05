@@ -74,6 +74,8 @@ export function DistributionRequestsTable() {
     pagination,
     fetchItems,
     bulkDelete,
+    submitForApproval,
+    isSubmitting,
     setFilters,
   } = useDistributionRequestsStore()
 
@@ -81,6 +83,8 @@ export function DistributionRequestsTable() {
   const [selectedStatuses, setSelectedStatuses] = useState<DistributionRequestStatus | 'all'>('all')
   const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
+  const [submittingId, setSubmittingId] = useState<number | null>(null)
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false)
 
   // Initial fetch
   useEffect(() => {
@@ -134,6 +138,24 @@ export function DistributionRequestsTable() {
     navigate({ to: `/distribution-requests/${item.id}/edit` })
   }
 
+  const handleSubmitClick = (item: DistributionRequest) => {
+    setSubmittingId(item.id)
+    setShowSubmitDialog(true)
+  }
+
+  const handleSubmit = async () => {
+    if (!submittingId) return
+    try {
+      await submitForApproval(submittingId)
+      toast.success('Distribution request submitted for approval')
+      setShowSubmitDialog(false)
+      setSubmittingId(null)
+      fetchItems()
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to submit')
+    }
+  }
+
   // Clear error
   useEffect(() => {
     if (error) {
@@ -176,6 +198,27 @@ export function DistributionRequestsTable() {
       accessorKey: 'status',
       header: 'Status',
       cell: (row) => <StatusBadge status={row.status} />,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+          {(row.status === 'draft' || row.status === 'rejected') && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleSubmitClick(row)
+              }}
+            >
+              <Send className="h-4 w-4 mr-1" />
+              Submit
+            </Button>
+          )}
+        </div>
+      ),
     },
   ]
 
@@ -265,6 +308,29 @@ export function DistributionRequestsTable() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleBulkDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Submit Confirmation Dialog */}
+      <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit untuk Approval</AlertDialogTitle>
+            <AlertDialogDescription>
+              Distribution request akan diajukan untuk persetujuan. Lanjutkan?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowSubmitDialog(false)
+              setSubmittingId(null)
+            }}>
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? 'Mengirim...' : 'Ya, Submit'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

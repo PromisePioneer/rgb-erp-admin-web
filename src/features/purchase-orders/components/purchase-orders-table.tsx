@@ -3,7 +3,7 @@
  * Using standardized DataTable
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -20,6 +20,7 @@ import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { usePurchaseOrdersStore } from '../store/purchase-orders-store'
 import { PurchaseOrdersFilters } from './purchase-orders-filters'
 import type { PurchaseOrder } from '../types/purchase-orders.types'
+import { toast } from 'sonner'
 
 export function PurchaseOrdersTable() {
   const navigate = useNavigate()
@@ -30,12 +31,15 @@ export function PurchaseOrdersTable() {
     fetchPurchaseOrders,
     filters,
     bulkDelete,
+    submitForApproval,
     isSubmitting,
   } = usePurchaseOrdersStore()
 
   const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [submittingId, setSubmittingId] = useState<number | null>(null)
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
 
   // Single source of truth for fetch - debounced, primitive dependencies
   useEffect(() => {
@@ -91,6 +95,23 @@ export function PurchaseOrdersTable() {
 
   const handleEdit = (po: PurchaseOrder) => {
     navigate({ to: '/purchase-orders/$id/edit', params: { id: String(po.id) } })
+  }
+
+  const handleSubmitClick = (po: PurchaseOrder) => {
+    setSubmittingId(po.id)
+    setShowSubmitConfirm(true)
+  }
+
+  const handleSubmit = async () => {
+    if (!submittingId) return
+    try {
+      await submitForApproval(submittingId)
+      toast.success('Purchase Order submitted for approval')
+      setShowSubmitConfirm(false)
+      setSubmittingId(null)
+    } catch {
+      toast.error('Failed to submit for approval')
+    }
   }
 
   // Define columns
@@ -175,6 +196,27 @@ export function PurchaseOrdersTable() {
         </span>
       ),
     },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+          {(row.status === 'draft' || row.status === 'rejected') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleSubmitClick(row)
+              }}
+            >
+              <Send className="h-4 w-4 mr-1" />
+              Submit
+            </Button>
+          )}
+        </div>
+      ),
+    },
   ]
 
   const columns = baseColumns
@@ -237,6 +279,32 @@ export function PurchaseOrdersTable() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? 'Menghapus...' : 'Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Submit Confirmation Dialog */}
+      <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit untuk Approval</AlertDialogTitle>
+            <AlertDialogDescription>
+              Purchase Order akan diajukan untuk persetujuan. Lanjutkan?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowSubmitConfirm(false)
+              setSubmittingId(null)
+            }}>
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Mengirim...' : 'Ya, Submit'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
