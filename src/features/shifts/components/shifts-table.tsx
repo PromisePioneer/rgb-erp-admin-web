@@ -21,6 +21,14 @@ import { useShiftsStore } from '../store/shifts-store'
 import { ShiftsFilters } from './shifts-filters'
 import type { Shift } from '../types/shifts.types'
 
+const SHIFT_TYPE_LABELS: Record<string, string> = {
+  morning: 'Morning',
+  middle: 'Middle',
+  night: 'Night',
+  off: 'Off',
+  back_office: 'Back Office',
+}
+
 export function ShiftsTable() {
   const {
     items,
@@ -98,17 +106,38 @@ export function ShiftsTable() {
     {
       accessorKey: 'name',
       header: 'Shift Name',
+      cell: (row) => <span className="font-medium">{row.name}</span>,
+    },
+    {
+      accessorKey: 'type',
+      header: 'Type',
       cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-          className="font-medium text-primary hover:underline text-left cursor-pointer"
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            row.type === 'morning'
+              ? 'bg-yellow-100 text-yellow-800'
+              : row.type === 'night'
+              ? 'bg-blue-100 text-blue-800'
+              : row.type === 'middle'
+              ? 'bg-orange-100 text-orange-800'
+              : row.type === 'off'
+              ? 'bg-gray-100 text-gray-800'
+              : row.type === 'back_office'
+              ? 'bg-purple-100 text-purple-800'
+              : 'bg-gray-100 text-gray-800'
+          }`}
         >
-          {row.name}
-        </button>
+          {row.type ? SHIFT_TYPE_LABELS[row.type] || row.type : '-'}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'area_name',
+      header: 'Area',
+      cell: (row) => (
+        <span className="text-sm">
+          {row.area_name ?? <span className="text-muted-foreground">Global</span>}
+        </span>
       ),
     },
     {
@@ -146,7 +175,6 @@ export function ShiftsTable() {
     },
   ]
 
-  // Bulk actions
   const bulkActions = (
     <div className="flex gap-2">
       <Button
@@ -171,11 +199,6 @@ export function ShiftsTable() {
         </Button>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama untuk mengedit data
-      </p>
-
       <DataTable
         columns={columns}
         data={items}
@@ -187,6 +210,7 @@ export function ShiftsTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

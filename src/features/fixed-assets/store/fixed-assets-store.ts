@@ -42,6 +42,8 @@ interface FixedAssetsFilters {
   status?: string
   search?: string
   category?: string
+  page?: number
+  per_page?: number
 }
 
 interface FixedAssetsState {
@@ -61,6 +63,7 @@ interface FixedAssetsState {
   createAsset: (data: FixedAssetFormData) => Promise<void>
   updateAsset: (id: number, data: Partial<FixedAssetFormData>) => Promise<void>
   deleteAsset: (id: number) => Promise<void>
+  bulkDelete: (ids: number[]) => Promise<void>
   disposeAsset: (id: number, data: DisposeFormData) => Promise<void>
   calculateDepreciationBatch: () => Promise<BatchResult | null>
   setFilters: (filters: FixedAssetsFilters) => void
@@ -235,6 +238,25 @@ export const useFixedAssetsStore = create<FixedAssetsState>((set, get) => ({
         toast.error(getErrorMessage(error))
       }
       const message = error instanceof Error ? error.message : 'Failed to delete fixed asset'
+      set({ error: message, isSubmitting: false })
+      throw error
+    }
+  },
+
+  bulkDelete: async (ids: number[]) => {
+    set({ isSubmitting: true, error: null })
+    try {
+      await apiClient.post('/admin/fixed-assets/bulk-delete', { ids })
+      await get().fetchAssets()
+      await get().fetchCategories()
+      set({ isSubmitting: false })
+      toast.success(`${ids.length} aktiva tetap berhasil dihapus`)
+    } catch (error: any) {
+      const status = error?.response?.status
+      if (status === 422 || status === 403) {
+        toast.error(getErrorMessage(error))
+      }
+      const message = error instanceof Error ? error.message : 'Failed to delete fixed assets'
       set({ error: message, isSubmitting: false })
       throw error
     }

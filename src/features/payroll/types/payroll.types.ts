@@ -3,6 +3,17 @@
  * API endpoint: /api/admin/payroll
  */
 
+export interface ApiResponse<T> {
+  success: boolean
+  data: T
+  error?: string
+  meta?: {
+    total: number
+    page: number
+    limit: number
+  }
+}
+
 export interface PayrollItem {
   id: number
   employee_id: number

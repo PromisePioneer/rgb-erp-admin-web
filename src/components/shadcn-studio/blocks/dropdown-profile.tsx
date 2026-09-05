@@ -28,13 +28,15 @@ const ProfileDropdown = ({ trigger, defaultOpen, align = 'end' }: Props) => {
 
   return (
     <DropdownMenu defaultOpen={defaultOpen}>
-      <DropdownMenuTrigger render={trigger} />
+      <DropdownMenuTrigger asChild>
+        {trigger}
+      </DropdownMenuTrigger>
       <DropdownMenuContent className='w-80' align={align || 'end'}>
         <DropdownMenuGroup>
           <DropdownMenuLabel className='flex items-center gap-4 px-4 py-2.5 font-normal'>
             <div className='relative'>
-              <Avatar size='lg'>
-                <AvatarFallback>
+              <Avatar className='h-10 w-10'>
+                <AvatarFallback className='text-lg'>
                   {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
@@ -63,7 +65,7 @@ const ProfileDropdown = ({ trigger, defaultOpen, align = 'end' }: Props) => {
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuItem variant='destructive' className='gap-2 px-4 py-2.5 text-base' onClick={handleLogout}>
+          <DropdownMenuItem className='gap-2 px-4 py-2.5 text-base focus:text-destructive' onClick={handleLogout}>
             <LogOutIcon className='size-5' />
             <span>Keluar</span>
           </DropdownMenuItem>

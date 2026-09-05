@@ -81,10 +81,22 @@ export function SchedulesFormModal({
                 pos_id: undefined,
             })
             hasShownValidationToast.current = false
+            setDefaultEmployeeOption(null)
+            setDefaultShiftOption(null)
         } else {
             // Set defaults from calendar click
             if (defaultEmployeeId && mode === 'create') {
                 form.setValue('employee_id', defaultEmployeeId)
+                // Fetch employee name for display
+                schedulesApi.getEmployeesSelectOptions({q: ''}).then(response => {
+                    const found = response.data.find((e: {id: number}) => e.id === defaultEmployeeId)
+                    if (found) {
+                        setDefaultEmployeeOption({
+                            value: found.id,
+                            label: `${found.name} (${found.code})`,
+                        })
+                    }
+                }).catch(() => {})
             }
             if (defaultDate && mode === 'create') {
                 form.setValue('date', defaultDate)
@@ -118,9 +130,7 @@ export function SchedulesFormModal({
 
     // Effect 1: Fetch data when scheduleId changes
     useEffect(() => {
-        console.log('Effect 1 - mode:', mode, 'scheduleId:', scheduleId, 'open:', open)
         if (mode === 'edit' && scheduleId && open) {
-            console.log('Calling fetchById with:', scheduleId)
             fetchById(scheduleId)
         }
         if (mode === 'create' && open) {
@@ -169,18 +179,7 @@ export function SchedulesFormModal({
             } else {
                 setDefaultShiftOption(null)
             }
-        } else if (mode === 'create' && defaultEmployeeId) {
-            // Pre-load employee for create mode
-            schedulesApi.getEmployeesSelectOptions({q: ''}).then(response => {
-                const found = response.data.find((e: {id: number}) => e.id === defaultEmployeeId)
-                if (found) {
-                    setDefaultEmployeeOption({
-                        value: found.id,
-                        label: `${found.name} (${found.code})`,
-                    })
-                }
-            }).catch(() => {})
-        } else if (mode === 'create') {
+        } else if (mode === 'create' && !defaultEmployeeId) {
             setDefaultEmployeeOption(null)
             setDefaultShiftOption(null)
         }
@@ -341,6 +340,7 @@ export function SchedulesFormModal({
                             Karyawan *
                         </label>
                         <AsyncSelect
+                            key={`employee-${defaultEmployeeOption?.value ?? 'empty'}`}
                             value={form.watch('employee_id') ?? null}
                             onChange={handleEmployeeChange}
                             loadOptions={loadEmployees}

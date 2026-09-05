@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { format, parseISO, isValid } from "date-fns"
-import { Popover, PopoverContent } from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -14,6 +14,7 @@ interface DatePickerProps {
   className?: string
   disabled?: boolean
   format?: string
+  selectionMode?: "date" | "month"
 }
 
 export function DatePicker({
@@ -23,8 +24,8 @@ export function DatePicker({
   className,
   disabled = false,
   format: formatStr = "yyyy-MM-dd",
+  selectionMode = "date",
 }: DatePickerProps) {
-  const [open, setOpen] = React.useState(false)
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
     value && isValid(parseISO(value)) ? parseISO(value) : undefined
   )
@@ -44,44 +45,44 @@ export function DatePicker({
     } else {
       onChange?.(undefined)
     }
-    setOpen(false)
   }
 
   const displayValue = selectedDate
-    ? format(selectedDate, "dd MMM yyyy")
+    ? selectionMode === "month"
+      ? format(selectedDate, "MMMM yyyy")
+      : format(selectedDate, "dd MMM yyyy")
     : placeholder
 
   return (
-    <div className={cn("relative w-full", className)}>
-      <button
-        type="button"
+    <Popover>
+      <PopoverTrigger
         disabled={disabled}
         className={cn(
           "w-full flex items-center justify-between font-normal h-10 px-3 py-2 text-sm rounded-md border bg-background",
           "hover:bg-accent hover:text-accent-foreground",
           "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
           "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted",
-          !selectedDate && "text-muted-foreground"
+          !selectedDate && "text-muted-foreground",
+          className
         )}
-        onClick={() => !disabled && setOpen(!open)}
       >
         <span className="flex items-center truncate">
           <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
           <span className="truncate">{displayValue}</span>
         </span>
-      </button>
-
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleSelect}
-            disabled={(date) => date > new Date()}
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={handleSelect}
+          disabled={selectionMode === "date" ? (date) => date > new Date() : undefined}
+          captionLayout={selectionMode === "month" ? "dropdown-months" : "label"}
+          startMonth={selectionMode === "month" ? new Date("2000-01-01") : undefined}
+          endMonth={selectionMode === "month" ? new Date("2050-12-31") : undefined}
+        />
+      </PopoverContent>
+    </Popover>
   )
 }
 

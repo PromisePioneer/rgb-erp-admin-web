@@ -9,18 +9,20 @@ import { Save, Plus, Trash2, MapPin, Building2, User, Calendar, DollarSign, Chev
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { MapPicker } from '@/components/map-picker'
 import { useClientsStore } from '@/features/clients'
 import { clientTypesApi } from '@/features/client-types/api/client-types-api'
-import type { CreateAreaNested, CreatePosNested, CreateClientPayload, UpdateClientPayload } from '@/features/clients/types/clients.types'
+import type {
+  CreateAreaNested,
+  CreatePosNested,
+  CreateClientPayload,
+  UpdateClientPayload,
+  ClientDetail,
+  ClientArea,
+  ClientPos,
+} from '@/features/clients/types/clients.types'
 
 type FormValues = {
   client_type_id: number | undefined
@@ -112,6 +114,36 @@ export function ClientsForm() {
     }
   }, [isEdit, selectedItem, form])
 
+  // Populate nested areas when editing
+  useEffect(() => {
+    if (isEdit && selectedItem) {
+      const detail = selectedItem as ClientDetail
+      if (detail.areas && Array.isArray(detail.areas)) {
+        const loadedAreas: AreaWithPoss[] = detail.areas.map((area: ClientArea) => ({
+          id: `existing-${area.id}`,
+          name: area.name,
+          latitude: area.latitude ?? '',
+          longitude: area.longitude ?? '',
+          description: area.description ?? '',
+          poss: (area.poss ?? []).map((pos: ClientPos) => ({
+            name: pos.name,
+            latitude: pos.latitude ?? '',
+            longitude: pos.longitude ?? '',
+            description: pos.description ?? '',
+          })),
+        }))
+        setNestedAreas(loadedAreas)
+        // Expand all areas by default
+        setExpandedAreas(new Set(loadedAreas.map(a => a.id)))
+      }
+    } else {
+      // Reset nested areas when creating new client
+      setNestedAreas([])
+      setExpandedAreas(new Set())
+    }
+  }, [isEdit, selectedItem])
+
+  // Load client types for dropdown
   const loadClientTypes = useCallback(async (search: string): Promise<SelectOption[]> => {
     try {
       const response = await clientTypesApi.getSelectOptions({ q: search })
@@ -123,6 +155,65 @@ export function ClientsForm() {
       return []
     }
   }, [])
+
+  // Skeleton loading state - AFTER all hooks
+  if (isLoading && isEdit) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-24" />
+        </div>
+
+        {/* Basic Info */}
+        <div className="bg-card rounded-lg border p-6 space-y-4 mb-6">
+          <Skeleton className="h-6 w-40" />
+          <div className="grid md:grid-cols-2 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+
+        {/* Contact Info */}
+        <div className="bg-card rounded-lg border p-6 space-y-4 mb-6">
+          <Skeleton className="h-6 w-40" />
+          <div className="grid md:grid-cols-2 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-20 w-full" />
+        </div>
+
+        {/* Project Info */}
+        <div className="bg-card rounded-lg border p-6 space-y-4 mb-6">
+          <Skeleton className="h-6 w-40" />
+          <div className="grid md:grid-cols-2 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+
+        {/* Financial Info */}
+        <div className="bg-card rounded-lg border p-6 space-y-4 mb-6">
+          <Skeleton className="h-6 w-40" />
+          <div className="grid md:grid-cols-3 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Area handlers
 
   // Area handlers
   const handleAddArea = () => {
@@ -261,6 +352,8 @@ export function ClientsForm() {
           status: Number(values.status),
         }
         if (values.password) updatePayload.password = values.password
+        // Include areas in update (will replace existing areas in backend)
+        if (validAreas.length > 0) updatePayload.areas = validAreas
 
         await update(clientId, updatePayload)
         toast.success('Client berhasil diperbarui')
@@ -327,18 +420,14 @@ export function ClientsForm() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
-              <Select
-                value={form.watch('status')}
-                onValueChange={(value) => form.setValue('status', value ?? '1')}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Aktif</SelectItem>
-                  <SelectItem value="0">Tidak Aktif</SelectItem>
-                </SelectContent>
-              </Select>
+              <AsyncSelect
+                loadOptions={async () => [
+                  { value: '1', label: 'Aktif' },
+                  { value: '0', label: 'Tidak Aktif' },
+                ]}
+                value={form.watch('status') || '1'}
+                onChange={(val) => form.setValue('status', (val as string) || '1')}
+              />
             </div>
           </div>
         </div>
@@ -367,6 +456,20 @@ export function ClientsForm() {
                 {...form.register('phone')}
               />
             </div>
+
+            {isEdit && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Password Baru</label>
+                <Input
+                  type="password"
+                  placeholder="Kosongkan jika tidak ingin mengubah"
+                  {...form.register('password')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Isi hanya jika ingin mengubah password
+                </p>
+              </div>
+            )}
 
             {!isEdit && (
               <div className="space-y-2">

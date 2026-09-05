@@ -13,13 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { AsyncSelect } from '@/components/async-select'
 import { toast } from 'sonner'
 import { usePayrollStore } from '../store/payroll-store'
 
@@ -36,6 +30,13 @@ const MONTHS = [
   { value: 10, label: 'October' },
   { value: 11, label: 'November' },
   { value: 12, label: 'December' },
+]
+
+const YEARS = [
+  new Date().getFullYear() - 2,
+  new Date().getFullYear() - 1,
+  new Date().getFullYear(),
+  new Date().getFullYear() + 1,
 ]
 
 interface PayrollGenerateDialogProps {
@@ -118,43 +119,23 @@ export function PayrollGenerateDialog({
             {isMonthly && (
               <div className="space-y-2">
                 <label className="text-sm font-medium">Month</label>
-                <Select
-                  value={month.toString()}
-                  onValueChange={(v) => { if (v) setMonth(parseInt(v, 10)) }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MONTHS.map((m) => (
-                      <SelectItem key={m.value} value={m.value.toString()}>
-                        {m.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <AsyncSelect
+                  placeholder="Select month..."
+                  loadOptions={async () => MONTHS.map(m => ({ value: String(m.value), label: m.label }))}
+                  value={month}
+                  onChange={(val) => { if (val) setMonth(Number(val)) }}
+                />
               </div>
             )}
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Year</label>
-              <Select
-                value={year.toString()}
-                onValueChange={(v) => { if (v) setYear(parseInt(v, 10)) }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[new Date().getFullYear() - 2, new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(
-                    (y) => (
-                      <SelectItem key={y} value={y.toString()}>
-                        {y}
-                      </SelectItem>
-                    )
-                  )}
-                </SelectContent>
-              </Select>
+              <AsyncSelect
+                placeholder="Select year..."
+                loadOptions={async () => YEARS.map(y => ({ value: String(y), label: String(y) }))}
+                value={year}
+                onChange={(val) => { if (val) setYear(Number(val)) }}
+              />
             </div>
           </div>
 

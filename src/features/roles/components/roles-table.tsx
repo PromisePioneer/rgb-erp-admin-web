@@ -3,8 +3,8 @@
  * Using standardized DataTable with row selection and modal form
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Trash2, Shield } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
+import { Plus, Trash2, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -29,6 +29,7 @@ export function RolesTable() {
     isLoading,
     pagination,
     fetchRoles,
+    fetchAllRoles,
     filters,
     bulkDelete,
     isSubmitting,
@@ -46,7 +47,8 @@ export function RolesTable() {
   // Fetch on mount and when filters change
   useEffect(() => {
     fetchRoles(filters)
-  }, [fetchRoles, filters])
+    fetchAllRoles() // Fetch all for parent dropdown
+  }, [fetchRoles, fetchAllRoles, filters])
 
   // Reset selection when data changes
   useEffect(() => {
@@ -117,16 +119,20 @@ export function RolesTable() {
       accessorKey: 'name',
       header: 'Name',
       cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-          className="font-medium text-primary hover:underline text-left cursor-pointer"
-        >
-          {row.name}
-        </button>
+        <span className="font-medium text-left">{row.name}</span>
+      ),
+    },
+    {
+      accessorKey: 'parent_role_id',
+      header: 'Approver (Parent)',
+      cell: (row) => (
+        <span className="text-sm">
+          {row.parent_role_name ? (
+            row.parent_role_name
+          ) : (
+            <span className="text-green-600 font-medium">Auto Approve</span>
+          )}
+        </span>
       ),
     },
     {
@@ -135,23 +141,27 @@ export function RolesTable() {
       cell: (row) => getStatusBadge(row.status),
     },
     {
+      id: 'actions',
       header: 'Actions',
-      cell: (row: Role) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            navigate({ to: '/roles/$id/privileges', params: { id: row.id.toString() } })
-          }}
-          className="text-muted-foreground hover:text-primary h-8 px-2"
-        >
-          <Shield className="h-4 w-4 mr-1" />
-          Privileges
-        </Button>
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate({ to: '/roles/$id/privileges', params: { id: String(row.id) } })
+            }}
+          >
+            <Shield className="h-4 w-4 mr-1" />
+            Privilege
+          </Button>
+        </div>
       ),
     },
   ]
+
+  // Columns without action column
 
   // Bulk actions
   const bulkActions = (
@@ -178,11 +188,6 @@ export function RolesTable() {
         </Button>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama untuk mengedit data
-      </p>
-
       <DataTable
         columns={columns}
         data={items}
@@ -194,6 +199,7 @@ export function RolesTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

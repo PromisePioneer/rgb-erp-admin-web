@@ -10,6 +10,7 @@ import { Save, Building2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
   DialogContent,
@@ -155,7 +156,22 @@ export function ClientTypesFormModal({
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+          {/* Skeleton loading state when fetching for edit */}
+          {mode === 'edit' && isLoading && !selectedItem && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-11 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-11 w-full" />
+              </div>
+            </div>
+          )}
+
           {/* Name */}
+          {(mode === 'create' || selectedItem) && (
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
               <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -172,8 +188,10 @@ export function ClientTypesFormModal({
               </p>
             )}
           </div>
+          )}
 
           {/* Status */}
+          {(mode === 'create' || selectedItem) && (
           <div className="space-y-2">
             <label className="text-sm font-medium">Status *</label>
             <select
@@ -191,6 +209,7 @@ export function ClientTypesFormModal({
               </p>
             )}
           </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t">
@@ -202,7 +221,7 @@ export function ClientTypesFormModal({
             >
               Batal
             </Button>
-            <Button type="submit" disabled={isSubmitting || isLoading} className="px-6">
+            <Button type="submit" disabled={isSubmitting || isLoading || (mode === 'edit' && !selectedItem)} className="px-6">
               <Save className="h-4 w-4 mr-2" />
               {isSubmitting ? 'Menyimpan...' : 'Simpan'}
             </Button>

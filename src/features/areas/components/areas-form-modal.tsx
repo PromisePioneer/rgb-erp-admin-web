@@ -8,19 +8,7 @@ import { Save, MapPin, Building2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { MapPicker } from '@/components/map-picker'
 import { useAreasStore } from '@/features/areas'
@@ -42,7 +30,13 @@ type AreaFormValues = {
   longitude: string
   description: string
   status: 'Aktif' | 'Tidak Aktif'
+  coordinator_id?: number | null
 }
+
+const STATUS_OPTIONS = [
+  { value: 'Aktif', label: 'Aktif' },
+  { value: 'Tidak Aktif', label: 'Tidak Aktif' },
+]
 
 export function AreasFormModal({
   open,
@@ -72,6 +66,7 @@ export function AreasFormModal({
       longitude: '',
       description: '',
       status: 'Aktif',
+      coordinator_id: null,
     },
   })
 
@@ -85,6 +80,7 @@ export function AreasFormModal({
         longitude: '',
         description: '',
         status: 'Aktif',
+        coordinator_id: null,
       })
       hasShownValidationToast.current = false
     }
@@ -109,7 +105,7 @@ export function AreasFormModal({
     if (errorCount === 0) {
       hasShownValidationToast.current = false
     }
-  }, [form, form.formState.errors, form.formState.submitCount])
+  }, [form.formState.errors, form.formState.submitCount])
 
   // Fetch data for edit mode
   useEffect(() => {
@@ -131,6 +127,7 @@ export function AreasFormModal({
         longitude: selectedItem.longitude ?? '',
         description: selectedItem.description ?? '',
         status: selectedItem.status === 1 ? 'Aktif' : 'Tidak Aktif',
+        coordinator_id: selectedItem.coordinator_id ?? null,
       })
     }
   }, [mode, selectedItem, open, form])
@@ -168,6 +165,7 @@ export function AreasFormModal({
       longitude: values.longitude.trim() || undefined,
       description: values.description.trim() || undefined,
       status: values.status,
+      coordinator_id: values.coordinator_id ?? null,
     }
 
     try {
@@ -213,9 +211,7 @@ export function AreasFormModal({
             ) : (
               <AsyncSelect
                 value={form.watch('client_id') ?? null}
-                onChange={(value) =>
-                  form.setValue('client_id', value as number | undefined, { shouldValidate: true })
-                }
+                onChange={(val) => form.setValue('client_id', val as number | undefined, { shouldValidate: true })}
                 loadOptions={loadClients}
                 placeholder="Pilih client..."
                 isDisabled={isLoading}
@@ -231,7 +227,7 @@ export function AreasFormModal({
               Nama Area
             </label>
             <Input
-              placeholder="Contoh: Gedung A, Perimeter, Lobby"
+              placeholder="Contoh: gedung A, Perimeter, Lobby"
               {...form.register('name', { required: 'Nama area wajib diisi' })}
             />
           </div>
@@ -284,18 +280,13 @@ export function AreasFormModal({
           {/* Status */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Status</label>
-            <Select
+            <AsyncSelect
+              placeholder="Pilih status..."
+              loadOptions={async () => STATUS_OPTIONS}
               value={form.watch('status')}
-              onValueChange={(value) => form.setValue('status', value as 'Aktif' | 'Tidak Aktif')}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Aktif">Aktif</SelectItem>
-                <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={(val) => form.setValue('status', val as 'Aktif' | 'Tidak Aktif')}
+              className="w-full"
+            />
           </div>
 
           {/* Actions */}

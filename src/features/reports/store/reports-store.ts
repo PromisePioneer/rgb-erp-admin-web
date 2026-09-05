@@ -27,6 +27,7 @@ interface ReportsState {
   fetchReports: (params?: ReportsFilters) => Promise<void>
   fetchByArea: (params?: ReportsFilters) => Promise<void>
   fetchClients: () => Promise<void>
+  bulkDelete: (ids: number[]) => Promise<void>
   setFilters: (filters: Partial<ReportsFilters>) => void
   resetFilters: () => void
   reset: () => void
@@ -105,6 +106,19 @@ export const useReportsStore = create<ReportsState>((set, get) => ({
     } catch {
       // Use empty array on error, filter will still work without clients
       set({ clients: [], isLoadingClients: false })
+    }
+  },
+
+  bulkDelete: async (ids: number[]) => {
+    set({ isLoading: true, error: null })
+    try {
+      await reportsApi.bulkDelete(ids)
+      await get().fetchReports()
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to delete reports'
+      set({ error: message, isLoading: false })
+      throw error
     }
   },
 

@@ -5,14 +5,13 @@
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { AsyncSelect } from '@/components/async-select'
 import { useAreasStore } from '../store/areas-store'
+
+const STATUS_OPTIONS = [
+  { value: '1', label: 'Aktif' },
+  { value: '0', label: 'Tidak Aktif' },
+]
 
 export function AreasFilters() {
   const {
@@ -25,11 +24,11 @@ export function AreasFilters() {
     setFilters({ search: e.target.value || undefined })
   }
 
-  const handleStatusChange = (value: string | null) => {
+  const handleStatusChange = (value: string | number | null) => {
     if (!value || value === 'all') {
       setFilters({ status: undefined })
     } else {
-      setFilters({ status: value })
+      setFilters({ status: value as '1' | '0' })
     }
   }
 
@@ -50,19 +49,13 @@ export function AreasFilters() {
       />
 
       {/* Status Dropdown */}
-      <Select
-        value={filters.status ?? 'all'}
-        onValueChange={handleStatusChange}
-      >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="All Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Status</SelectItem>
-          <SelectItem value="1">Aktif</SelectItem>
-          <SelectItem value="0">Tidak Aktif</SelectItem>
-        </SelectContent>
-      </Select>
+      <AsyncSelect
+        placeholder="All Status"
+        loadOptions={async () => STATUS_OPTIONS}
+        value={filters.status ? String(filters.status) : null}
+        onChange={handleStatusChange}
+        className="w-[180px]"
+      />
 
       {/* Reset Button */}
       {hasActiveFilters && (

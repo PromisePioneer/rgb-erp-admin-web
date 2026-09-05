@@ -60,4 +60,13 @@ export const reportsApi = {
     )
     return data
   },
+
+  /**
+   * Bulk delete field reports
+   * POST /api/admin/reports/bulk-delete
+   */
+  bulkDelete: async (ids: number[]) => {
+    const { data } = await apiClient.post<ApiResponse<void>>('/admin/reports/bulk-delete', { ids })
+    return data
+  },
 }
