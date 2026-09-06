@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { toast } from 'sonner'
+import echo from '@/lib/echo'
 import type { Notification } from '../types/notifications.types'
 import { notificationsApi } from '../api/notifications-api'
 
@@ -8,6 +10,8 @@ interface NotificationsState {
   isLoading: boolean
   error: string | null
   isPanelOpen: boolean
+  isConnected: boolean
+  employeeId: number | null
 
   // Actions
   fetchNotifications: () => Promise<void>
@@ -18,6 +22,9 @@ interface NotificationsState {
   closePanel: () => void
   togglePanel: () => void
   reset: () => void
+  initReverb: (employeeId: number) => void
+  disconnectReverb: () => void
+  addRealtimeNotification: (notification: Notification) => void
 }
 
 const initialState = {
@@ -26,6 +33,8 @@ const initialState = {
   isLoading: false,
   error: null,
   isPanelOpen: false,
+  isConnected: false,
+  employeeId: null,
 }
 
 export const useNotificationsStore = create<NotificationsState>((set, get) => ({
@@ -113,5 +122,53 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
 
   reset: () => {
     set(initialState)
+  },
+
+  initReverb: (employeeId: number) => {
+    // Disconnect existing if any
+    get().disconnectReverb()
+
+    set({ employeeId, isConnected: false })
+    console.log('Initializing Reverb for employee:', employeeId)
+
+    // Listen to private notification channel
+    echo.private(`notifications.${employeeId}`)
+      .listen('.new-notification', (event: Notification) => {
+        console.log('Received realtime notification:', event)
+        get().addRealtimeNotification(event)
+      })
+
+    set({ isConnected: true })
+    console.log('Reverb channel subscribed')
+  },
+
+  disconnectReverb: () => {
+    const { employeeId } = get()
+    if (employeeId) {
+      console.log('Disconnecting Reverb for employee:', employeeId)
+      echo.leave(`notifications.${employeeId}`)
+    }
+    set({ isConnected: false, employeeId: null })
+  },
+
+  addRealtimeNotification: (notification: Notification) => {
+    // Add to state
+    set((state) => ({
+      notifications: [notification, ...state.notifications],
+      unreadCount: state.unreadCount + 1,
+    }))
+
+    // Show toast
+    toast(notification.title, {
+      description: notification.body,
+      duration: 5000,
+      action: notification.reference_type ? {
+        label: 'Lihat',
+        onClick: () => {
+          // Navigate to reference
+          console.log('Navigate to:', notification.reference_type, notification.reference_id)
+        },
+      } : undefined,
+    })
   },
 }))

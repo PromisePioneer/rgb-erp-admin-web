@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Bell } from 'lucide-react'
 import { useNotificationsStore } from '@/features/notifications/store/notifications-store'
+import { useAuthStore } from '@/stores/auth-store'
 import { NotificationPanel } from '@/features/notifications/components/notification-panel'
 import {
   DropdownMenu,
@@ -9,7 +10,20 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 export function NotificationBell() {
-  const { unreadCount, fetchUnreadCount } = useNotificationsStore()
+  const { unreadCount, fetchUnreadCount, initReverb, disconnectReverb, isConnected } = useNotificationsStore()
+  const { user, isAuthenticated } = useAuthStore()
+
+  // Init Reverb on mount when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user?.employee?.id) {
+      console.log('Init Reverb for employee:', user.employee.id)
+      initReverb(user.employee.id)
+    }
+
+    return () => {
+      disconnectReverb()
+    }
+  }, [isAuthenticated, user?.employee?.id, initReverb, disconnectReverb])
 
   // Fetch unread count on mount
   useEffect(() => {
@@ -27,7 +41,7 @@ export function NotificationBell() {
       <DropdownMenuTrigger asChild>
         <button
           className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
-          title="Notifikasi"
+          title={`Notifikasi${isConnected ? ' (Live)' : ''}`}
         >
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
