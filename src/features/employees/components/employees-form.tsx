@@ -25,9 +25,9 @@ import type {CreateEmployeePayload} from '@/features/employees'
 const REQUIRED_PLACEMENT_ROLES = [
     'Security Guard',
     'Chief',
-    'Danru',
+    'Komandan Regu',
     'Valet',
-    'Cleaning Service',
+    'Cleaning Crew',
     'Team Leader'
 ]
 
