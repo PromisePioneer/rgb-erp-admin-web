@@ -1,8 +1,7 @@
 import { create } from 'zustand'
 import { toast } from 'sonner'
-import echo from '@/lib/echo'
-import type { Notification } from '../types/notifications.types'
 import { notificationsApi } from '../api/notifications-api'
+import type { Notification } from '../types/notifications.types'
 
 interface NotificationsState {
   notifications: Notification[]
@@ -10,10 +9,8 @@ interface NotificationsState {
   isLoading: boolean
   error: string | null
   isPanelOpen: boolean
-  isConnected: boolean
-  employeeId: number | null
-
-  // Actions
+  lastFetchTime: number | null
+  
   fetchNotifications: () => Promise<void>
   fetchUnreadCount: () => Promise<void>
   markAsRead: (id: number) => Promise<void>
@@ -22,36 +19,47 @@ interface NotificationsState {
   closePanel: () => void
   togglePanel: () => void
   reset: () => void
-  initReverb: (employeeId: number) => void
-  disconnectReverb: () => void
-  addRealtimeNotification: (notification: Notification) => void
+  addNotification: (notification: Notification) => void
 }
 
-const initialState = {
+
+export const useNotificationsStore = create<NotificationsState>((set, get) => ({
   notifications: [],
   unreadCount: 0,
   isLoading: false,
   error: null,
   isPanelOpen: false,
-  isConnected: false,
-  employeeId: null,
-}
-
-export const useNotificationsStore = create<NotificationsState>((set, get) => ({
-  ...initialState,
+  lastFetchTime: null,
 
   fetchNotifications: async () => {
     set({ isLoading: true, error: null })
     try {
       const result = await notificationsApi.getList()
+      const oldIds = new Set(get().notifications.map(n => n.id))
+      const newNotifications = result.notifications
+      
+      // Find new notifications
+      const newOnes = newNotifications.filter(n => !oldIds.has(n.id))
+      
       set({
-        notifications: result.notifications,
+        notifications: newNotifications,
         unreadCount: result.unread_count,
         isLoading: false,
+        lastFetchTime: Date.now(),
       })
+      
+      // Show toast for new notifications
+      if (newOnes.length > 0) {
+        newOnes.forEach(notif => {
+          toast(notif.title, {
+            description: notif.body,
+            duration: 5000,
+          })
+        })
+      }
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : 'Failed to fetch notifications',
+        error: error instanceof Error ? error.message : 'Failed to fetch',
         isLoading: false,
       })
     }
@@ -62,55 +70,45 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
       const count = await notificationsApi.getUnreadCount()
       set({ unreadCount: count })
     } catch {
-      // Silently fail for count refresh
+      // Silent fail
     }
   },
 
   markAsRead: async (id: number) => {
     try {
       await notificationsApi.markAsRead(id)
-
-      // Update local state
-      const notifications = get().notifications.map((n) =>
-        n.id === id ? { ...n, read_at: new Date().toISOString() } : n
-      )
-      const unreadCount = Math.max(0, get().unreadCount - 1)
-
-      set({ notifications, unreadCount })
+      set((state) => ({
+        notifications: state.notifications.map(n =>
+          n.id === id ? { ...n, read_at: new Date().toISOString() } : n
+        ),
+        unreadCount: Math.max(0, state.unreadCount - 1),
+      }))
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to mark as read',
-      })
+      set({ error: error instanceof Error ? error.message : 'Failed' })
     }
   },
 
   markAllAsRead: async () => {
     try {
       await notificationsApi.markAllAsRead()
-
-      // Update local state - mark all as read
-      const notifications = get().notifications.map((n) => ({
-        ...n,
-        read_at: n.read_at || new Date().toISOString(),
+      set((state) => ({
+        notifications: state.notifications.map(n => ({
+          ...n,
+          read_at: n.read_at || new Date().toISOString(),
+        })),
+        unreadCount: 0,
       }))
-
-      set({ notifications, unreadCount: 0 })
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to mark all as read',
-      })
+      set({ error: error instanceof Error ? error.message : 'Failed' })
     }
   },
 
   openPanel: () => {
     set({ isPanelOpen: true })
-    // Fetch notifications when opening panel
     get().fetchNotifications()
   },
 
-  closePanel: () => {
-    set({ isPanelOpen: false })
-  },
+  closePanel: () => set({ isPanelOpen: false }),
 
   togglePanel: () => {
     if (get().isPanelOpen) {
@@ -120,55 +118,23 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
     }
   },
 
-  reset: () => {
-    set(initialState)
-  },
+  reset: () => set({
+    notifications: [],
+    unreadCount: 0,
+    isLoading: false,
+    error: null,
+    isPanelOpen: false,
+    lastFetchTime: null,
+  }),
 
-  initReverb: (employeeId: number) => {
-    // Disconnect existing if any
-    get().disconnectReverb()
-
-    set({ employeeId, isConnected: false })
-    console.log('Initializing Reverb for employee:', employeeId)
-
-    // Listen to private notification channel
-    echo.private(`notifications.${employeeId}`)
-      .listen('.new-notification', (event: Notification) => {
-        console.log('Received realtime notification:', event)
-        get().addRealtimeNotification(event)
-      })
-
-    set({ isConnected: true })
-    console.log('Reverb channel subscribed')
-  },
-
-  disconnectReverb: () => {
-    const { employeeId } = get()
-    if (employeeId) {
-      console.log('Disconnecting Reverb for employee:', employeeId)
-      echo.leave(`notifications.${employeeId}`)
-    }
-    set({ isConnected: false, employeeId: null })
-  },
-
-  addRealtimeNotification: (notification: Notification) => {
-    // Add to state
+  addNotification: (notification: Notification) => {
     set((state) => ({
       notifications: [notification, ...state.notifications],
       unreadCount: state.unreadCount + 1,
     }))
-
-    // Show toast
     toast(notification.title, {
       description: notification.body,
       duration: 5000,
-      action: notification.reference_type ? {
-        label: 'Lihat',
-        onClick: () => {
-          // Navigate to reference
-          console.log('Navigate to:', notification.reference_type, notification.reference_id)
-        },
-      } : undefined,
     })
   },
 }))

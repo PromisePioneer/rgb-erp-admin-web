@@ -1,7 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Bell } from 'lucide-react'
 import { useNotificationsStore } from '@/features/notifications/store/notifications-store'
-import { useAuthStore } from '@/stores/auth-store'
 import { NotificationPanel } from '@/features/notifications/components/notification-panel'
 import {
   DropdownMenu,
@@ -9,39 +8,36 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-export function NotificationBell() {
-  const { unreadCount, fetchUnreadCount, initReverb, disconnectReverb, isConnected } = useNotificationsStore()
-  const { user, isAuthenticated } = useAuthStore()
+const POLL_INTERVAL = 5000 // 5 seconds
 
-  // Init Reverb on mount when authenticated
+export function NotificationBell() {
+  const { unreadCount, fetchUnreadCount, fetchNotifications } = useNotificationsStore()
+  const intervalRef = useRef<number | null>(null)
+
   useEffect(() => {
-    if (isAuthenticated && user?.employee?.id) {
-      console.log('Init Reverb for employee:', user.employee.id)
-      initReverb(user.employee.id)
-    }
+    // Initial fetch
+    fetchUnreadCount()
+    fetchNotifications()
+
+    // Poll every 5 seconds
+    intervalRef.current = window.setInterval(() => {
+      fetchUnreadCount()
+      fetchNotifications()
+    }, POLL_INTERVAL)
 
     return () => {
-      disconnectReverb()
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
     }
-  }, [isAuthenticated, user?.employee?.id, initReverb, disconnectReverb])
-
-  // Fetch unread count on mount
-  useEffect(() => {
-    fetchUnreadCount()
-    // Refresh every 30 seconds
-    const interval = setInterval(() => {
-      fetchUnreadCount()
-    }, 30000)
-
-    return () => clearInterval(interval)
-  }, [fetchUnreadCount])
+  }, [fetchUnreadCount, fetchNotifications])
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
-          title={`Notifikasi${isConnected ? ' (Live)' : ''}`}
+          title="Notifikasi"
         >
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (

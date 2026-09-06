@@ -44,7 +44,7 @@ export function NotificationPanel() {
             <p className="text-muted-foreground text-sm">Tidak ada notifikasi</p>
           </div>
         ) : (
-          <div className="p-2">
+          <div className="p-2 space-y-2">
             {notifications.map((notification) => (
               <NotificationItem key={notification.id} notification={notification} />
             ))}
