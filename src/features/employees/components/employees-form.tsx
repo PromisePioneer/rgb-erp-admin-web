@@ -827,7 +827,7 @@ export function EmployeesForm() {
                                 loadOptions={loadClients}
                                 placeholder="Select client..."
                                 className="w-full"
-                                isDisabled={!isPlacementRequired}
+                                isDisabled={!isPlacementRequired && !form.watch('client_id')}
                             />
                         </div>
 
@@ -841,7 +841,7 @@ export function EmployeesForm() {
                                 loadOptions={(search) => loadAreas(search, form.getValues('client_id') as number | undefined)}
                                 placeholder="Select area..."
                                 className="w-full"
-                                isDisabled={!form.watch('client_id') || !isPlacementRequired}
+                                isDisabled={!form.watch('client_id') || (!isPlacementRequired && !form.watch('area_id'))}
                             />
                         </div>
 
