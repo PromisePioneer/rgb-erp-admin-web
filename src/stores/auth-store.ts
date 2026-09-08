@@ -55,8 +55,8 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       login: async (email, password) => {
-        // Get CSRF cookie first (Sanctum requirement)
-        await apiClient.get('/admin/sanctum/csrf-cookie')
+        // Get CSRF cookie first (Sanctum requirement) - use fetch directly since it's outside /api
+        await fetch('/sanctum/csrf-cookie', { credentials: 'include' })
 
         // Login
         const { data } = await apiClient.post('/admin/login', {
