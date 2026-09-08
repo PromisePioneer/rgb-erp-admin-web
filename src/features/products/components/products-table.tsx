@@ -27,69 +27,18 @@ import {ProductsFilters} from './products-filters'
 import {ProductsFormModal} from '@/features/products'
 import {productsApi, type StockDetail} from '../api/products-api'
 import type {Product} from '../types/products.types'
-
-// Condition labels based on category
-// const TOOL_CONDITIONS = ['excellent', 'good', 'fair', 'poor', 'replace']
-// const CHEMICAL_CONDITIONS = ['full', 'half', 'low']
+import {
+    calculateCondition,
+    getConditionColor,
+    getConditionLabel,
+    type Condition,
+} from '@/types/condition'
 
 // Get condition based on category and stock
-function getCondition(categoryName: string | null, stock: number): string {
-    const cat = categoryName?.toLowerCase() || ''
-
-    // Chemicals use full/half/low
-    if (cat.includes('chemical') || cat.includes('kimia')) {
-        if (stock >= 75) return 'full'
-        if (stock >= 30) return 'half'
-        return 'low'
-    }
-
-    // Tools, PPEs, Machines use excellent/good/fair/poor/replace
-    if (cat.includes('tool') || cat.includes('alat') ||
-        cat.includes('ppe') ||
-        cat.includes('mesin') || cat.includes('machine')) {
-        if (stock >= 80) return 'excellent'
-        if (stock >= 50) return 'good'
-        if (stock >= 30) return 'fair'
-        if (stock >= 10) return 'poor'
-        return 'replace'
-    }
-
-    // Default for other categories
-    if (stock >= 50) return 'good'
-    if (stock >= 20) return 'fair'
-    return 'poor'
-}
-
-// Get condition color
-function getConditionColor(condition: string): string {
-    const colors: Record<string, string> = {
-        // Tool/PPE/Machine conditions
-        excellent: 'bg-green-100 text-green-800',
-        good: 'bg-emerald-100 text-emerald-800',
-        fair: 'bg-yellow-100 text-yellow-800',
-        poor: 'bg-orange-100 text-orange-800',
-        replace: 'bg-red-100 text-red-800',
-        // Chemical conditions
-        full: 'bg-green-100 text-green-800',
-        half: 'bg-yellow-100 text-yellow-800',
-        low: 'bg-red-100 text-red-800',
-    }
-    return colors[condition] || 'bg-gray-100 text-gray-800'
-}
-
-// Get condition label in Indonesian
-function getConditionLabel(condition: string): string {
-    const labels: Record<string, string> = {
-        excellent: 'Sangat Baik',
-        good: 'Baik',
-        fair: 'Cukup',
-        poor: 'Kurang',
-        replace: 'Ganti',
-        full: 'Penuh',
-        half: 'Setengah',
-        low: 'Habis',
-    }
-    return labels[condition] || condition
+// Chemical: Full (>=75%), Half (>=50%), Quarter (>=25%), Habis (<25%)
+// Non-chemical: Sangat Baik (>=85%), Baik (>=65%), Cukup Baik (>=45%), Kurang Baik (>=25%), Rusak (<25%)
+function getProductCondition(categoryName: string | null, stock: number): Condition {
+    return calculateCondition(categoryName, stock, 100)
 }
 
 // Modal component for stock detail
@@ -145,8 +94,8 @@ function StockDetailModal({
                                 <div className="text-right">
                                     <p className="text-sm text-muted-foreground">Kondisi</p>
                                     <span
-                                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getConditionColor(getCondition(product?.category_name || null, totalStock))}`}>
-                    {getConditionLabel(getCondition(product?.category_name || null, totalStock))}
+                                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getConditionColor(getProductCondition(product?.category_name || null, totalStock))}`}>
+                    {getConditionLabel(getProductCondition(product?.category_name || null, totalStock))}
                   </span>
                                 </div>
                             </div>
@@ -166,7 +115,7 @@ function StockDetailModal({
                                 </thead>
                                 <tbody>
                                 {stockDetails.map((detail) => {
-                                    const condition = getCondition(product?.category_name || null, detail.stock)
+                                    const condition = getProductCondition(product?.category_name || null, detail.stock)
                                     return (
                                         <tr key={detail.warehouse_id} className="border-b">
                                             <td className="px-4 py-2">
@@ -333,9 +282,9 @@ export function ProductsTable() {
     }
 
     // Get condition for a product
-    const getProductCondition = (product: Product): string => {
+    const getProductConditionForRow = (product: Product): Condition => {
         const totalStock = getTotalStock(product.id)
-        return getCondition(product.category_name, totalStock)
+        return getProductCondition(product.category_name, totalStock)
     }
 
     // Define columns
@@ -365,7 +314,7 @@ export function ProductsTable() {
             header: 'Stock',
             cell: (row) => {
                 const totalStock = getTotalStock(row.id)
-                const condition = getProductCondition(row)
+                const condition = getProductConditionForRow(row)
                 return (
                     <div className="flex items-center gap-2">
                         <button

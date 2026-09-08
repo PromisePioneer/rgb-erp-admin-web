@@ -3,6 +3,7 @@
  * Single module for both warehouse and area stock tracking with barcode support
  */
 import { apiClient } from '@/lib/api-client'
+import type { NonChemicalCondition, Condition } from '@/types/condition'
 
 // ==================== Types ====================
 
@@ -132,14 +133,14 @@ export interface MoveItemPayload {
 export interface ReturnItemPayload {
   qr_code: string
   warehouse_id: number
-  condition?: 'good' | 'damaged'
+  condition?: NonChemicalCondition
   notes?: string
 }
 
 export interface UpdateStatusPayload {
   qr_code: string
   status: 'available' | 'assigned' | 'damaged' | 'lost'
-  condition?: string
+  condition?: Condition
   notes?: string
 }
 

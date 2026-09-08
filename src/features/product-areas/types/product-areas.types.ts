@@ -3,6 +3,11 @@
  * API endpoint: /api/admin/product-areas
  * Stok per Area/Client
  */
+import type { Condition, NonChemicalCondition, ChemicalCondition } from '@/types/condition'
+
+export type ProductAreaCondition = Condition
+export type ProductAreaNonChemicalCondition = NonChemicalCondition
+export type ProductAreaChemicalCondition = ChemicalCondition
 
 export interface ProductArea {
   id: number
@@ -14,7 +19,7 @@ export interface ProductArea {
   client_name: string | null
   stock: number
   base_price: number
-  condition?: string | null
+  condition?: ProductAreaCondition | null
   condition_label?: string
   condition_color?: string
   status: number

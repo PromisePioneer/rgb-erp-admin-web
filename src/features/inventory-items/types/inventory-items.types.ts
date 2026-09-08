@@ -3,6 +3,11 @@
  * API endpoint: /api/admin/inventory-items
  * Unified tracking for warehouse and area inventory with movement history
  */
+import type { Condition, NonChemicalCondition, ChemicalCondition } from '@/types/condition'
+
+export type InventoryCondition = Condition
+export type InventoryNonChemicalCondition = NonChemicalCondition
+export type InventoryChemicalCondition = ChemicalCondition
 
 export interface InventoryItemInUseBy {
   task_id: number
@@ -27,7 +32,7 @@ export interface InventoryItem {
   status: 'available' | 'assigned' | 'damaged' | 'lost'
   status_label: string
   status_color: string
-  condition: string | null
+  condition: InventoryCondition | null
   condition_label: string
   condition_color: string
   initial_stock: number
@@ -76,7 +81,7 @@ export interface ItemMovement {
   to_type: string | null
   to_id: number | null
   to_name: string | null
-  condition: string | null
+  condition: InventoryCondition | null
   notes: string | null
   reference_type: string | null
   reference_id: string | null
@@ -118,17 +123,18 @@ export interface MoveItemPayload {
   notes?: string
 }
 
+// Return item - accepts standardized condition values (non-chemical)
 export interface ReturnItemPayload {
   qr_code: string
   warehouse_id: number
-  condition?: 'good' | 'damaged'
+  condition?: NonChemicalCondition
   notes?: string
 }
 
 export interface UpdateStatusPayload {
   qr_code: string
   status: 'available' | 'assigned' | 'damaged' | 'lost'
-  condition?: string
+  condition?: InventoryCondition
   notes?: string
 }
 
@@ -146,9 +152,9 @@ export interface DailyTaskUsage {
   worker_name: string | null
   assigner_name: string | null
   item_type: 'tools' | 'chemicals' | 'ppes' | 'machines'
-  initial_condition: string | null
+  initial_condition: InventoryCondition | null
   initial_condition_label: string
-  final_condition: string | null
+  final_condition: InventoryCondition | null
   final_condition_label: string
   used_at: string
 }

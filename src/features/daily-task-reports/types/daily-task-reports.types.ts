@@ -2,6 +2,10 @@
  * Daily Task Reports Type Definitions
  * API endpoint: /api/admin/daily-task-reports
  */
+import type { NonChemicalCondition, ChemicalCondition } from '@/types/condition'
+
+export type DailyTaskNonChemicalCondition = NonChemicalCondition
+export type DailyTaskChemicalCondition = ChemicalCondition
 
 export interface DailyTaskReport {
   id: number
@@ -45,12 +49,15 @@ export interface DailyTaskReview {
   scores: DailyTaskReviewScore[]
 }
 
+// Union type for condition values (handles both non-chemical and chemical)
+export type DailyTaskConditionValue = NonChemicalCondition | ChemicalCondition
+
 export interface DailyTaskConditionItem {
   id: number
   name: string
-  initial_condition: string | null
+  initial_condition: DailyTaskConditionValue | null
   initial_condition_label: string | null
-  final_condition: string | null
+  final_condition: DailyTaskConditionValue | null
   final_condition_label: string | null
 }
 
