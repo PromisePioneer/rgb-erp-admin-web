@@ -17,22 +17,22 @@ export default defineConfig(() => ({
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8800',
+        target: `${import.meta.env.VITE_API_URL}`,
         changeOrigin: true,
         secure: false,
       },
       '/sanctum': {
-        target: 'http://localhost:8800',
+        target: `${import.meta.env.VITE_API_URL}`,
         changeOrigin: true,
         secure: false,
       },
       '/admin': {
-        target: 'http://localhost:8800',
+        target: `${import.meta.env.VITE_API_URL}`,
         changeOrigin: true,
         secure: false,
       },
       '/storage': {
-        target: 'http://localhost:8800',
+        target: `${import.meta.env.VITE_API_URL}`,
         changeOrigin: true,
         secure: false,
       },
