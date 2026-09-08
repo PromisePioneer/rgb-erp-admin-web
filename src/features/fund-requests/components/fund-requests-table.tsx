@@ -23,6 +23,8 @@ export function FundRequestsTable() {
 
   const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
+  const [submittingId, setSubmittingId] = useState<number | null>(null)
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
 
   useEffect(() => {
     store.fetchFundRequests()
@@ -49,12 +51,20 @@ export function FundRequestsTable() {
     navigate({ to: '/fund-requests/$id/edit', params: { id: String(row.id) } })
   }
 
-  const handleSubmit = async (id: number) => {
+  const handleSubmitClick = (row: FundRequest) => {
+    setSubmittingId(row.id)
+    setShowSubmitConfirm(true)
+  }
+
+  const handleSubmit = async () => {
+    if (!submittingId) return
     try {
-      await store.submitForApproval(id)
+      await store.submitForApproval(submittingId)
       toast.success('Submitted for approval')
+      setShowSubmitConfirm(false)
+      setSubmittingId(null)
     } catch (err: any) {
-      toast.error(err.message || 'Failed')
+      toast.error(err.message || 'Failed to submit')
     }
   }
 
@@ -80,8 +90,13 @@ export function FundRequestsTable() {
     },
     {
       accessorKey: 'vendor_name',
-      header: 'Vendor',
+      header: 'Supplier',
       cell: (row) => row.vendor_name || '-',
+    },
+    {
+      accessorKey: 'payment_term',
+      header: 'Termin',
+      cell: (row) => row.payment_term || '-',
     },
     {
       accessorKey: 'requested_amount',
@@ -100,16 +115,33 @@ export function FundRequestsTable() {
       ),
     },
     {
-      accessorKey: 'can_submit',
-      header: '',
-      className: 'text-center',
+      accessorKey: 'current_level',
+      header: 'Level',
       cell: (row) => (
-        row.can_submit && (
-          <Button size="sm" variant="outline" onClick={() => handleSubmit(row.id)} disabled={store.isSubmitting}>
-            <Send className="h-4 w-4 mr-1" />
-            Submit
-          </Button>
-        )
+        <span className="text-muted-foreground">
+          {row.status === 'pending' ? `Level ${row.current_level}` : '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+          {(row.status === 'draft' || row.status === 'rejected') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleSubmitClick(row)
+              }}
+            >
+              <Send className="h-4 w-4 mr-1" />
+              Submit
+            </Button>
+          )}
+        </div>
       ),
     },
   ]
@@ -164,6 +196,32 @@ export function FundRequestsTable() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Submit Confirmation Dialog */}
+      <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit untuk Approval</AlertDialogTitle>
+            <AlertDialogDescription>
+              Fund Request akan diajukan untuk persetujuan. Lanjutkan?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowSubmitConfirm(false)
+              setSubmittingId(null)
+            }}>
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSubmit}
+              disabled={store.isSubmitting}
+            >
+              {store.isSubmitting ? 'Mengirim...' : 'Ya, Submit'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -132,9 +132,18 @@ export const usePurchaseRequestsStore = create<PurchaseRequestsState>((set, get)
 
     try {
       await purchaseRequestsApi.submitForApproval(id)
-      set({ isSubmitting: false })
-      // Refresh the list and selected item
-      await get().fetchPurchaseRequests()
+
+      // Optimistic update: update the item directly for immediate UI feedback
+      set((state) => ({
+        items: state.items.map((item) =>
+          item.id === id
+            ? { ...item, can_submit: false, status: 'pending' as const, current_level: 1 }
+            : item
+        ),
+        isSubmitting: false,
+      }))
+
+      // Fetch only the updated item to ensure data consistency
       await get().fetchById(id)
     } catch (error) {
       const message =

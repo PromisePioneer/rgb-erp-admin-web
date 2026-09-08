@@ -8,9 +8,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { ArrowLeft, Save, Send } from 'lucide-react'
+import { ArrowLeft, Save, Send, User, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { usePurchaseOrdersStore } from '../store/purchase-orders-store'
 import { purchaseOrdersApi } from '../api/purchase-orders-api'
@@ -29,6 +30,7 @@ const formSchema = z.object({
   purchase_request_id: z.number().min(1, 'Purchase Request wajib dipilih'),
   date: z.string().min(1, 'Tanggal wajib diisi'),
   supplier: z.string().optional(),
+  notes: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -67,6 +69,7 @@ export function PurchaseOrdersForm() {
       purchase_request_id: 0,
       date: new Date().toISOString().split('T')[0],
       supplier: '',
+      notes: '',
     },
   })
 
@@ -138,6 +141,7 @@ export function PurchaseOrdersForm() {
         purchase_request_id: selectedItem.purchase_request_id,
         date: selectedItem.date.split('T')[0],
         supplier: selectedItem.supplier ?? '',
+        notes: selectedItem.note ?? '',  // API field is 'note', form field is 'notes'
       })
       setLineItems(selectedItem.details.map((d, i) => ({
         id: String(i + 1),
@@ -184,6 +188,7 @@ export function PurchaseOrdersForm() {
         purchase_request_id: values.purchase_request_id,
         date: values.date,
         supplier: values.supplier || undefined,
+        notes: values.notes || undefined,
         details: validItems.map((d) => ({
           product_id: d.product_id,
           qty: d.qty,
@@ -274,6 +279,17 @@ export function PurchaseOrdersForm() {
               disabled={!canEdit}
             />
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Catatan / Notes</label>
+            <Textarea
+              {...form.register('notes')}
+              placeholder="Tambahkan catatan jika diperlukan..."
+              disabled={!canEdit}
+              rows={3}
+              className="resize-none"
+            />
+          </div>
         </div>
 
         {/* Line Items */}
@@ -326,22 +342,53 @@ export function PurchaseOrdersForm() {
         {isEdit && selectedItem?.approvals && selectedItem.approvals.length > 0 && (
           <div className="bg-card rounded-lg border p-6 space-y-4">
             <h3 className="text-lg font-semibold">Approval History</h3>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {selectedItem.approvals.map((approval) => (
-                <div key={approval.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-md">
-                  <div>
-                    <p className="font-medium">Level {approval.level}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {approval.acted_at ? new Date(approval.acted_at).toLocaleString('id-ID') : '-'}
-                    </p>
+                <div key={approval.id} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        approval.status === 'approved' ? 'bg-green-100 text-green-700' :
+                        approval.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        <User className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Level {approval.level}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {approval.acted_by_name || 'Menunggu...'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      approval.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      approval.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {approval.status === 'pending' ? 'Menunggu' :
+                       approval.status === 'approved' ? 'Disetujui' : 'Ditolak'}
+                    </span>
                   </div>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    approval.status === 'approved' ? 'bg-green-100 text-green-800' :
-                    approval.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {approval.status.charAt(0).toUpperCase() + approval.status.slice(1)}
-                  </span>
+
+                  {approval.note && (
+                    <div className="flex gap-2 pl-13">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-2 flex-1">
+                        <span className="font-medium text-foreground">Alasan: </span>
+                        {approval.note}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-muted-foreground pl-13">
+                    {approval.acted_at
+                      ? new Date(approval.acted_at).toLocaleString('id-ID', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })
+                      : 'Belum diproses'}
+                  </p>
                 </div>
               ))}
             </div>

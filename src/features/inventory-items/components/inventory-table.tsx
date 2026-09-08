@@ -3,7 +3,7 @@
  * Lists all inventory items with QR code tracking and movement history
  */
 import {useEffect, useState, useCallback, useRef} from 'react'
-import {QrCodeIcon, Printer, Download, History, User, Filter, X, Trash2} from 'lucide-react'
+import {QrCodeIcon, Printer, Download, History, User, Filter, X, Trash2, CheckCircle, Clock, Wrench, FlaskConical, Shield, Cog} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
 import {Badge} from '@/components/ui/badge'
@@ -16,7 +16,8 @@ import {
 import {DataTable, type DataTableColumn} from '@/components/ui/data-table'
 import {AsyncSelect} from '@/components/async-select'
 import {useInventoryStore} from '@/features/inventory-items'
-import type {InventoryItem} from '../types/inventory-items.types'
+import type { InventoryItem, ItemMovement, DailyTaskUsage } from '@/features/inventory/api/inventory-api'
+import { inventoryApi } from '@/features/inventory/api/inventory-api'
 import {QRCodeSVG} from 'qrcode.react'
 import {apiClient} from '@/lib/api-client'
 import {toast} from 'sonner'
@@ -30,27 +31,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-
-// Types for movement history
-interface ItemMovement {
-    id: number
-    action: string
-    action_label: string
-    action_color: string
-    from_type: string | null
-    from_id: number | null
-    from_name: string | null
-    to_type: string | null
-    to_id: number | null
-    to_name: string | null
-    condition: string | null
-    notes: string | null
-    reference_type: string | null
-    reference_id: string | null
-    moved_by: string | null
-    created_at: string
-    created_at_human: string
-}
 
 // Detail Modal with QR Code and Movement History
 function ItemDetailModal({
@@ -71,6 +51,9 @@ function ItemDetailModal({
     const [movements, setMovements] = useState<ItemMovement[]>([])
     const [isLoadingMovements, setIsLoadingMovements] = useState(false)
     const [showMovements, setShowMovements] = useState(false)
+    const [dailyTaskUsages, setDailyTaskUsages] = useState<DailyTaskUsage[]>([])
+    const [isLoadingDailyTaskUsages, setIsLoadingDailyTaskUsages] = useState(false)
+    const [showDailyTaskUsages, setShowDailyTaskUsages] = useState(false)
     const qrPrintRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -79,8 +62,11 @@ function ItemDetailModal({
             if (showMovements) {
                 loadMovements(item.qr_code)
             }
+            if (showDailyTaskUsages) {
+                loadDailyTaskUsages(item.id)
+            }
         }
-    }, [open, item, showMovements])
+    }, [open, item, showMovements, showDailyTaskUsages])
 
     const loadQRContent = async (id: number) => {
         setIsLoadingQR(true)
@@ -112,6 +98,48 @@ function ItemDetailModal({
         } finally {
             setIsLoadingMovements(false)
         }
+    }
+
+    const loadDailyTaskUsages = async (itemId: number) => {
+        setIsLoadingDailyTaskUsages(true)
+        try {
+            const response = await inventoryApi.getDailyTaskUsages(itemId)
+            setDailyTaskUsages(response.data)
+        } catch {
+            toast.error('Failed to load daily task usage history')
+            setDailyTaskUsages([])
+        } finally {
+            setIsLoadingDailyTaskUsages(false)
+        }
+    }
+
+    const getItemTypeIcon = (type: string) => {
+        switch (type) {
+            case 'tools': return <Wrench className="h-4 w-4" />
+            case 'chemicals': return <FlaskConical className="h-4 w-4" />
+            case 'ppes': return <Shield className="h-4 w-4" />
+            case 'machines': return <Cog className="h-4 w-4" />
+            default: return <CheckCircle className="h-4 w-4" />
+        }
+    }
+
+    const getStatusBadge = (status: string) => {
+        const styles: Record<string, string> = {
+            'completed': 'bg-green-100 text-green-800',
+            'in_progress': 'bg-blue-100 text-blue-800',
+            'assigned': 'bg-gray-100 text-gray-800',
+            'cancelled': 'bg-red-100 text-red-800',
+            'reviewed': 'bg-purple-100 text-purple-800',
+        }
+        return (
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
+                {status === 'in_progress' ? 'Sedang Dikerjakan' :
+                 status === 'completed' ? 'Selesai' :
+                 status === 'assigned' ? 'Ditugaskan' :
+                 status === 'cancelled' ? 'Dibatalkan' :
+                 status === 'reviewed' ? 'Direview' : status}
+            </span>
+        )
     }
 
     if (!item) return null
@@ -174,15 +202,32 @@ function ItemDetailModal({
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
                                 <p className="text-muted-foreground">Status</p>
-                                <span
-                                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${item.status_color}`}>
-                  {item.status_label}
-                </span>
+                                <div className="flex flex-col gap-1">
+
+                                    <Badge
+                                        className={`font-bold ${item.status_color}`}>
+                                        {item.status_label.toUpperCase()}
+                                    </Badge>
+                                    {item.status === 'assigned' && item.in_use_by && (
+                                        <div className="text-xs text-muted-foreground bg-blue-50 rounded p-2">
+                                            <p className="font-medium text-blue-700">📋 {item.in_use_by.task_name}</p>
+                                            {item.in_use_by.area_name && (
+                                                <p>📍 {item.in_use_by.area_name}</p>
+                                            )}
+                                            {item.in_use_by.client_name && (
+                                                <p>🏢 {item.in_use_by.client_name}</p>
+                                            )}
+                                            <p className="mt-1">Status tugas: <span
+                                                className="capitalize">{item.in_use_by.status}</span></p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div>
                                 <p className="text-muted-foreground">Kondisi</p>
                                 {item.condition ? (
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${item.condition_color}`}>
+                                    <span
+                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${item.condition_color}`}>
                                         {item.condition_label}
                                     </span>
                                 ) : (
@@ -338,6 +383,111 @@ function ItemDetailModal({
                         )}
                     </div>
 
+                    {/* Daily Task Usage History Toggle */}
+                    <div className="border-t pt-4">
+                        <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                                if (!showDailyTaskUsages) {
+                                    loadDailyTaskUsages(item.id)
+                                }
+                                setShowDailyTaskUsages(!showDailyTaskUsages)
+                            }}
+                        >
+                            <Clock className="h-4 w-4 mr-2"/>
+                            {showDailyTaskUsages ? 'Sembunyikan' : 'Tampilkan'} Riwayat Daily Task
+                            {dailyTaskUsages.length > 0 && (
+                                <span className="ml-2 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
+                                    {dailyTaskUsages.length}
+                                </span>
+                            )}
+                        </Button>
+
+                        {showDailyTaskUsages && (
+                            <div className="mt-4">
+                                {isLoadingDailyTaskUsages ? (
+                                    <div className="flex justify-center p-4">
+                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                                    </div>
+                                ) : dailyTaskUsages.length === 0 ? (
+                                    <div className="text-center p-4 text-muted-foreground">
+                                        <Clock className="h-8 w-8 mx-auto mb-2 opacity-50"/>
+                                        <p>Belum ada riwayat penggunaan daily task</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                                        {dailyTaskUsages.map((usage, index) => (
+                                            <div
+                                                key={`${usage.task_id}-${index}`}
+                                                className="border rounded-lg p-3 bg-white"
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex items-start gap-2">
+                                                        {getItemTypeIcon(usage.item_type)}
+                                                        <div>
+                                                            <p className="font-medium text-sm">{usage.task_name}</p>
+                                                            {usage.area_name && (
+                                                                <p className="text-xs text-muted-foreground">📍 {usage.area_name}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        {getStatusBadge(usage.status)}
+                                                        {usage.start_at && (
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {new Date(usage.start_at).toLocaleDateString('id-ID', {
+                                                                    day: '2-digit',
+                                                                    month: 'short',
+                                                                    year: 'numeric',
+                                                                })}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Worker & Assigner Info */}
+                                                <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                                                    {usage.worker_name && (
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-muted-foreground">Worker:</span>
+                                                            <span className="font-medium">{usage.worker_name}</span>
+                                                        </div>
+                                                    )}
+                                                    {usage.assigner_name && (
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-muted-foreground">TL:</span>
+                                                            <span className="font-medium">{usage.assigner_name}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Condition Progression */}
+                                                <div className="mt-2 flex items-center gap-2 text-xs">
+                                                    <span className="text-muted-foreground">Kondisi:</span>
+                                                    <span className={`px-2 py-0.5 rounded ${usage.initial_condition ? 'bg-gray-100' : 'bg-gray-50'}`}>
+                                                        {usage.initial_condition_label || '-'}
+                                                    </span>
+                                                    <span className="text-muted-foreground">→</span>
+                                                    <span className={`px-2 py-0.5 rounded ${usage.final_condition ? 'bg-green-100' : 'bg-gray-50'}`}>
+                                                        {usage.final_condition_label || '-'}
+                                                    </span>
+                                                </div>
+
+                                                {/* Duration */}
+                                                {usage.start_at && usage.end_at && (
+                                                    <div className="mt-2 text-xs text-muted-foreground">
+                                                        Durasi: {Math.round((new Date(usage.end_at).getTime() - new Date(usage.start_at).getTime()) / 60000)} menit
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
                     {item.notes && (
                         <div className="border-t pt-4">
                             <p className="text-muted-foreground text-sm">Catatan</p>
@@ -398,27 +548,27 @@ export function InventoryTable() {
         setLocationTypeFilter(value)
         setWarehouseFilter(null) // Reset warehouse when location type changes
         if (value) {
-            setFilters({ location_type: value as 'warehouse' | 'area' })
+            setFilters({location_type: value as 'warehouse' | 'area'})
         } else {
-            setFilters({ location_type: undefined, warehouse_id: undefined })
+            setFilters({location_type: undefined, warehouse_id: undefined})
         }
     }
 
     const handleWarehouseChange = (warehouseId: number | null) => {
         setWarehouseFilter(warehouseId)
         if (warehouseId) {
-            setFilters({ warehouse_id: warehouseId })
+            setFilters({warehouse_id: warehouseId})
         } else {
-            setFilters({ warehouse_id: undefined })
+            setFilters({warehouse_id: undefined})
         }
     }
 
     const handleStatusChange = (value: string | null) => {
         setStatusFilter(value)
         if (value) {
-            setFilters({ status: value })
+            setFilters({status: value})
         } else {
-            setFilters({ status: undefined })
+            setFilters({status: undefined})
         }
     }
 
@@ -427,7 +577,7 @@ export function InventoryTable() {
         setWarehouseFilter(null)
         setStatusFilter(null)
         setSearchInput('')
-        setFilters({ location_type: undefined, warehouse_id: undefined, status: undefined, search: undefined })
+        setFilters({location_type: undefined, warehouse_id: undefined, status: undefined, search: undefined})
     }
 
     // Fetch items on mount and filter change
@@ -722,7 +872,7 @@ export function InventoryTable() {
                     ? row.warehouse_name
                     : row.current_location_type === 'area'
                         ? row.area_name
-                        : row.location_name;
+                        : row.employee_name;
                 return (
                     <div className="flex flex-col gap-0.5">
             <span className="capitalize text-sm">
@@ -738,13 +888,25 @@ export function InventoryTable() {
             },
         },
         {
-            accessorKey: 'status',
+            id: 'status',
             header: 'Status',
             cell: (row) => (
-                <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${row.status_color}`}>
-          {row.status_label}
-        </span>
+                <div className="flex flex-col gap-1.5">
+                    {/* Status Badge - compact pill */}
+                    <span
+                        className={`inline-flex items-center justify-center px-2 py-1 rounded-md text-xs font-semibold w-fit ${row.status_color}`}>
+                        {row.status_label}
+                    </span>
+                    {/* In Use By - hanya tampil kalau assigned */}
+                    {row.status === 'assigned' && row.in_use_by && (
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                            <span className="text-xs text-blue-600 font-medium">
+                                {row.in_use_by.area_name || row.in_use_by.client_name || 'Tugas #' + row.in_use_by.task_id}
+                            </span>
+                        </div>
+                    )}
+                </div>
             ),
         },
         {
@@ -760,7 +922,8 @@ export function InventoryTable() {
             accessorKey: 'condition',
             header: 'Kondisi',
             cell: (row) => (
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${row.condition_color}`}>
+                <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${row.condition_color}`}>
                     {row.condition_label}
                 </span>
             ),
@@ -782,7 +945,8 @@ export function InventoryTable() {
                             <Filter className="h-4 w-4 mr-1"/>
                             Filter
                             {activeFilterCount > 0 && (
-                                <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
+                                <Badge variant="secondary"
+                                       className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
                                     {activeFilterCount}
                                 </Badge>
                             )}
@@ -808,8 +972,8 @@ export function InventoryTable() {
                                 label="Tipe Lokasi"
                                 placeholder="Semua"
                                 loadOptions={async () => [
-                                    { value: 'warehouse', label: '📦 Gudang' },
-                                    { value: 'area', label: '📍 Area' },
+                                    {value: 'warehouse', label: '📦 Gudang'},
+                                    {value: 'area', label: '📍 Area'},
                                 ]}
                                 value={locationTypeFilter}
                                 onChange={(val) => handleLocationTypeChange(val as string | null)}
@@ -824,8 +988,11 @@ export function InventoryTable() {
                                     placeholder="Pilih Gudang"
                                     loadOptions={async () => {
                                         try {
-                                            const { data } = await apiClient.get<{success: boolean, data: Array<{id: number, name: string}>}>('/admin/warehouses/select-options')
-                                            return data.data.map(w => ({ value: w.id, label: w.name }))
+                                            const {data} = await apiClient.get<{
+                                                success: boolean,
+                                                data: Array<{ id: number, name: string }>
+                                            }>('/admin/warehouses/select-options')
+                                            return data.data.map(w => ({value: w.id, label: w.name}))
                                         } catch {
                                             return []
                                         }
@@ -842,10 +1009,10 @@ export function InventoryTable() {
                                 label="Status"
                                 placeholder="Semua"
                                 loadOptions={async () => [
-                                    { value: 'available', label: 'Tersedia' },
-                                    { value: 'assigned', label: 'Ditugaskan' },
-                                    { value: 'damaged', label: 'Rusak' },
-                                    { value: 'lost', label: 'Hilang' },
+                                    {value: 'available', label: 'Tersedia'},
+                                    {value: 'assigned', label: 'Ditugaskan'},
+                                    {value: 'damaged', label: 'Rusak'},
+                                    {value: 'lost', label: 'Hilang'},
                                 ]}
                                 value={statusFilter}
                                 onChange={(val) => handleStatusChange(val as string | null)}
@@ -906,7 +1073,8 @@ export function InventoryTable() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Inventory Items</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete {selectedIds.size} selected item(s)? This action cannot be undone.
+                            Are you sure you want to delete {selectedIds.size} selected item(s)? This action cannot be
+                            undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

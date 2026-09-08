@@ -26,6 +26,8 @@ export interface FundRequest {
 }
 
 export interface FundRequestDetail extends FundRequest {
+  po_supplier: string | null
+  remaining_amount: number
   po_details: FundRequestLineItem[]
   approvals: Approval[]
 }

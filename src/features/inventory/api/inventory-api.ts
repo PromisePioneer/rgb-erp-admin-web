@@ -6,6 +6,14 @@ import { apiClient } from '@/lib/api-client'
 
 // ==================== Types ====================
 
+export interface InventoryItemInUseBy {
+  task_id: number
+  task_name: string
+  status: string
+  area_name: string | null
+  client_name: string | null
+}
+
 export interface InventoryItem {
   id: number
   qr_code: string
@@ -31,8 +39,11 @@ export interface InventoryItem {
   current_location_name: string | null
   purchase_date: string | null
   purchase_price: number
+  purchase_order_code: string | null
+  reception_date: string | null
   notes: string | null
   created_at: string
+  in_use_by: InventoryItemInUseBy | null
 }
 
 export interface InventoryFilters {
@@ -149,6 +160,27 @@ export interface UpdateConditionPayload {
   condition: string
   current_stock?: number
   notes?: string
+}
+
+/**
+ * Daily Task Usage History
+ * Shows how an inventory item was used in daily tasks
+ */
+export interface DailyTaskUsage {
+  task_id: number
+  task_name: string
+  area_name: string | null
+  status: 'assigned' | 'in_progress' | 'completed' | 'cancelled' | 'reviewed'
+  start_at: string | null
+  end_at: string | null
+  worker_name: string | null
+  assigner_name: string | null
+  item_type: 'tools' | 'chemicals' | 'ppes' | 'machines'
+  initial_condition: string | null
+  initial_condition_label: string
+  final_condition: string | null
+  final_condition_label: string
+  used_at: string
 }
 
 // ==================== API ====================
@@ -324,6 +356,17 @@ export const inventoryApi = {
       condition: string
       status: string
     }>>(`/admin/inventory-items/${id}/print`)
+    return data
+  },
+
+  /**
+   * Get daily task usage history for an item
+   * GET /api/admin/inventory-items/{id}/daily-task-usages
+   */
+  getDailyTaskUsages: async (itemId: number) => {
+    const { data } = await apiClient.get<ApiResponse<DailyTaskUsage[]>>(
+      `/admin/inventory-items/${itemId}/daily-task-usages`
+    )
     return data
   },
 }

@@ -42,4 +42,14 @@ export const fundRequestsApi = {
     const { data } = await apiClient.post<ApiResponse<{ deleted: number }>>('/admin/fund-requests/bulk-delete', { ids })
     return data
   },
+
+  getApprovedPurchaseOrders: async (params?: { q?: string }) => {
+    const { data } = await apiClient.get<ApiResponse<any[]>>('/admin/purchase-orders/approved-select-options', { params })
+    return data
+  },
+
+  getRemainingAmount: async (poId: number) => {
+    const { data } = await apiClient.get<ApiResponse<{ po_id: number; po_total: number; remaining_amount: number }>>(`/admin/fund-requests/remaining/${poId}`)
+    return data
+  },
 }

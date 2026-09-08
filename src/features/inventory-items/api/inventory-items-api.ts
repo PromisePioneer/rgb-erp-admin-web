@@ -11,6 +11,7 @@ import type {
   MoveItemPayload,
   ReturnItemPayload,
   UpdateStatusPayload,
+  DailyTaskUsage,
 } from '../types/inventory-items.types'
 
 export const inventoryApi = {
@@ -104,6 +105,17 @@ export const inventoryApi = {
     const { data } = await apiClient.post<ApiResponse<{ deleted: number }>>(
       '/admin/inventory-items/bulk-delete',
       { ids }
+    )
+    return data
+  },
+
+  /**
+   * Get daily task usage history for an item
+   * GET /api/admin/inventory-items/{id}/daily-task-usages
+   */
+  getDailyTaskUsages: async (itemId: number) => {
+    const { data } = await apiClient.get<ApiResponse<DailyTaskUsage[]>>(
+      `/admin/inventory-items/${itemId}/daily-task-usages`
     )
     return data
   },

@@ -4,6 +4,14 @@
  * Unified tracking for warehouse and area inventory with movement history
  */
 
+export interface InventoryItemInUseBy {
+  task_id: number
+  task_name: string
+  status: string
+  area_name: string | null
+  client_name: string | null
+}
+
 export interface InventoryItem {
   id: number
   qr_code: string
@@ -34,6 +42,7 @@ export interface InventoryItem {
   reception_date: string | null
   notes: string | null
   created_at: string
+  in_use_by: InventoryItemInUseBy | null
 }
 
 export interface InventoryItemSummary {
@@ -49,6 +58,8 @@ export interface CategoryBreakdown {
   category_name: string
   total_items: number
   total_stock: number
+  initial_stock: number
+  percentage: number
   condition: string
   condition_color: string
   condition_label: string
@@ -119,4 +130,25 @@ export interface UpdateStatusPayload {
   status: 'available' | 'assigned' | 'damaged' | 'lost'
   condition?: string
   notes?: string
+}
+
+/**
+ * Daily Task Usage History
+ * Shows how an inventory item was used in daily tasks
+ */
+export interface DailyTaskUsage {
+  task_id: number
+  task_name: string
+  area_name: string | null
+  status: 'assigned' | 'in_progress' | 'completed' | 'cancelled' | 'reviewed'
+  start_at: string | null
+  end_at: string | null
+  worker_name: string | null
+  assigner_name: string | null
+  item_type: 'tools' | 'chemicals' | 'ppes' | 'machines'
+  initial_condition: string | null
+  initial_condition_label: string
+  final_condition: string | null
+  final_condition_label: string
+  used_at: string
 }

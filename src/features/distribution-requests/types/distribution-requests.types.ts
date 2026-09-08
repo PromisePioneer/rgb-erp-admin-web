@@ -65,7 +65,7 @@ export interface DistributionRequestDetail {
 export interface Approval {
   id: number
   level: number
-  status: string
+  status: 'pending' | 'approved' | 'rejected'
   note: string | null
   approver_id: number | null
   approver_name: string | null

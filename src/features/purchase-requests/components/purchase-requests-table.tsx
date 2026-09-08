@@ -74,11 +74,17 @@ export function PurchaseRequestsTable() {
         })
     }, [fetchPurchaseRequests, filters.search, pagination.last_page])
 
+    // Filter items that can be deleted (not pending, approved)
+    const deletableItems = items.filter((item) => item.status !== 'pending' && item.status !== 'approved')
+    const deletableSelectedIds = Array.from(selectedIds).filter((id) =>
+        deletableItems.some((item) => item.id === id)
+    )
+
     const handleBulkDelete = async () => {
-        if (selectedIds.size === 0) return
+        if (deletableSelectedIds.length === 0) return
         setIsDeleting(true)
         try {
-            await bulkDelete(Array.from(selectedIds).map(Number))
+            await bulkDelete(deletableSelectedIds.map(Number))
             setSelectedIds(new Set())
             setShowDeleteConfirm(false)
         } catch {
@@ -93,6 +99,10 @@ export function PurchaseRequestsTable() {
     }
 
     const handleEdit = (pr: PurchaseRequest) => {
+        // Only navigate to edit if can_edit is true
+        if (!pr.can_edit) {
+            return
+        }
         navigate({to: '/purchase-requests/$id/edit', params: {id: String(pr.id)}})
     }
 
@@ -195,21 +205,27 @@ export function PurchaseRequestsTable() {
         {
             accessorKey: 'id',
             header: '',
-            cell: (row) => row.can_submit ? (
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        handleSubmit(row)
-                    }}
-                    disabled={isSubmitting || submittingId === row.id}
-                    className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                >
-                    <Send className="h-4 w-4 mr-1"/>
-                    {submittingId === row.id ? 'Submitting...' : 'Submit'}
-                </Button>
-            ) : null,
+            cell: (row) => {
+                // Show submit button only if can_submit is true (e.g., draft or rejected status)
+                if (!row.can_submit) {
+                    return null
+                }
+                return (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            handleSubmit(row)
+                        }}
+                        disabled={isSubmitting || submittingId === row.id}
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                        <Send className="h-4 w-4 mr-1"/>
+                        {submittingId === row.id ? 'Submitting...' : 'Submit'}
+                    </Button>
+                )
+            },
         },
     ]
 
@@ -222,10 +238,10 @@ export function PurchaseRequestsTable() {
                 variant="destructive"
                 size="sm"
                 onClick={() => setShowDeleteConfirm(true)}
-                disabled={selectedIds.size === 0}
+                disabled={deletableSelectedIds.length === 0}
             >
                 <Trash2 className="h-4 w-4 mr-1"/>
-                Delete Selected
+                Delete Selected {deletableSelectedIds.length > 0 && `(${deletableSelectedIds.length})`}
             </Button>
         </div>
     )
@@ -260,7 +276,7 @@ export function PurchaseRequestsTable() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Konfirmasi Hapus</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Apakah Anda yakin ingin menghapus {selectedIds.size} purchase request yang dipilih? Tindakan
+                            Apakah Anda yakin ingin menghapus {deletableSelectedIds.length} purchase request yang dipilih? Tindakan
                             ini tidak dapat dibatalkan.
                         </AlertDialogDescription>
                     </AlertDialogHeader>

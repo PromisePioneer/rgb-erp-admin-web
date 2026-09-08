@@ -92,4 +92,32 @@ export const receptionsApi = {
     )
     return data
   },
+
+  /**
+   * Get select options for areas
+   * GET /api/admin/areas/select-options
+   */
+  getAreasSelectOptions: async (search?: string) => {
+    const { data } = await apiClient.get<ApiResponse<Array<{
+      id: number
+      name: string
+    }>>>('/admin/areas/select-options', {
+      params: search ? { q: search } : undefined,
+    })
+    return data
+  },
+
+  /**
+   * Submit reception for approval
+   * POST /api/admin/receptions/:id/submit
+   */
+  submitForApproval: async (id: number) => {
+    const { data } = await apiClient.post<ApiResponse<{
+      id: number
+      status: number
+      current_level: number
+      message: string
+    }>>(`/admin/receptions/${id}/submit`)
+    return data
+  },
 }

@@ -432,8 +432,14 @@ export function PurchaseRequestsForm() {
                 {/* Submit */}
                 <div className="flex justify-between items-center">
                     <div className="text-sm text-muted-foreground">
-                        {!canEdit && currentStatus === 'approved' && (
+                        {currentStatus === 'approved' && (
                             <span className="text-green-600 font-medium">Purchase request ini sudah disetujui dan tidak dapat diedit.</span>
+                        )}
+                        {currentStatus === 'pending' && (
+                            <span className="text-yellow-600 font-medium">Purchase request ini sedang dalam proses approval dan tidak dapat diedit.</span>
+                        )}
+                        {currentStatus === 'rejected' && (
+                            <span className="text-red-600 font-medium">Purchase request ini ditolak. Silakan edit dan ajukan kembali.</span>
                         )}
                     </div>
                     <div className="flex gap-3">

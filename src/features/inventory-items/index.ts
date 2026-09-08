@@ -12,13 +12,3 @@ export { BarcodeScanner } from './components/barcode-scanner'
 export { InventoryTable } from './components/inventory-table'
 export { useInventoryStore } from './store/inventory-items-store'
 export { inventoryApi } from './api/inventory-items-api'
-
-// Legacy types re-export
-export type {
-  InventoryItem,
-  InventoryFilters,
-  InventoryItemSummary,
-  MoveItemPayload,
-  ReturnItemPayload,
-  UpdateStatusPayload,
-} from '@/features/inventory/api/inventory-api'

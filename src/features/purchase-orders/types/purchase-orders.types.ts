@@ -8,6 +8,7 @@ export interface PurchaseOrderApproval {
   level: number
   status: 'pending' | 'approved' | 'rejected'
   note: string | null
+  acted_by_name: string | null
   acted_at: string | null
 }
 
@@ -18,6 +19,7 @@ export interface PurchaseOrder {
   date: string
   code: string
   supplier: string | null
+  note: string | null
   total: number
   status: string
   current_level: number

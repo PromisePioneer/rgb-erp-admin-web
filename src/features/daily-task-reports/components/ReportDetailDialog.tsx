@@ -230,53 +230,110 @@ export function ReportDetailDialog({
               </Card>
             )}
 
-            {/* Tools, Chemicals, PPEs */}
+            {/* Materials Used with Condition Progression */}
             {(selectedItem.tools?.length > 0 ||
               selectedItem.chemicals?.length > 0 ||
-              selectedItem.ppes?.length > 0) && (
+              selectedItem.ppes?.length > 0 ||
+              selectedItem.machines?.length > 0) && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Materials Used</CardTitle>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Alat & Bahan yang Digunakan
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
-                    {selectedItem.tools?.length > 0 && (
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">Tools</p>
-                        <div className="flex flex-wrap gap-1">
-                          {selectedItem.tools.map((tool, i) => (
-                            <Badge key={i} variant="outline">
-                              {tool}
-                            </Badge>
-                          ))}
-                        </div>
+                <CardContent className="space-y-4">
+                  {/* Tools */}
+                  {selectedItem.tools && selectedItem.tools.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2 font-medium">Alat</p>
+                      <div className="space-y-2">
+                        {selectedItem.tools.map((tool, i) => (
+                          <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                            <span className="text-sm">{tool.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-1 rounded ${tool.initial_condition_label ? 'bg-gray-100' : 'bg-gray-50'}`}>
+                                {tool.initial_condition_label || '-'}
+                              </span>
+                              <span className="text-muted-foreground">→</span>
+                              <span className={`text-xs px-2 py-1 rounded ${tool.final_condition_label ? 'bg-green-100' : 'bg-gray-50'}`}>
+                                {tool.final_condition_label || '-'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                    {selectedItem.chemicals?.length > 0 && (
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">Chemicals</p>
-                        <div className="flex flex-wrap gap-1">
-                          {selectedItem.chemicals.map((chemical, i) => (
-                            <Badge key={i} variant="outline">
-                              {chemical}
-                            </Badge>
-                          ))}
-                        </div>
+                    </div>
+                  )}
+
+                  {/* Chemicals */}
+                  {selectedItem.chemicals && selectedItem.chemicals.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2 font-medium">Chemical</p>
+                      <div className="space-y-2">
+                        {selectedItem.chemicals.map((c, i) => (
+                          <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                            <span className="text-sm">{c.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-1 rounded ${c.initial_condition_label ? 'bg-gray-100' : 'bg-gray-50'}`}>
+                                {c.initial_condition_label || '-'}
+                              </span>
+                              <span className="text-muted-foreground">→</span>
+                              <span className={`text-xs px-2 py-1 rounded ${c.final_condition_label ? 'bg-green-100' : 'bg-gray-50'}`}>
+                                {c.final_condition_label || '-'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                    {selectedItem.ppes?.length > 0 && (
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">PPEs</p>
-                        <div className="flex flex-wrap gap-1">
-                          {selectedItem.ppes.map((ppe, i) => (
-                            <Badge key={i} variant="outline">
-                              {ppe}
-                            </Badge>
-                          ))}
-                        </div>
+                    </div>
+                  )}
+
+                  {/* PPEs */}
+                  {selectedItem.ppes && selectedItem.ppes.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2 font-medium">APD</p>
+                      <div className="space-y-2">
+                        {selectedItem.ppes.map((p, i) => (
+                          <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                            <span className="text-sm">{p.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-1 rounded ${p.initial_condition_label ? 'bg-gray-100' : 'bg-gray-50'}`}>
+                                {p.initial_condition_label || '-'}
+                              </span>
+                              <span className="text-muted-foreground">→</span>
+                              <span className={`text-xs px-2 py-1 rounded ${p.final_condition_label ? 'bg-green-100' : 'bg-gray-50'}`}>
+                                {p.final_condition_label || '-'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Machines */}
+                  {selectedItem.machines && selectedItem.machines.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2 font-medium">Mesin</p>
+                      <div className="space-y-2">
+                        {selectedItem.machines.map((m, i) => (
+                          <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                            <span className="text-sm">{m.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-1 rounded ${m.initial_condition_label ? 'bg-gray-100' : 'bg-gray-50'}`}>
+                                {m.initial_condition_label || '-'}
+                              </span>
+                              <span className="text-muted-foreground">→</span>
+                              <span className={`text-xs px-2 py-1 rounded ${m.final_condition_label ? 'bg-green-100' : 'bg-gray-50'}`}>
+                                {m.final_condition_label || '-'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

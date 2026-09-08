@@ -17,22 +17,22 @@ export default defineConfig(() => ({
     host: true,
     proxy: {
       '/api': {
-        target: 'https://testing-erp-ges.tech',
+        target: 'http://localhost:8800',
         changeOrigin: true,
         secure: false,
       },
       '/sanctum': {
-        target: 'https://testing-erp-ges.tech',
+        target: 'http://localhost:8800',
         changeOrigin: true,
         secure: false,
       },
       '/admin': {
-        target: 'https://testing-erp-ges.tech',
+        target: 'http://localhost:8800',
         changeOrigin: true,
         secure: false,
       },
       '/storage': {
-        target: 'https://testing-erp-ges.tech',
+        target: 'http://localhost:8800',
         changeOrigin: true,
         secure: false,
       },

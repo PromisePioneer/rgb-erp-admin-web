@@ -2,8 +2,9 @@
  * Approvals Table Component
  * Includes approve/reject actions with confirmation dialogs
  */
-import { useEffect, useCallback, useState } from 'react'
-import { FileText, FileSpreadsheet } from 'lucide-react'
+import { useEffect, useCallback, useState, useRef } from 'react'
+import { FileText, FileSpreadsheet, Check, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,10 +39,11 @@ export function ApprovalsTable() {
   } = useApprovalsStore()
 
   const [selectedApproval, setSelectedApproval] = useState<Approval | null>(null)
-  const [actionType] = useState<'approve' | 'reject' | null>(null)
+  const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [showDetail, setShowDetail] = useState(false)
   const [note, setNote] = useState('')
+  const noteRef = useRef('')
 
   // Fetch approvals on mount
   useEffect(() => {
@@ -58,16 +60,36 @@ export function ApprovalsTable() {
     setShowDetail(true)
   }
 
+  const handleApprove = (approval: Approval, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedApproval(approval)
+    setActionType('approve')
+    setNote('')
+    setShowConfirm(true)
+  }
+
+  const handleReject = (approval: Approval, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedApproval(approval)
+    setActionType('reject')
+    // Jangan reset note di sini - biarkan user bisa lihat note sebelumnya
+    setShowConfirm(true)
+  }
+
   const handleConfirm = async () => {
     if (!selectedApproval || !actionType) return
 
     try {
       await act(selectedApproval.id, {
         decision: actionType,
-        note: note || undefined,
+        note: noteRef.current || undefined,
       })
       toast.success(`Request ${actionType === 'approve' ? 'approved' : 'rejected'} successfully`)
       setShowConfirm(false)
+      setSelectedApproval(null)
+      setActionType(null)
+      setNote('')
+      noteRef.current = ''
     } catch {
       toast.error('Failed to process approval')
     }
@@ -157,6 +179,47 @@ export function ApprovalsTable() {
         </span>
       ),
     },
+    {
+      accessorKey: 'id',
+      header: 'Actions',
+      cell: (row) => {
+        // Only show actions for pending approvals
+        if (row.status !== 'pending') {
+          return (
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+              row.status === 'approved'
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {row.status === 'approved' ? 'Approved' : 'Rejected'}
+            </span>
+          )
+        }
+
+        return (
+          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => handleApprove(row, e)}
+              disabled={isActing}
+              className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 h-8 px-2"
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => handleReject(row, e)}
+              disabled={isActing}
+              className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 h-8 px-2"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )
+      },
+    },
   ]
 
   return (
@@ -203,7 +266,10 @@ export function ApprovalsTable() {
                     rows={2}
                     placeholder="Add a note..."
                     value={note}
-                    onChange={(e) => setNote(e.target.value)}
+                    onChange={(e) => {
+                      setNote(e.target.value)
+                      noteRef.current = e.target.value
+                    }}
                   />
                 </div>
               </div>

@@ -3,9 +3,10 @@
  * Using standardized DataTable with CRUD operations
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from '@tanstack/react-router'
+import { toast } from 'sonner'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,12 +31,15 @@ export function ReceptionsTable() {
     fetchReceptions,
     filters,
     bulkDelete,
+    submitForApproval,
     isSubmitting,
   } = useReceptionsStore()
 
   const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [submittingId, setSubmittingId] = useState<number | null>(null)
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
 
   // Single source of truth for fetch - debounced, primitive dependencies
   useEffect(() => {
@@ -84,8 +88,9 @@ export function ReceptionsTable() {
       await bulkDelete(Array.from(selectedIds).map(Number))
       setSelectedIds(new Set())
       setShowDeleteConfirm(false)
-    } catch {
-      // Error handled in store
+      toast.success(`${selectedIds.size} item(s) deleted`)
+    } catch (err: any) {
+      toast.error(err.message || 'Delete failed')
     } finally {
       setIsDeleting(false)
     }
@@ -95,13 +100,58 @@ export function ReceptionsTable() {
     navigate({ to: '/receptions/new' })
   }
 
+  const handleEdit = (reception: Reception) => {
+    // Only navigate to edit if can_edit is true
+    if (reception.can_edit === false) {
+      return
+    }
+    navigate({ to: '/receptions/$id/edit', params: { id: String(reception.id) } })
+  }
+
+  const handleSubmitClick = (row: Reception) => {
+    setSubmittingId(row.id)
+    setShowSubmitConfirm(true)
+  }
+
+  const handleSubmit = async () => {
+    if (!submittingId) return
+    try {
+      await submitForApproval(submittingId)
+      toast.success('Submitted for approval')
+      setShowSubmitConfirm(false)
+      setSubmittingId(null)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to submit')
+    }
+  }
+
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case 'approved': return 'bg-green-100 text-green-800'
+      case 'rejected': return 'bg-red-100 text-red-800'
+      case 'pending': return 'bg-yellow-100 text-yellow-800'
+      case 'draft': return 'bg-blue-100 text-blue-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'approved': return 'Approved'
+      case 'rejected': return 'Rejected'
+      case 'pending': return 'Pending'
+      case 'draft': return 'Draft'
+      default: return 'Unknown'
+    }
+  }
+
   // Define columns
   const columns: DataTableColumn<Reception>[] = [
     {
       accessorKey: 'code',
       header: 'Kode',
       cell: (row) => (
-        <span className="font-mono text-sm text-muted-foreground">
+        <span className="font-mono text-sm font-medium text-primary">
           {row.code ?? '-'}
         </span>
       ),
@@ -145,19 +195,39 @@ export function ReceptionsTable() {
       accessorKey: 'status',
       header: 'Status',
       cell: (row) => (
-        <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-            row.status === 'approved'
-              ? 'bg-green-100 text-green-800'
-              : row.status === 'rejected'
-              ? 'bg-red-100 text-red-800'
-              : row.status === 'pending'
-              ? 'bg-yellow-100 text-yellow-800'
-              : 'bg-gray-100 text-gray-800'
-          }`}
-        >
-          {row.status === 'approved' ? 'Approved' : row.status === 'rejected' ? 'Rejected' : row.status === 'pending' ? 'Pending' : 'Draft'}
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusClass(row.status)}`}>
+          {getStatusLabel(row.status)}
         </span>
+      ),
+    },
+    {
+      accessorKey: 'current_level',
+      header: 'Level',
+      cell: (row) => (
+        <span className="text-muted-foreground">
+          {row.status === 'pending' ? `Level ${row.current_level}` : '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (row: Reception) => (
+        <div className="flex items-center gap-2">
+          {(row.status === 'draft' || row.status === 'rejected') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleSubmitClick(row)
+              }}
+            >
+              <Send className="h-4 w-4 mr-1" />
+              Submit
+            </Button>
+          )}
+        </div>
       ),
     },
   ]
@@ -189,7 +259,7 @@ export function ReceptionsTable() {
 
       {/* Click to edit hint */}
       <p className="text-xs text-muted-foreground">
-        Klik pada baris untuk melihat detail atau mengedit data
+        Klik pada kode untuk melihat detail atau mengedit data
       </p>
 
       <DataTable
@@ -204,6 +274,7 @@ export function ReceptionsTable() {
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
         rowKey="id"
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -225,6 +296,32 @@ export function ReceptionsTable() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? 'Menghapus...' : 'Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Submit Confirmation Dialog */}
+      <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit untuk Approval</AlertDialogTitle>
+            <AlertDialogDescription>
+              Reception akan diajukan untuk persetujuan. Lanjutkan?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowSubmitConfirm(false)
+              setSubmittingId(null)
+            }}>
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Mengirim...' : 'Ya, Submit'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

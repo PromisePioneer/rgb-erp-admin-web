@@ -45,11 +45,21 @@ export interface DailyTaskReview {
   scores: DailyTaskReviewScore[]
 }
 
+export interface DailyTaskConditionItem {
+  id: number
+  name: string
+  initial_condition: string | null
+  initial_condition_label: string | null
+  final_condition: string | null
+  final_condition_label: string | null
+}
+
 export interface DailyTaskReportDetail extends DailyTaskReport {
-  tools: string[]
-  chemicals: string[]
-  ppes: string[]
+  tools: DailyTaskConditionItem[]
+  chemicals: DailyTaskConditionItem[]
+  ppes: DailyTaskConditionItem[]
   photos: DailyTaskPhoto[]
+  machines: DailyTaskConditionItem[]
   reviews: DailyTaskReview[]
   duration_minutes: number | null
   notes: string | null

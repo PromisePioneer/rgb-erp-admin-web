@@ -29,6 +29,7 @@ interface ReceptionsState {
   update: (id: number, payload: UpdateReceptionPayload) => Promise<void>
   remove: (id: number) => Promise<void>
   bulkDelete: (ids: number[]) => Promise<void>
+  submitForApproval: (id: number) => Promise<void>
   setFilters: (filters: Partial<ReceptionsFilters>) => void
   resetFilters: () => void
   resetForm: () => void
@@ -152,6 +153,22 @@ export const useReceptionsStore = create<ReceptionsState>((set, get) => ({
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to delete receptions'
+      set({ error: message, isSubmitting: false })
+      throw error
+    }
+  },
+
+  submitForApproval: async (id: number) => {
+    set({ isSubmitting: true, error: null })
+
+    try {
+      await receptionsApi.submitForApproval(id)
+      set({ isSubmitting: false })
+      // Refresh the list
+      await get().fetchReceptions()
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to submit for approval'
       set({ error: message, isSubmitting: false })
       throw error
     }

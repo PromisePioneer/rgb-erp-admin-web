@@ -4,7 +4,7 @@
  */
 import { useEffect, useCallback, useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { Save, Plus, Trash2, ArrowLeft, Package, FileText } from 'lucide-react'
+import { Save, Plus, Trash2, ArrowLeft, Package, FileText, Send, User, MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +17,9 @@ import type { CreateReceptionPayload, UpdateReceptionPayload, ReceptionLineItem 
 
 type FormValues = {
   purchase_order_id: number | undefined
+  location_type: 'warehouse' | 'area'
   warehouse_id: number | undefined
+  area_id: number | undefined
   date: string
 }
 
@@ -34,37 +36,82 @@ export function ReceptionsForm() {
     fetchById,
     create,
     update,
+    submitForApproval,
     resetForm,
   } = useReceptionsStore()
 
   // Form state
   const [formValues, setFormValues] = useState<FormValues>({
     purchase_order_id: undefined,
+    location_type: 'warehouse',
     warehouse_id: undefined,
+    area_id: undefined,
     date: new Date().toISOString().split('T')[0],
   })
 
   // Line items state
   const [lineItems, setLineItems] = useState<ReceptionLineItem[]>([])
+  const [initialized, setInitialized] = useState(false)
 
   // Calculate grand total
   const grandTotal = lineItems.reduce((sum, item) => sum + item.line_total, 0)
 
+  // Status badge component
+  const canEdit = selectedItem?.can_edit ?? true
+  const canSubmit = selectedItem?.can_submit ?? false
+  const currentStatus = selectedItem?.status
+
+  // Status badge
+  function StatusBadge({ status }: { status: string }) {
+    const config: Record<string, { label: string; class: string }> = {
+      draft: { label: 'Draft', class: 'bg-gray-100 text-gray-800' },
+      pending: { label: 'Pending', class: 'bg-yellow-100 text-yellow-800' },
+      approved: { label: 'Approved', class: 'bg-green-100 text-green-800' },
+      rejected: { label: 'Rejected', class: 'bg-red-100 text-red-800' },
+    }
+    const { label, class: className } = config[status] || config.draft
+
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
+        {label}
+      </span>
+    )
+  }
+
+  // Handle submit for approval
+  const handleSubmitForApproval = async () => {
+    if (!receptionId) return
+    try {
+      await submitForApproval(receptionId)
+      toast.success('Penerimaan berhasil diajukan untuk approval')
+      navigate({ to: '/receptions' })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Terjadi kesalahan')
+    }
+  }
+
   // Fetch data for edit mode
   useEffect(() => {
     if (isEdit && receptionId) {
+      setInitialized(false)
       fetchById(receptionId)
     } else {
+      setInitialized(false)
       resetForm()
     }
-  }, [isEdit, receptionId, fetchById, resetForm])
+  }, [isEdit, receptionId])
 
   // Populate form when data is loaded
   useEffect(() => {
-    if (isEdit && selectedItem) {
+    if (isEdit && selectedItem && !initialized) {
+      // Determine location type based on warehouse_id vs area_id
+      const locationType = selectedItem.area_id ? 'area' : 'warehouse'
+
       setFormValues({
         purchase_order_id: selectedItem.purchase_order_id,
         warehouse_id: selectedItem.warehouse_id,
+        area_id: selectedItem.area_id,
+        location_type: locationType,
         date: selectedItem.date,
       })
 
@@ -79,8 +126,10 @@ export function ReceptionsForm() {
           line_total: detail.total,
         })))
       }
+
+      setInitialized(true)
     }
-  }, [isEdit, selectedItem])
+  }, [isEdit, selectedItem, initialized])
 
   // Load purchase order details when PO is selected
   const handlePurchaseOrderChange = useCallback(async (value: number | string | null) => {
@@ -127,6 +176,29 @@ export function ReceptionsForm() {
       return []
     }
   }, [])
+
+  // Load areas
+  const loadAreas = useCallback(async (search: string): Promise<SelectOption[]> => {
+    try {
+      const response = await receptionsApi.getAreasSelectOptions(search)
+      return response.data.map((a) => ({
+        value: a.id,
+        label: a.name,
+      }))
+    } catch {
+      return []
+    }
+  }, [])
+
+  // Handle location type change
+  const handleLocationTypeChange = (type: 'warehouse' | 'area') => {
+    setFormValues(prev => ({
+      ...prev,
+      location_type: type,
+      warehouse_id: undefined,
+      area_id: undefined,
+    }))
+  }
 
   // Load purchase orders
   const loadPurchaseOrders = useCallback(async (search: string): Promise<SelectOption[]> => {
@@ -250,8 +322,12 @@ export function ReceptionsForm() {
       toast.error('Purchase Order wajib dipilih')
       return
     }
-    if (!formValues.warehouse_id) {
+    if (formValues.location_type === 'warehouse' && !formValues.warehouse_id) {
       toast.error('Gudang wajib dipilih')
+      return
+    }
+    if (formValues.location_type === 'area' && !formValues.area_id) {
+      toast.error('Area wajib dipilih')
       return
     }
     if (!formValues.date) {
@@ -273,7 +349,8 @@ export function ReceptionsForm() {
     try {
       const payload = {
         purchase_order_id: formValues.purchase_order_id,
-        warehouse_id: formValues.warehouse_id,
+        warehouse_id: formValues.location_type === 'warehouse' ? formValues.warehouse_id : undefined,
+        area_id: formValues.location_type === 'area' ? formValues.area_id : undefined,
         date: formValues.date,
         product_id: validLineItems.map(item => item.product_id as number),
         qty: validLineItems.map(item => item.qty),
@@ -306,9 +383,12 @@ export function ReceptionsForm() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">
-              {isEdit ? 'Edit Penerimaan' : 'Tambah Penerimaan Baru'}
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold">
+                {isEdit ? 'Edit Penerimaan' : 'Tambah Penerimaan Baru'}
+              </h1>
+              {isEdit && currentStatus && <StatusBadge status={currentStatus} />}
+            </div>
             <p className="text-sm text-muted-foreground mt-1">
               {isEdit ? 'Perbarui informasi penerimaan barang' : 'Lengkapi informasi penerimaan barang baru'}
             </p>
@@ -328,7 +408,7 @@ export function ReceptionsForm() {
             Informasi Dasar
           </h2>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Purchase Order *</label>
               <AsyncSelect
@@ -336,22 +416,51 @@ export function ReceptionsForm() {
                 onChange={(value) => handlePurchaseOrderChange(value)}
                 loadOptions={loadPurchaseOrders}
                 placeholder="Pilih PO..."
-                isDisabled={isLoading || isSubmitting}
+                isDisabled={isLoading || isSubmitting || !canEdit}
                 className="w-full"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Gudang *</label>
-              <AsyncSelect
-                value={formValues.warehouse_id ?? null}
-                onChange={(value) => setFormValues(prev => ({ ...prev, warehouse_id: value ? Number(value) : undefined }))}
-                loadOptions={loadWarehouses}
-                placeholder="Pilih gudang..."
-                isDisabled={isLoading || isSubmitting}
-                className="w-full"
-              />
+              <label className="text-sm font-medium">Lokasi *</label>
+              <select
+                className="w-full border rounded px-3 py-2 bg-background"
+                value={formValues.location_type}
+                onChange={(e) => handleLocationTypeChange(e.target.value as 'warehouse' | 'area')}
+                disabled={isLoading || isSubmitting || !canEdit}
+              >
+                <option value="warehouse">Gudang</option>
+                <option value="area">Area</option>
+              </select>
             </div>
+
+            {formValues.location_type === 'warehouse' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Gudang *</label>
+                <AsyncSelect
+                  value={formValues.warehouse_id ?? null}
+                  onChange={(value) => setFormValues(prev => ({ ...prev, warehouse_id: value ? Number(value) : undefined }))}
+                  loadOptions={loadWarehouses}
+                  placeholder="Pilih gudang..."
+                  isDisabled={isLoading || isSubmitting || !canEdit}
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            {formValues.location_type === 'area' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Area *</label>
+                <AsyncSelect
+                  value={formValues.area_id ?? null}
+                  onChange={(value) => setFormValues(prev => ({ ...prev, area_id: value ? Number(value) : undefined }))}
+                  loadOptions={loadAreas}
+                  placeholder="Pilih area..."
+                  isDisabled={isLoading || isSubmitting || !canEdit}
+                  className="w-full"
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Tanggal *</label>
@@ -359,7 +468,7 @@ export function ReceptionsForm() {
                 type="date"
                 value={formValues.date}
                 onChange={(e) => setFormValues(prev => ({ ...prev, date: e.target.value }))}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canEdit}
               />
             </div>
           </div>
@@ -372,10 +481,12 @@ export function ReceptionsForm() {
               <Package className="h-5 w-5" />
               Detail Produk
             </h2>
-            <Button type="button" variant="outline" size="sm" onClick={addLineItem}>
-              <Plus className="h-4 w-4 mr-1" />
-              Tambah Baris
-            </Button>
+            {canEdit && (
+              <Button type="button" variant="outline" size="sm" onClick={addLineItem}>
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah Baris
+              </Button>
+            )}
           </div>
 
           {lineItems.length > 0 ? (
@@ -412,7 +523,7 @@ export function ReceptionsForm() {
                           value={item.qty}
                           onChange={(e) => updateLineItem(index, 'qty', parseFloat(e.target.value) || 0)}
                           className="text-right w-24"
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || !canEdit}
                         />
                       </td>
                       <td className="px-3 py-2">
@@ -422,7 +533,7 @@ export function ReceptionsForm() {
                           value={item.unit_price}
                           onChange={(e) => updateLineItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
                           className="text-right"
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || !canEdit}
                         />
                       </td>
                       <td className="px-3 py-2 text-right font-mono">
@@ -435,7 +546,7 @@ export function ReceptionsForm() {
                           size="sm"
                           onClick={() => removeLineItem(index)}
                           className="text-destructive hover:text-destructive"
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || !canEdit}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -470,12 +581,77 @@ export function ReceptionsForm() {
           <Button type="button" variant="outline" onClick={() => navigate({ to: '/receptions' })}>
             Batal
           </Button>
-          <Button type="button" onClick={onSubmit} disabled={isSubmitting}>
-            <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? 'Menyimpan...' : 'Simpan'}
-          </Button>
+          {isEdit && canSubmit && (
+            <Button type="button" onClick={handleSubmitForApproval} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
+              <Send className="h-4 w-4 mr-2" />
+              {isSubmitting ? 'Mengirim...' : 'Ajukan Approval'}
+            </Button>
+          )}
+          {canEdit && (
+            <Button type="button" onClick={onSubmit} disabled={isSubmitting}>
+              <Save className="h-4 w-4 mr-2" />
+              {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Approval History */}
+      {isEdit && selectedItem?.approvals && selectedItem.approvals.length > 0 && (
+        <div className="bg-card rounded-lg border p-6 space-y-4">
+          <h3 className="text-lg font-semibold">Approval History</h3>
+          <div className="space-y-3">
+            {selectedItem.approvals.map((approval) => (
+              <div key={approval.id} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      approval.status === 'approved' ? 'bg-green-100 text-green-700' :
+                      approval.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      <User className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">Level {approval.level}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {approval.acted_by_name || 'Menunggu...'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    approval.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    approval.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {approval.status === 'pending' ? 'Menunggu' :
+                     approval.status === 'approved' ? 'Disetujui' : 'Ditolak'}
+                  </span>
+                </div>
+
+                {approval.note && (
+                  <div className="flex gap-2 pl-13">
+                    <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-2 flex-1">
+                      <span className="font-medium text-foreground">Alasan: </span>
+                      {approval.note}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground pl-13">
+                  {approval.acted_at
+                    ? new Date(approval.acted_at).toLocaleString('id-ID', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })
+                    : 'Belum diproses'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
