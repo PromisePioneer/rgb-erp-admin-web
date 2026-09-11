@@ -74,11 +74,6 @@ import {NotificationBell} from '@/components/layout/notification-bell'
 // Re-export for backward compatibility
 export {AppSidebar as Sidebar} from "@/components/app-sidebar"
 
-// Helper function
-function getLabel(key: string): string {
-    return key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-}
-
 function hasPrivilege(menu: string | undefined, privileges: string[]): boolean {
     if (!menu) return true
     return privileges.some((p) => p.startsWith(`${menu},View`))
@@ -130,11 +125,25 @@ const iconMap: Record<string, LucideIcon> = {
     'list': List,
 }
 
+// Helper function - translate label or fallback to formatted key
+function getTranslatedLabelMobile(key: string, t: (key: string) => string, isLoaded: boolean): string {
+    if (isLoaded) {
+        const translated = t(`nav.${key}`)
+        // Only use translation if it's different from the key (meaning translation exists)
+        if (translated !== `nav.${key}`) {
+            return translated
+        }
+    }
+    // Fallback: format the key like before
+    return key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
 // Mobile navigation menu (inline version for Sheet)
 function NavMenuMobile({onNavigate}: { onNavigate: () => void }) {
     const location = useLocation()
     const privileges = useAuthStore((state) => state.privileges) || []
     const navigate = useNavigate()
+    const { t, isLoaded } = useTranslationStore()
     const [expandedMenus, setExpandedMenus] = React.useState<Set<string>>(new Set())
 
     const isActive = (path: string): boolean => {
@@ -189,6 +198,7 @@ function NavMenuMobile({onNavigate}: { onNavigate: () => void }) {
         const hasChildren = item.children && item.children.length > 0
         const isExpanded = expandedMenus.has(item.label)
         const childActive = hasChildren && isChildActive(item.children)
+        const label = getTranslatedLabelMobile(item.label, t, isLoaded)
 
         if (hasChildren) {
             // Parent item with children
@@ -205,7 +215,7 @@ function NavMenuMobile({onNavigate}: { onNavigate: () => void }) {
                         style={{paddingLeft: `${12 + depth * 16}px`}}
                     >
                         {Icon && <Icon className="h-4 w-4 shrink-0"/>}
-                        <span className="flex-1 text-left truncate">{getLabel(item.label)}</span>
+                        <span className="flex-1 text-left truncate">{label}</span>
                         {isExpanded ? <ChevronDown className="h-4 w-4"/> : <ChevronRight className="h-4 w-4"/>}
                     </button>
 
@@ -235,7 +245,7 @@ function NavMenuMobile({onNavigate}: { onNavigate: () => void }) {
                     style={{paddingLeft: `${12 + depth * 16}px`}}
                 >
                     {Icon && <Icon className="h-4 w-4 shrink-0"/>}
-                    <span className="truncate">{getLabel(item.label)}</span>
+                    <span className="truncate">{label}</span>
                 </button>
             )
         }
@@ -258,26 +268,29 @@ function NavMenuMobile({onNavigate}: { onNavigate: () => void }) {
             {/* Navigation Menu - scrollable */}
             <div className="flex-1 overflow-y-auto py-4">
                 <div className="px-3">
-                    {filteredSections.map((section, sectionIndex) => (
-                        <div key={section.label} className="mb-4">
-                            {/* Section Header */}
-                            <div className="px-2 py-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
-                  {getLabel(section.label)}
-                </span>
-                            </div>
+                    {filteredSections.map((section, sectionIndex) => {
+                        const sectionLabel = getTranslatedLabelMobile(section.label, t, isLoaded)
+                        return (
+                            <div key={section.label} className="mb-4">
+                                {/* Section Header */}
+                                <div className="px-2 py-2">
+                                    <span className="text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
+                                      {sectionLabel}
+                                    </span>
+                                </div>
 
-                            {/* Section Items */}
-                            <div className="space-y-0.5">
-                                {section.items.map((item) => renderItem(item))}
-                            </div>
+                                {/* Section Items */}
+                                <div className="space-y-0.5">
+                                    {section.items.map((item) => renderItem(item))}
+                                </div>
 
-                            {/* Separator between sections */}
-                            {sectionIndex < filteredSections.length - 1 && (
-                                <Separator className="mt-4 bg-sidebar-border"/>
-                            )}
-                        </div>
-                    ))}
+                                {/* Separator between sections */}
+                                {sectionIndex < filteredSections.length - 1 && (
+                                    <Separator className="mt-4 bg-sidebar-border"/>
+                                )}
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
         </div>

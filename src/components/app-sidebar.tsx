@@ -32,6 +32,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { useAuthStore } from "@/stores/auth-store"
 import { useSettingsStore } from "@/features/settings/store/settings-store"
+import { useTranslationStore } from "@/stores/translation-store"
 import { navigationSections } from "./layout/navigation-types"
 import { cn } from "@/lib/utils"
 import {
@@ -126,8 +127,16 @@ const iconMap: Record<string, LucideIcon> = {
   'list': List,
 }
 
-// Helper function
-function getLabel(key: string): string {
+// Helper function - translate label or fallback to formatted key
+function getTranslatedLabel(key: string, t: (key: string) => string, isLoaded: boolean): string {
+  if (isLoaded) {
+    const translated = t(`nav.${key}`)
+    // Only use translation if it's different from the key (meaning translation exists)
+    if (translated !== `nav.${key}`) {
+      return translated
+    }
+  }
+  // Fallback: format the key like before
   return key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
@@ -241,6 +250,7 @@ function NavMenu({
 }) {
   const location = useLocation()
   const privileges = useAuthStore((state) => state.privileges)
+  const { t, isLoaded } = useTranslationStore()
   const [expandedMenus, setExpandedMenus] = React.useState<Set<string>>(new Set())
 
   const isActive = (path: string): boolean => {
@@ -300,6 +310,7 @@ function NavMenu({
     const hasChildren = item.children && item.children.length > 0
     const isExpanded = expandedMenus.has(item.label)
     const childActive = hasChildren && isChildActive(item.children)
+    const label = getTranslatedLabel(item.label, t, isLoaded)
 
     if (hasChildren) {
       // Parent item with children
@@ -315,7 +326,7 @@ function NavMenu({
             )}
           >
             {Icon && <Icon className="h-4 w-4 shrink-0" />}
-            {!isCollapsed && <span className="flex-1 text-left">{getLabel(item.label)}</span>}
+            {!isCollapsed && <span className="flex-1 text-left">{label}</span>}
             {!isCollapsed && (
               isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
             )}
@@ -344,7 +355,7 @@ function NavMenu({
           )}
         >
           {Icon && <Icon className="h-4 w-4 shrink-0" />}
-          {!isCollapsed && <span>{getLabel(item.label)}</span>}
+          {!isCollapsed && <span>{label}</span>}
         </Link>
       )
 
@@ -356,7 +367,7 @@ function NavMenu({
             </TooltipTrigger>
             <TooltipContent side="right" className="flex items-center gap-2">
               {Icon && <Icon className="h-4 w-4" />}
-              <span>{getLabel(item.label)}</span>
+              <span>{label}</span>
             </TooltipContent>
           </Tooltip>
         )
@@ -370,28 +381,31 @@ function NavMenu({
     <TooltipProvider delayDuration={0}>
       <SidebarGroup className="px-2 py-0">
         <SidebarMenu className="gap-0">
-          {filteredSections.map((section, sectionIndex) => (
-            <div key={section.label}>
-              {/* Section Header */}
-              {!isCollapsed && (
-                <div className="flex items-center justify-between px-2 py-2 mb-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
-                    {getLabel(section.label)}
-                  </span>
+          {filteredSections.map((section, sectionIndex) => {
+            const sectionLabel = getTranslatedLabel(section.label, t, isLoaded)
+            return (
+              <div key={section.label}>
+                {/* Section Header */}
+                {!isCollapsed && (
+                  <div className="flex items-center justify-between px-2 py-2 mb-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
+                      {sectionLabel}
+                    </span>
+                  </div>
+                )}
+
+                {/* Section Items */}
+                <div className="space-y-0.5">
+                  {section.items.map((item) => renderItem(item))}
                 </div>
-              )}
 
-              {/* Section Items */}
-              <div className="space-y-0.5">
-                {section.items.map((item) => renderItem(item))}
+                {/* Separator between sections */}
+                {!isCollapsed && sectionIndex < filteredSections.length - 1 && (
+                  <Separator className="my-3 bg-sidebar-border" />
+                )}
               </div>
-
-              {/* Separator between sections */}
-              {!isCollapsed && sectionIndex < filteredSections.length - 1 && (
-                <Separator className="my-3 bg-sidebar-border" />
-              )}
-            </div>
-          ))}
+            )
+          })}
         </SidebarMenu>
       </SidebarGroup>
     </TooltipProvider>
