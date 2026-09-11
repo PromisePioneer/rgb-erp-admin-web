@@ -128,10 +128,16 @@ const iconMap: Record<string, LucideIcon> = {
 // Helper function - translate label or fallback to formatted key
 function getTranslatedLabelMobile(key: string, t: (key: string) => string, isLoaded: boolean): string {
     if (isLoaded) {
-        const translated = t(`nav.${key}`)
+        // Try the direct key first (matches lang/id/messages.php structure)
+        const translated = t(key)
         // Only use translation if it's different from the key (meaning translation exists)
-        if (translated !== `nav.${key}`) {
+        if (translated !== key) {
             return translated
+        }
+        // Also try with nav. prefix for compatibility
+        const translatedWithPrefix = t(`nav.${key}`)
+        if (translatedWithPrefix !== `nav.${key}`) {
+            return translatedWithPrefix
         }
     }
     // Fallback: format the key like before
