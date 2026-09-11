@@ -90,13 +90,11 @@ import {MasterDataHub} from '@/features/master-data'
 // Root route
 const rootRoute = createRootRoute({
     component: () => {
-        const {fetchTranslations, isLoaded} = useTranslationStore()
+        const {preloadTranslations} = useTranslationStore()
 
         useEffect(() => {
-            if (!isLoaded) {
-                fetchTranslations()
-            }
-        }, [fetchTranslations, isLoaded])
+            preloadTranslations()
+        }, [preloadTranslations])
 
         return (
             <>
