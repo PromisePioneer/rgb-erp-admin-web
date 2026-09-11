@@ -101,7 +101,32 @@ const rootRoute = createRootRoute({
         return (
             <>
                 <Outlet/>
-                <Toaster position="top-right" richColors/>
+                <Toaster
+                    position="top-right"
+                    expand={false}
+                    richColors
+                    closeButton
+                    toastOptions={{
+                        style: {
+                            background: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            color: 'hsl(var(--card-foreground))',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        },
+                        classNames: {
+                            toast: 'group',
+                            title: 'text-sm font-medium',
+                            description: 'text-xs text-muted-foreground mt-1',
+                            success: 'border-l-4 border-l-green-500',
+                            error: 'border-l-4 border-l-red-500',
+                            warning: 'border-l-4 border-l-amber-500',
+                            info: 'border-l-4 border-l-blue-500',
+                            actionButton: 'bg-primary text-primary-foreground text-xs px-3 py-1 rounded',
+                            cancelButton: 'bg-muted text-muted-foreground text-xs px-3 py-1 rounded',
+                            closeButton: 'bg-transparent hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors',
+                        },
+                    }}
+                />
             </>
         )
     },
