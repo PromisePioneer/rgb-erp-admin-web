@@ -26,6 +26,7 @@ interface AsyncSelectProps {
   error?: string
   debounceMs?: number
   defaultOption?: SelectOption | null
+  defaultOptions?: boolean // If true, load options on mount
 }
 
 export function AsyncSelect({
@@ -40,6 +41,7 @@ export function AsyncSelect({
   error,
   debounceMs = 300,
   defaultOption,
+  defaultOptions = false,
 }: AsyncSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -62,6 +64,14 @@ export function AsyncSelect({
       setSelectedOption(defaultOption)
     }
   }, [defaultOption])
+
+  // Load options on mount if defaultOptions is true
+  useEffect(() => {
+    if (defaultOptions && !hasLoadedInitialRef.current) {
+      hasLoadedInitialRef.current = true
+      fetchOptions('')
+    }
+  }, [defaultOptions])
 
   /**
    * Fetch options with request-id to handle race conditions

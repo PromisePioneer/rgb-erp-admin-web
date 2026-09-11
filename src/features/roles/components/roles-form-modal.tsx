@@ -1,6 +1,6 @@
 /**
  * Roles Form Modal Component
- * Create and edit form using react-hook-form in a Dialog
+ * Create and edit form with parent hierarchy selection
  */
 import { useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
@@ -28,6 +28,7 @@ interface RolesFormModalProps {
 const roleFormSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi').max(255, 'Maksimal 255 karakter'),
   status: z.number(),
+  parent_role_id: z.number().nullable().optional(),
 })
 
 type RoleFormValues = z.infer<typeof roleFormSchema>
@@ -40,6 +41,7 @@ export function RolesFormModal({
 }: RolesFormModalProps) {
   const {
     selectedItem,
+    allRoles, // Get all roles for parent selection
     isLoading,
     isSubmitting,
     fetchById,
@@ -55,6 +57,7 @@ export function RolesFormModal({
     defaultValues: {
       name: '',
       status: 1,
+      parent_role_id: null,
     },
   })
 
@@ -64,6 +67,7 @@ export function RolesFormModal({
       form.reset({
         name: '',
         status: 1,
+        parent_role_id: null,
       })
       hasShownValidationToast.current = false
     }
@@ -97,7 +101,7 @@ export function RolesFormModal({
     if (errorCount === 0) {
       hasShownValidationToast.current = false
     }
-  }, [form, form.formState.errors, form.formState.submitCount])
+  }, [form.formState.errors, form.formState.submitCount])
 
   // Fetch data when editing
   useEffect(() => {
@@ -115,6 +119,7 @@ export function RolesFormModal({
       form.reset({
         name: selectedItem.name,
         status: selectedItem.status,
+        parent_role_id: selectedItem.parent_role_id,
       })
     }
   }, [mode, selectedItem, open, form])
@@ -125,12 +130,18 @@ export function RolesFormModal({
 
   const onSubmit = async (values: RoleFormValues) => {
     try {
+      const payload = {
+        name: values.name,
+        status: values.status,
+        parent_role_id: values.parent_role_id,
+      }
+
       if (mode === 'create') {
-        await create(values)
+        await create(payload)
         toast.success('Role created successfully')
         handleClose()
       } else if (roleId) {
-        await update(roleId, values)
+        await update(roleId, payload)
         toast.success('Role updated successfully')
         handleClose()
       }
@@ -138,6 +149,9 @@ export function RolesFormModal({
       toast.error(err instanceof Error ? err.message : 'An error occurred')
     }
   }
+
+  // Get roles for parent dropdown (exclude current role to avoid self-reference)
+  const parentRoles = allRoles.filter(r => mode === 'create' || r.id !== roleId)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -168,6 +182,38 @@ export function RolesFormModal({
             )}
           </div>
 
+          {/* Parent Role (Approver) */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Atasan (Approver) *
+            </label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Pilih role yang akan menyetujui request dari role ini. Kosongkan jika tidak butuh approval.
+            </p>
+            <select
+              {...form.register('parent_role_id', { valueAsNumber: true })}
+              value={form.watch('parent_role_id') ?? ''}
+              onChange={(e) => {
+                const val = e.target.value
+                form.setValue('parent_role_id', val ? Number(val) : null)
+              }}
+              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+            >
+              <option value="">-- Tidak Ada Approver (Auto Approve) --</option>
+              {parentRoles.length > 0 ? (
+                parentRoles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))
+              ) : (
+                <option disabled value="">
+                  Tidak ada role tersedia
+                </option>
+              )}
+            </select>
+          </div>
+
           {/* Status */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Status *</label>
@@ -175,16 +221,11 @@ export function RolesFormModal({
               {...form.register('status', { valueAsNumber: true })}
               value={form.watch('status')}
               onChange={(e) => form.setValue('status', Number(e.target.value))}
-              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
             >
               <option value={1}>Aktif</option>
               <option value={0}>Tidak Aktif</option>
             </select>
-            {form.formState.errors.status && (
-              <p className="text-sm text-red-500">
-                {form.formState.errors.status.message}
-              </p>
-            )}
           </div>
 
           {/* Actions */}

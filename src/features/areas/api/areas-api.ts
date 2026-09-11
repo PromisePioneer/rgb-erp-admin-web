@@ -9,6 +9,7 @@ import type {
   AreaDetail,
   AreasFilters,
   CreateAreaPayload,
+  CoordinatorOption,
   UpdateAreaPayload,
 } from '../types/areas.types'
 
@@ -36,7 +37,10 @@ export const areasApi = {
    * POST /api/admin/areas
    */
   create: async (payload: CreateAreaPayload) => {
-    const { data } = await apiClient.post<ApiResponse<Area>>('/admin/areas', payload)
+    const { data } = await apiClient.post<ApiResponse<Area>>('/admin/areas', {
+      ...payload,
+      status: payload.status === 'Aktif' ? 1 : 0,
+    })
     return data
   },
 
@@ -45,7 +49,10 @@ export const areasApi = {
    * PUT /api/admin/areas/:id
    */
   update: async (id: number, payload: UpdateAreaPayload) => {
-    const { data } = await apiClient.put<ApiResponse<Area>>(`/admin/areas/${id}`, payload)
+    const { data } = await apiClient.put<ApiResponse<Area>>(`/admin/areas/${id}`, {
+      ...payload,
+      status: payload.status === 'Aktif' ? 1 : 0,
+    })
     return data
   },
 
@@ -77,6 +84,19 @@ export const areasApi = {
     const { data } = await apiClient.get<
       ApiResponse<{ id: number; name: string; client_name: string; text: string }[]>
     >('/admin/areas/select-options', { params })
+    return data
+  },
+
+  /**
+   * Get coordinator options for area assignment
+   * Returns employees with Team Leader or Danru positions
+   * GET /api/admin/areas/coordinator-options
+   */
+  getCoordinatorOptions: async (params?: { area_id?: number; q?: string }) => {
+    const { data } = await apiClient.get<ApiResponse<CoordinatorOption[]>>(
+      '/admin/areas/coordinator-options',
+      { params }
+    )
     return data
   },
 }

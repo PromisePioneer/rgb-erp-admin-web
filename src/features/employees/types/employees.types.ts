@@ -7,8 +7,8 @@ export interface Employee {
   id: number
   company_id: number | null
   company_name: string | null
-  position_id: number | null
-  position_name: string | null
+  role_id: number | null
+  role_name: string | null
   province_id: number | null
   province_name: string | null
   code: string
@@ -27,8 +27,8 @@ export interface Employee {
 }
 
 export interface EmployeeDetail extends Employee {
-  position_id: number | null
-  position_name: string | null
+  role_id: number | null
+  role_name: string | null
   province_id: number | null
   province_name: string | null
   photo: string | null
@@ -119,7 +119,6 @@ export interface EmployeeSocialActivity {
 
 export interface EmployeesFilters {
   search?: string
-  company_id?: number
   status?: number
   page?: number
   per_page?: number
@@ -141,7 +140,7 @@ export interface ApiResponse<T> {
 
 export interface CreateEmployeePayload {
   company_id?: number | null
-  position_id?: number | null
+  role_id?: number | null
   province_id?: number | null
   client_id?: number | null
   area_id?: number | null

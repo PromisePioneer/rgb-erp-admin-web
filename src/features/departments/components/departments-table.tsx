@@ -114,18 +114,7 @@ export function DepartmentsTable() {
     {
       accessorKey: 'name',
       header: 'Name',
-      cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-          className="font-medium text-primary hover:underline text-left cursor-pointer"
-        >
-          {row.name}
-        </button>
-      ),
+      cell: (row) => <span className="font-medium">{row.name}</span>,
     },
     {
       accessorKey: 'status',
@@ -159,11 +148,6 @@ export function DepartmentsTable() {
         </Button>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama untuk mengedit data
-      </p>
-
       <DataTable
         columns={columns}
         data={items}
@@ -175,6 +159,7 @@ export function DepartmentsTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

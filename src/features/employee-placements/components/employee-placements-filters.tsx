@@ -5,7 +5,13 @@
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { AsyncSelect } from '@/components/async-select'
 import { useEmployeePlacementsStore } from '@/features/employee-placements'
+
+const STATUS_OPTIONS = [
+  { value: '1', label: 'Active' },
+  { value: '0', label: 'Inactive' },
+]
 
 export function EmployeePlacementsFilters() {
     const {
@@ -18,12 +24,11 @@ export function EmployeePlacementsFilters() {
         setFilters({ search: e.target.value || undefined })
     }
 
-    const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const value = e.target.value
-        if (!value || value === 'all') {
+    const handleStatusChange = (value: string | number | null) => {
+        if (!value) {
             setFilters({ status: undefined })
         } else {
-            setFilters({ status: value })
+            setFilters({ status: String(value) })
         }
     }
 
@@ -44,15 +49,13 @@ export function EmployeePlacementsFilters() {
             />
 
             {/* Status Dropdown */}
-            <select
-                value={filters.status ?? ''}
+            <AsyncSelect
+                placeholder="All Status"
+                loadOptions={async () => STATUS_OPTIONS}
+                value={filters.status ? String(filters.status) : null}
                 onChange={handleStatusChange}
-                className="flex h-10 w-[150px] rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-                <option value="">All Status</option>
-                <option value="1">Active</option>
-                <option value="0">Inactive</option>
-            </select>
+                className="w-[150px]"
+            />
 
             {/* Reset Button */}
             {hasActiveFilters && (

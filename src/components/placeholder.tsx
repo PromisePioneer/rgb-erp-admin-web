@@ -14,10 +14,7 @@ export function Placeholder({ title }: PlaceholderProps) {
       <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
       <h2 className="text-xl font-semibold mb-2">{title}</h2>
       <p className="text-muted-foreground">
-        This module is still being migrated from Blade to React.
-      </p>
-      <p className="text-sm text-muted-foreground mt-2">
-        Please use the Blade version for now.
+        This module is still in development
       </p>
     </div>
   )

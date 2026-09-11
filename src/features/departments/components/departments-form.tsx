@@ -12,6 +12,7 @@ import { ArrowLeft, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { AsyncSelect } from '@/components/async-select'
 import {
   FormControl,
@@ -105,6 +106,35 @@ export function DepartmentsForm({ mode, departmentId }: DepartmentsFormProps) {
       clearError()
     }
   }, [clearError])
+
+  // Skeleton loading state
+  if (isLoading && mode === 'edit') {
+    return (
+      <div className="max-w-2xl">
+        <div className="flex items-center gap-4 mb-6">
+          <Skeleton className="h-10 w-10" />
+          <Skeleton className="h-8 w-48" />
+        </div>
+
+        <div className="bg-card rounded-lg border p-6 space-y-6">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const onSubmit = async (values: DepartmentFormValues) => {
     setSubmitError(null)

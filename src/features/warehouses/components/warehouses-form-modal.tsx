@@ -1,6 +1,6 @@
 /**
  * Warehouses Form Modal Component
- * Create and edit form using react-hook-form with company dropdown
+ * Create and edit form using react-hook-form
  */
 import { useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
@@ -14,9 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { useWarehousesStore } from '@/features/warehouses'
-import { companyApi } from '@/features/companies/api/companies-api'
 
 interface WarehousesFormModalProps {
   open: boolean
@@ -26,9 +24,8 @@ interface WarehousesFormModalProps {
 }
 
 type WarehouseFormValues = {
-  Name: string
+  name: string
   location: string
-  company_id?: number | null
   status: number
 }
 
@@ -47,9 +44,8 @@ export function WarehousesFormModal({ open, onOpenChange, mode, warehouseId }: W
 
   const form = useForm<WarehouseFormValues>({
     defaultValues: {
-      Name: '',
+      name: '',
       location: '',
-      company_id: undefined,
       status: 1,
     },
   })
@@ -57,9 +53,8 @@ export function WarehousesFormModal({ open, onOpenChange, mode, warehouseId }: W
   useEffect(() => {
     if (!open) {
       form.reset({
-        Name: '',
+        name: '',
         location: '',
-        company_id: undefined,
         status: 1,
       })
       hasShownValidationToast.current = false
@@ -101,9 +96,8 @@ export function WarehousesFormModal({ open, onOpenChange, mode, warehouseId }: W
   useEffect(() => {
     if (mode === 'edit' && selectedItem && open) {
       form.reset({
-        Name: selectedItem.name,
+        name: selectedItem.name,
         location: selectedItem.location ?? '',
-        company_id: selectedItem.company_id ?? undefined,
         status: selectedItem.status,
       })
     }
@@ -115,9 +109,8 @@ export function WarehousesFormModal({ open, onOpenChange, mode, warehouseId }: W
 
   const onSubmit = async (values: WarehouseFormValues) => {
     const payload = {
-      Name: values.Name,
+      name: values.name,
       location: values.location || null,
-      company_id: values.company_id ?? null,
       status: values.status,
     }
 
@@ -134,15 +127,6 @@ export function WarehousesFormModal({ open, onOpenChange, mode, warehouseId }: W
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'An error occurred')
     }
-  }
-
-  // Load companies for dropdown
-  const loadCompanies = async (search: string): Promise<SelectOption[]> => {
-    const response = await companyApi.getSelectOptions({ q: search })
-    return response.map((item) => ({
-      value: item.id,
-      label: item.name,
-    }))
   }
 
   return (
@@ -164,24 +148,12 @@ export function WarehousesFormModal({ open, onOpenChange, mode, warehouseId }: W
             </label>
             <Input
               placeholder="Masukkan nama warehouse"
-              {...form.register('Name', { required: 'Nama warehouse wajib diisi' })}
+              {...form.register('name', { required: 'Nama warehouse wajib diisi' })}
               className="h-11"
             />
-            {form.formState.errors.Name && (
-              <p className="text-sm text-red-500">{form.formState.errors.Name.message}</p>
+            {form.formState.errors.name && (
+              <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
             )}
-          </div>
-
-          {/* Company */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Company</label>
-            <AsyncSelect
-              value={form.watch('company_id') ?? null}
-              onChange={(value) => form.setValue('company_id', value as number | null | undefined, { shouldValidate: true })}
-              loadOptions={loadCompanies}
-              placeholder="Pilih company (opsional)"
-              className="w-full"
-            />
           </div>
 
           {/* Location */}

@@ -89,6 +89,7 @@ export function ClientsTable() {
     navigate({ to: '/areas', search: { client_id: client.id, client_name: client.name } })
   }
 
+  // Create action column
   // Define columns
   const columns: DataTableColumn<Client>[] = [
     {
@@ -104,16 +105,9 @@ export function ClientsTable() {
       accessorKey: 'name',
       header: 'Name',
       cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-          className="font-medium text-primary hover:underline text-left cursor-pointer"
-        >
+        <span className="font-medium">
           {row.name}
-        </button>
+        </span>
       ),
     },
     {
@@ -197,11 +191,6 @@ export function ClientsTable() {
         </Button>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama untuk mengedit data, klik jumlah area untuk mengelola area
-      </p>
-
       <DataTable
         columns={columns}
         data={items}
@@ -213,6 +202,7 @@ export function ClientsTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

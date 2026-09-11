@@ -37,7 +37,7 @@ export interface ApiResponse<T> {
 }
 
 export interface CreateWarehousePayload {
-  Name: string
+  name: string
   location?: string | null
   company_id?: number | null
   status: number

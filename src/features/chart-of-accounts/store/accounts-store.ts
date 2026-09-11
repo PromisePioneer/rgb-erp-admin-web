@@ -43,6 +43,7 @@ interface AccountsState {
   create: (data: Partial<Account>) => Promise<Account>
   update: (id: number, data: Partial<Account>) => Promise<void>
   softDelete: (id: number) => Promise<void>
+  bulkDelete: (ids: number[]) => Promise<void>
   restore: (id: number) => Promise<void>
   setFilters: (filters: AccountsFilters) => void
   clearError: () => void
@@ -132,6 +133,19 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
       set({ isSubmitting: false })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to delete account'
+      set({ error: message, isSubmitting: false })
+      throw error
+    }
+  },
+
+  bulkDelete: async (ids: number[]) => {
+    set({ isSubmitting: true, error: null })
+    try {
+      await apiClient.post('/admin/accounts/bulk-delete', { ids })
+      await get().fetchAccounts({ ...get().filters, with_trashed: true })
+      set({ isSubmitting: false })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete accounts'
       set({ error: message, isSubmitting: false })
       throw error
     }

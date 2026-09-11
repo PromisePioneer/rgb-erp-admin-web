@@ -3,27 +3,26 @@
  * Displays payroll list with filters and generation controls
  */
 import { useEffect, useState } from 'react'
-import { FileText, RefreshCw } from 'lucide-react'
+import { RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { AsyncSelect } from '@/components/async-select'
+import { DataTable } from '@/components/ui/data-table'
+import type { DataTableColumn } from '@/components/ui/data-table'
 import { usePayrollStore } from '../store/payroll-store'
 import { PayrollGenerateDialog } from './payroll-generate-dialog'
 import { PayrollPayslipModal } from './payroll-payslip-modal'
+import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 const MONTHS = [
   { value: 1, label: 'January' },
@@ -40,6 +39,18 @@ const MONTHS = [
   { value: 12, label: 'December' },
 ]
 
+const YEARS = [
+  new Date().getFullYear() - 2,
+  new Date().getFullYear() - 1,
+  new Date().getFullYear(),
+  new Date().getFullYear() + 1,
+]
+
+const TYPE_OPTIONS = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'thr', label: 'THR' },
+]
+
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -47,6 +58,18 @@ function formatCurrency(amount: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)
+}
+
+interface PayrollRow {
+  id: number
+  employee_name: string | null
+  employee_code: string | null
+  present_days: number
+  working_days: number
+  gross: number
+  bpjs_ee: number
+  pph21: number
+  net: number
 }
 
 export function PayrollTable() {
@@ -59,29 +82,49 @@ export function PayrollTable() {
     fetchPayroll,
     setFilters,
     clearError,
+    bulkDelete,
   } = usePayrollStore()
 
   const [selectedPayrollId, setSelectedPayrollId] = useState<number | null>(null)
   const [showGenerateDialog, setShowGenerateDialog] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
 
   // Fetch on mount and when filters change
   useEffect(() => {
     fetchPayroll()
   }, [filters.month, filters.year, filters.type, filters.page, fetchPayroll])
 
-  const handleMonthChange = (value: string | null) => {
-    if (!value) return
-    setFilters({ month: parseInt(value, 10) })
+  const handleSelectionChange = (newSelectedIds: Set<number | string>) => {
+    setSelectedIds(newSelectedIds)
   }
 
-  const handleYearChange = (value: string | null) => {
-    if (!value) return
-    setFilters({ year: parseInt(value, 10) })
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds).map(Number)
+    if (ids.length === 0) return
+    try {
+      await bulkDelete(ids)
+      toast.success(`${ids.length} item(s) deleted`)
+      setSelectedIds(new Set())
+      setShowBulkDeleteDialog(false)
+    } catch (err: any) {
+      toast.error(err.message || 'Delete failed')
+    }
   }
 
-  const handleTypeChange = (value: string | null) => {
+  const handleMonthChange = (value: string | number | null) => {
     if (!value) return
-    setFilters({ type: value as 'monthly' | 'thr' })
+    setFilters({ month: parseInt(String(value), 10) })
+  }
+
+  const handleYearChange = (value: string | number | null) => {
+    if (!value) return
+    setFilters({ year: parseInt(String(value), 10) })
+  }
+
+  const handleTypeChange = (value: string | number | null) => {
+    if (!value) return
+    setFilters({ type: String(value) as 'monthly' | 'thr' })
   }
 
   const handlePageChange = (newPage: number) => {
@@ -90,9 +133,85 @@ export function PayrollTable() {
     setFilters({ page: newPage })
   }
 
-  const handleViewPayslip = (id: number) => {
-    setSelectedPayrollId(id)
+  const handleEdit = (row: PayrollRow) => {
+    setSelectedPayrollId(row.id)
   }
+
+  // Define base columns
+  const baseColumns: DataTableColumn<PayrollRow>[] = [
+    {
+      accessorKey: 'employee_name',
+      header: 'Employee',
+      cell: (row: PayrollRow) => (
+        <div>
+          <div className="font-medium">{row.employee_name ?? '—'}</div>
+          <div className="text-xs text-muted-foreground">
+            {row.employee_code ?? '—'}
+          </div>
+        </div>
+      ),
+    },
+  ]
+
+  // Add days column for monthly type
+  if (filters.type === 'monthly') {
+    baseColumns.push({
+      id: 'days',
+      header: 'Days',
+      className: 'w-[100px]',
+      cell: (row: PayrollRow) => (
+        <span className="text-muted-foreground">
+          {row.present_days}/{row.working_days}
+        </span>
+      ),
+    })
+  }
+
+  baseColumns.push(
+    {
+      accessorKey: 'gross',
+      header: 'Gross',
+      className: 'text-right',
+      cell: (row: PayrollRow) => (
+        <span className="text-muted-foreground">
+          {formatCurrency(row.gross)}
+        </span>
+      ),
+    }
+  )
+
+  // Add BPJS and PPh21 columns for monthly type
+  if (filters.type === 'monthly') {
+    baseColumns.push(
+      {
+        accessorKey: 'bpjs_ee',
+        header: 'BPJS (EE)',
+        className: 'text-right w-[120px]',
+        cell: (row: PayrollRow) => (
+          <span className="text-muted-foreground">
+            {formatCurrency(row.bpjs_ee)}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'pph21',
+        header: 'PPh21',
+        className: 'text-right w-[100px]',
+        cell: (row: PayrollRow) => (
+          <span className="text-muted-foreground">
+            {formatCurrency(row.pph21)}
+          </span>
+        ),
+      }
+    )
+  }
+
+  baseColumns.push({
+    accessorKey: 'net',
+    header: 'Net',
+    className: 'text-right font-medium',
+    cell: (row: PayrollRow) => formatCurrency(row.net),
+  })
 
   const currentMonthName = MONTHS.find((m) => m.value === filters.month)?.label || ''
 
@@ -131,63 +250,37 @@ export function PayrollTable() {
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
           <label className="text-sm text-muted-foreground">Type</label>
-          <Select
+          <AsyncSelect
+            placeholder="Select type..."
+            loadOptions={async () => TYPE_OPTIONS.map(t => ({ value: String(t.value), label: t.label }))}
             value={filters.type}
-            onValueChange={handleTypeChange}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="thr">THR</SelectItem>
-            </SelectContent>
-          </Select>
+            onChange={handleTypeChange}
+            className="w-32"
+          />
         </div>
 
         {filters.type === 'monthly' && (
           <div className="space-y-1">
             <label className="text-sm text-muted-foreground">Month</label>
-            <Select
-              value={filters.month?.toString() ?? '1'}
-              onValueChange={handleMonthChange}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MONTHS.map((month) => (
-                  <SelectItem
-                    key={month.value}
-                    value={month.value.toString()}
-                  >
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <AsyncSelect
+              placeholder="Select month..."
+              loadOptions={async () => MONTHS.map(m => ({ value: String(m.value), label: m.label }))}
+              value={filters.month}
+              onChange={handleMonthChange}
+              className="w-40"
+            />
           </div>
         )}
 
         <div className="space-y-1">
           <label className="text-sm text-muted-foreground">Year</label>
-          <Select
-            value={filters.year?.toString() ?? new Date().getFullYear().toString()}
-            onValueChange={handleYearChange}
-          >
-            <SelectTrigger className="w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[new Date().getFullYear() - 2, new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(
-                (year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                )
-              )}
-            </SelectContent>
-          </Select>
+          <AsyncSelect
+            placeholder="Select year..."
+            loadOptions={async () => YEARS.map(y => ({ value: String(y), label: String(y) }))}
+            value={filters.year}
+            onChange={handleYearChange}
+            className="w-28"
+          />
         </div>
 
         <div className="text-sm text-muted-foreground">
@@ -208,128 +301,52 @@ export function PayrollTable() {
       )}
 
       {/* Table */}
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                {filters.type === 'monthly' && (
-                  <TableHead className="w-[100px]">Days</TableHead>
-                )}
-                <TableHead className="text-right">Gross</TableHead>
-                {filters.type === 'monthly' && (
-                  <>
-                    <TableHead className="text-right w-[120px]">BPJS (EE)</TableHead>
-                    <TableHead className="text-right w-[100px]">PPh21</TableHead>
-                  </>
-                )}
-                <TableHead className="text-right">Net</TableHead>
-                <TableHead className="w-[60px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={filters.type === 'monthly' ? 6 : 3} className="text-center py-8">
-                    <div className="flex items-center justify-center">
-                      <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : items.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={filters.type === 'monthly' ? 6 : 3}
-                    className="text-center py-12"
-                  >
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">
-                      No payslips for this period
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Generate payroll above to create payslips
-                    </p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                items.map((payroll) => (
-                  <TableRow key={payroll.id}>
-                    <TableCell>
-                      <div className="font-medium">{payroll.employee_name ?? '—'}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {payroll.employee_code ?? '—'}
-                      </div>
-                    </TableCell>
-                    {filters.type === 'monthly' && (
-                      <TableCell className="text-muted-foreground">
-                        {payroll.present_days}/{payroll.working_days}
-                      </TableCell>
-                    )}
-                    <TableCell className="text-right text-muted-foreground">
-                      {formatCurrency(payroll.gross)}
-                    </TableCell>
-                    {filters.type === 'monthly' && (
-                      <>
-                        <TableCell className="text-right text-muted-foreground">
-                          {formatCurrency(payroll.bpjs_ee)}
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {formatCurrency(payroll.pph21)}
-                        </TableCell>
-                      </>
-                    )}
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(payroll.net)}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleViewPayslip(payroll.id)}
-                      >
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+      <DataTable
+        columns={baseColumns}
+        data={items as PayrollRow[]}
+        pagination={pagination ?? { current_page: 1, per_page: 10, last_page: 1, total: 0 }}
+        isLoading={isLoading}
+        onPageChange={handlePageChange}
+        emptyMessage="No payslips for this period"
+        rowKey="id"
+        onRowClick={handleEdit}
+        enableRowSelection
+        selectedIds={selectedIds}
+        onSelectionChange={handleSelectionChange}
+        bulkActions={
+          selectedIds.size > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowBulkDeleteDialog(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Delete {selectedIds.size} item(s)
+            </Button>
+          )
+        }
+      />
 
-        {/* Pagination */}
-        {pagination && pagination.total > 0 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border">
-            <p className="text-sm text-muted-foreground">
-              Showing {(pagination.current_page - 1) * pagination.per_page + 1} to{' '}
-              {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of{' '}
-              {pagination.total}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(pagination.current_page - 1)}
-                disabled={pagination.current_page <= 1}
-              >
-                Previous
-              </Button>
-              <span className="text-sm">
-                Page {pagination.current_page} of {pagination.last_page}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(pagination.current_page + 1)}
-                disabled={pagination.current_page >= pagination.last_page}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Payroll Records</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedIds.size} selected payroll record(s)? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Payslip Modal */}
       <PayrollPayslipModal

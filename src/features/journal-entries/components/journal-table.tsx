@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { CheckCircle, XCircle, Trash2, RotateCcw, RefreshCw, Plus, Pencil, ChevronDown, ChevronRight } from 'lucide-react'
+import { CheckCircle, XCircle, Trash2, RotateCcw, RefreshCw, Plus, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -123,7 +123,9 @@ export function JournalEntriesTable() {
     <div className="space-y-4">
       {/* Header with Add Button */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Daftar Jurnal Umum</h2>
+        <div>
+          <h2 className="text-lg font-semibold">Daftar Jurnal Umum</h2>
+        </div>
         <Button onClick={handleAddNew}>
           <Plus className="h-4 w-4 mr-2" />
           Tambah Jurnal
@@ -235,26 +237,27 @@ export function JournalEntriesTable() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEdit(entry)
+                            }}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-muted transition-colors cursor-pointer"
+                            title="Edit"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground hover:text-foreground"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                          </button>
                           {isDraft && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEdit(entry)}
-                                title="Edit"
-                              >
-                                <Pencil className="h-4 w-4 text-blue-600" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handlePost(entry.id)}
-                                disabled={isSubmitting}
-                                title="Post"
-                              >
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                              </Button>
-                            </>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePost(entry.id)}
+                              disabled={isSubmitting}
+                              title="Post"
+                            >
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            </Button>
                           )}
                           {!isDraft && (
                             <Button

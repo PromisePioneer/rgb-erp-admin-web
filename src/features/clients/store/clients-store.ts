@@ -5,6 +5,7 @@
 import { create } from 'zustand'
 import type {
   Client,
+  ClientDetail,
   ClientsFilters,
   ClientsPagination,
   CreateClientPayload,
@@ -15,7 +16,7 @@ import { clientsApi } from '../api/clients-api'
 interface ClientsState {
   // State
   items: Client[]
-  selectedItem: Client | null
+  selectedItem: ClientDetail | null
   isLoading: boolean
   isSubmitting: boolean
   error: string | null

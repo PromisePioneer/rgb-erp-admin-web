@@ -26,6 +26,7 @@ interface ProvincesState {
   create: (payload: CreateProvincePayload) => Promise<void>
   update: (id: number, payload: UpdateProvincePayload) => Promise<void>
   remove: (id: number) => Promise<void>
+  bulkDelete: (ids: number[]) => Promise<void>
   setFilters: (filters: Partial<ProvincesFilters>) => void
   resetFilters: () => void
   resetForm: () => void
@@ -106,6 +107,18 @@ export const useProvincesStore = create<ProvincesState>((set, get) => ({
     set({ isSubmitting: true, error: null })
     try {
       await provincesApi.delete(id)
+      set({ isSubmitting: false })
+      await get().fetchProvinces()
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to delete', isSubmitting: false })
+      throw error
+    }
+  },
+
+  bulkDelete: async (ids: number[]) => {
+    set({ isSubmitting: true, error: null })
+    try {
+      await provincesApi.bulkDelete(ids)
       set({ isSubmitting: false })
       await get().fetchProvinces()
     } catch (error) {

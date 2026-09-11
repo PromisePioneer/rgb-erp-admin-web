@@ -12,6 +12,7 @@ import type {
   UpdateSchedulePayload,
   EmployeeScheduleRow,
 } from '../types/schedules.types'
+import { downloadBlob, fileToFormData } from '@/utils/download-blob'
 
 export const schedulesApi = {
   /**
@@ -36,7 +37,7 @@ export const schedulesApi = {
 
   /**
    * Create new schedule
-   * POST /api/admin/schedules
+   * POST /api/schedules
    */
   create: async (payload: CreateSchedulePayload) => {
     const { data } = await apiClient.post<ApiResponse<Schedule>>('/admin/schedules', payload)
@@ -131,5 +132,127 @@ export const schedulesApi = {
       dates: string[]
     }>>('/admin/schedules/employees-by-placement', { params })
     return data
+  },
+
+  /**
+   * Download schedule template Excel file
+   * GET /api/admin/schedules/template
+   */
+  downloadTemplate: async (params: {
+    year: number
+    month: number
+    client_id?: number
+    area_id?: number
+  }) => {
+    const response = await apiClient.get('/admin/schedules/template', {
+      params,
+      responseType: 'blob',
+    })
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    const filename = `jadwal_template_${params.year}_${String(params.month).padStart(2, '0')}.xlsx`
+    downloadBlob(blob, filename)
+    return { success: true, filename }
+  },
+
+  /**
+   * Import schedules from Excel file (queued)
+   * POST /api/admin/schedules/import
+   */
+  importSchedules: async (
+    file: File,
+    year: number,
+    month: number,
+    area_id?: number
+  ): Promise<ApiResponse<{ job_id: string; message: string }>> => {
+    const formData = fileToFormData(file)
+    formData.append('year', String(year))
+    formData.append('month', String(month))
+    if (area_id) {
+      formData.append('area_id', String(area_id))
+    }
+
+    const { data } = await apiClient.post<ApiResponse<{ job_id: string; message: string }>>(
+      '/admin/schedules/import',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+    return data
+  },
+
+  /**
+   * Get import job status
+   * GET /api/admin/schedules/import/status/{jobId}
+   */
+  getImportStatus: async (jobId: string) => {
+    const { data } = await apiClient.get<ApiResponse<{
+      status: 'pending' | 'processing' | 'completed' | 'failed'
+      percent: number
+      message: string
+      created: number
+      updated: number
+      deleted: number
+      errors: number
+    }>>(`/admin/schedules/import/status/${jobId}`)
+    return data
+  },
+
+  /**
+   * Clear import job status
+   * DELETE /api/admin/schedules/import/status/{jobId}
+   */
+  clearImportStatus: async (jobId: string) => {
+    const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(
+      `/admin/schedules/import/status/${jobId}`
+    )
+    return data
+  },
+
+  /**
+   * Export schedules to Excel file
+   * GET /api/admin/schedules/export
+   */
+  exportSchedules: async (params: { year: number; month: number }) => {
+    const response = await apiClient.get('/admin/schedules/export', {
+      params,
+      responseType: 'blob',
+    })
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    const filename = `jadwal_${params.year}_${String(params.month).padStart(2, '0')}.xlsx`
+    downloadBlob(blob, filename)
+    return { success: true, filename }
+  },
+
+  /**
+   * Check existing schedules for a month
+   * GET /api/admin/schedules/check-existing
+   */
+  checkExisting: async (year: number, month: number) => {
+    const { data } = await apiClient.get<ApiResponse<{
+      has_existing: boolean
+      count: number
+      message: string
+    }>>('/admin/schedules/check-existing', {
+      params: { year, month },
+    })
+    return data
+  },
+
+  /**
+   * Clear schedules for a month
+   * DELETE /admin/schedules/clear-month
+   */
+  clearMonth: async (year: number, month: number) => {
+    const response = await apiClient.delete(`/admin/schedules/clear-month`, {
+      data: { year, month },
+    })
+    return response.data as { success: boolean; data: { deleted: number; message: string } }
   },
 }

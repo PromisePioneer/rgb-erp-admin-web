@@ -15,6 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { useProvincesStore } from '../store/provinces-store'
 import { ProvincesFormModal } from './provinces-form-modal'
@@ -28,6 +29,7 @@ export function ProvincesTable() {
     fetchProvinces,
     filters,
     remove,
+    bulkDelete,
     isSubmitting,
     setFilters,
   } = useProvincesStore()
@@ -38,6 +40,8 @@ export function ProvincesTable() {
   const [showFormModal, setShowFormModal] = useState(false)
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create')
   const [editingId, setEditingId] = useState<number | undefined>(undefined)
+  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
 
   // Debounce search -> store filters
   useEffect(() => {
@@ -73,6 +77,22 @@ export function ProvincesTable() {
     }
   }
 
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds).map(Number)
+    if (ids.length === 0) return
+    setIsDeleting(true)
+    try {
+      await bulkDelete(ids)
+      toast.success(`${ids.length} province(s) deleted`)
+      setSelectedIds(new Set())
+      setShowBulkDeleteDialog(false)
+    } catch {
+      // handled in store
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const handleAddNew = () => {
     setFormMode('create')
     setEditingId(undefined)
@@ -90,13 +110,7 @@ export function ProvincesTable() {
       accessorKey: 'name',
       header: 'Nama Province',
       cell: (row) => (
-        <button
-          type="button"
-          onClick={() => handleEdit(row)}
-          className="font-medium text-primary hover:underline text-left"
-        >
-          {row.name}
-        </button>
+        <span className="font-medium">{row.name}</span>
       ),
     },
     {
@@ -118,6 +132,8 @@ export function ProvincesTable() {
       ),
     },
   ]
+
+  const columnsWithActions = columns
 
   return (
     <div className="space-y-4">
@@ -146,12 +162,23 @@ export function ProvincesTable() {
       </div>
 
       <DataTable
-        columns={columns}
+        columns={columnsWithActions}
         data={items}
         pagination={pagination}
         isLoading={isLoading}
         onPageChange={handlePageChange}
         emptyMessage="No provinces found"
+        onRowClick={handleEdit}
+        enableRowSelection
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+        bulkActions={
+          selectedIds.size > 0 && (
+            <Button variant="destructive" size="sm" onClick={() => setShowBulkDeleteDialog(true)}>
+              Delete {selectedIds.size} item(s)
+            </Button>
+          )
+        }
       />
 
       {/* Delete Confirmation */}
@@ -167,6 +194,28 @@ export function ProvincesTable() {
             <AlertDialogCancel onClick={() => setDeleteId(null)}>Batal</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
+              disabled={isDeleting || isSubmitting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Menghapus...' : 'Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Hapus Massal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus {selectedIds.size} province(s)? Tindakan tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowBulkDeleteDialog(false)}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
               disabled={isDeleting || isSubmitting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

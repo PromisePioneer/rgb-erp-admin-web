@@ -83,6 +83,11 @@ export function PettyCashTable() {
     setShowFormModal(true)
   }
 
+  const handleEdit = (item: PettyCash) => {
+    setEditItem(item)
+    setShowFormModal(true)
+  }
+
   // Format currency
   const formatCurrency = (value: number | null) => {
     if (value === null) return '-'
@@ -104,7 +109,7 @@ export function PettyCashTable() {
   }
 
   // Define columns
-  const columns: DataTableColumn<PettyCash>[] = [
+  const baseColumns: DataTableColumn<PettyCash>[] = [
     {
       accessorKey: 'date',
       header: 'Date',
@@ -159,6 +164,8 @@ export function PettyCashTable() {
     },
   ]
 
+  const columns = baseColumns
+
   // Bulk actions
   const bulkActions = (
     <div className="flex gap-2">
@@ -195,6 +202,7 @@ export function PettyCashTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Form Modal */}

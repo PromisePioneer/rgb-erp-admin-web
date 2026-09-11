@@ -9,7 +9,7 @@ export interface EmployeePlacement {
   employee_name: string
   client_id: number
   client_name: string
-  position_name: string | null
+  role_name: string | null
   status: number
   created_at: string | null
   updated_at: string | null
@@ -21,7 +21,7 @@ export interface EmployeePlacementDetail {
   employee_name: string
   client_id: number
   client_name: string
-  position_name: string | null
+  role_name: string | null
   status: number
 }
 

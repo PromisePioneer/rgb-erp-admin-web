@@ -5,15 +5,17 @@
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { AsyncSelect } from '@/components/async-select'
 import { useAccountsStore } from '../store/accounts-store'
 import type { AccountType } from '../types/accounts.types'
+
+const ACCOUNT_TYPES = [
+  { value: 'asset', label: 'Asset (Aktiva)' },
+  { value: 'liability', label: 'Liability (Kewajiban)' },
+  { value: 'equity', label: 'Equity (Modal)' },
+  { value: 'revenue', label: 'Revenue (Pendapatan)' },
+  { value: 'expense', label: 'Expense (Beban)' },
+]
 
 export function AccountsFilters() {
   const {
@@ -43,28 +45,13 @@ export function AccountsFilters() {
       />
 
       {/* Type Dropdown */}
-      <Select
-        value={filters.type ?? 'all'}
-        onValueChange={(value) => {
-          if (value === 'all') {
-            setFilters({ type: undefined })
-          } else {
-            setFilters({ type: value as AccountType })
-          }
-        }}
-      >
-        <SelectTrigger className="w-[200px]">
-          <SelectValue placeholder="All Types" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Types</SelectItem>
-          <SelectItem value="asset">Asset (Aktiva)</SelectItem>
-          <SelectItem value="liability">Liability (Kewajiban)</SelectItem>
-          <SelectItem value="equity">Equity (Modal)</SelectItem>
-          <SelectItem value="revenue">Revenue (Pendapatan)</SelectItem>
-          <SelectItem value="expense">Expense (Beban)</SelectItem>
-        </SelectContent>
-      </Select>
+      <AsyncSelect
+        placeholder="All Types"
+        loadOptions={async () => ACCOUNT_TYPES}
+        value={filters.type || null}
+        onChange={(val) => setFilters({ type: val as AccountType || undefined })}
+        className="w-[200px]"
+      />
 
       {/* Reset Button */}
       {hasActiveFilters && (

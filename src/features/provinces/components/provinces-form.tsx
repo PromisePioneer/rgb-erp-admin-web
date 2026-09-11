@@ -8,6 +8,7 @@ import { Save, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useProvincesStore } from '../store/provinces-store'
 
 type FormValues = {
@@ -48,6 +49,7 @@ export function ProvincesForm() {
     }
   }, [isEdit, provinceId, fetchById, resetForm])
 
+  // Populate form when data is loaded
   useEffect(() => {
     if (isEdit && selectedItem) {
       form.reset({
@@ -57,6 +59,44 @@ export function ProvincesForm() {
       })
     }
   }, [isEdit, selectedItem, form])
+
+  // Skeleton loading state - AFTER all hooks
+  if (isLoading && isEdit) {
+    return (
+      <div className="max-w-xl mx-auto p-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Skeleton className="h-10 w-10" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+        </div>
+
+        <div className="bg-card rounded-lg border p-6 space-y-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 mt-6">
+          <Skeleton className="h-10 w-24" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+      </div>
+    )
+  }
 
   const onSubmit = async (values: FormValues) => {
     try {

@@ -3,7 +3,7 @@
  * Zustand state management for settings
  */
 import { create } from 'zustand'
-import type { Settings, UpdateSettingsPayload } from '../types/settings.types'
+import type { Settings, UpdateSettingsPayloadWithFiles } from '../types/settings.types'
 import { settingsApi } from '../api/settings-api'
 
 interface SettingsState {
@@ -15,7 +15,7 @@ interface SettingsState {
 
   // Actions
   fetchSettings: () => Promise<void>
-  updateSettings: (payload: UpdateSettingsPayload) => Promise<void>
+  updateSettings: (payload: UpdateSettingsPayloadWithFiles) => Promise<void>
   reset: () => void
   clearError: () => void
 }
@@ -41,7 +41,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     }
   },
 
-  updateSettings: async (payload: UpdateSettingsPayload) => {
+  updateSettings: async (payload: UpdateSettingsPayloadWithFiles) => {
     set({ isSubmitting: true, error: null })
 
     try {

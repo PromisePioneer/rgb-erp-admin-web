@@ -14,13 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { useEmployeePlacementsStore } from '@/features/employee-placements'
 import { employeePlacementsApi } from '@/features/employee-placements/api/employee-placements-api'
@@ -240,18 +233,16 @@ export function EmployeePlacementsFormModal({
           {/* Status */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Status</label>
-            <Select
+            <AsyncSelect
+              placeholder="Pilih status"
+              loadOptions={async () => [
+                { value: 'Aktif', label: 'Aktif' },
+                { value: 'Tidak Aktif', label: 'Tidak Aktif' },
+              ]}
               value={form.watch('status')}
-              onValueChange={(value) => form.setValue('status', value as 'Aktif' | 'Tidak Aktif')}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Aktif">Aktif</SelectItem>
-                <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={(value) => form.setValue('status', value as 'Aktif' | 'Tidak Aktif')}
+              className="w-full"
+            />
           </div>
 
           {/* Actions */}

@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api-client'
 import type {
   ApiResponse,
   Client,
+  ClientDetail,
   ClientsFilters,
   CreateClientPayload,
   UpdateClientPayload,
@@ -28,7 +29,7 @@ export const clientsApi = {
    * GET /api/admin/clients/:id
    */
   getById: async (id: number) => {
-    const { data } = await apiClient.get<ApiResponse<Client>>(`/admin/clients/${id}`)
+    const { data } = await apiClient.get<ApiResponse<ClientDetail>>(`/admin/clients/${id}`)
     return data
   },
 
