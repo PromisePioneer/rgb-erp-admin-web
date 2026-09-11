@@ -13,3 +13,4 @@ export { useDailyTaskItemsStore } from './store/daily-task-items-store'
 
 // Components
 export { DailyTaskItemsTable } from './components/daily-task-items-table'
+export { DailyTaskItemsImportModal } from './components/daily-task-items-import-modal'

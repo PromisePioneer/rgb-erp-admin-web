@@ -79,7 +79,9 @@ import {
   ChevronDown,
   ChevronRight,
   List,
+  Search,
 } from "lucide-react"
+import { useCommandPalette } from '@/components/ui/command-palette'
 
 // Icon map
 const iconMap: Record<string, LucideIcon> = {
@@ -383,9 +385,33 @@ function NavMenu({
     }
   }
 
+  // Command Palette Button Component
+  function CommandPaletteButton() {
+    const {setOpen} = useCommandPalette()
+
+    return (
+        <button
+            onClick={() => setOpen(true)}
+            className="flex items-center gap-2 h-9 w-full px-3 rounded-md border border-sidebar-border bg-sidebar-accent/50 hover:bg-sidebar-accent text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors"
+        >
+            <Search className="h-4 w-4 shrink-0"/>
+            <span className="text-sm flex-1 text-left">Search menus...</span>
+            <kbd
+                className="pointer-events-none hidden sm:flex h-5 select-none items-center gap-1 rounded border bg-sidebar-accent px-1.5 font-mono text-[10px] font-medium text-sidebar-foreground/60">
+                <span className="text-xs">⌘</span>K
+            </kbd>
+        </button>
+    )
+  }
+
   return (
     <TooltipProvider delayDuration={0}>
       <SidebarGroup className="px-2 py-0">
+        {/* Search Button */}
+        <div className="px-2 py-3">
+          <CommandPaletteButton/>
+        </div>
+
         <SidebarMenu className="gap-0">
           {filteredSections.map((section, sectionIndex) => {
             const sectionLabel = getTranslatedLabel(section.label, t, isLoaded)

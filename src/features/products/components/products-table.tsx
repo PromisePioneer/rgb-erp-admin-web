@@ -3,7 +3,7 @@
  * Using standardized DataTable with modal form
  */
 import {useEffect, useState, useCallback} from 'react'
-import {Plus, Trash2, Package} from 'lucide-react'
+import {Plus, Trash2, Package, Upload} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {
     AlertDialog,
@@ -24,7 +24,7 @@ import {
 import {DataTable, type DataTableColumn} from '@/components/ui/data-table'
 import {useProductsStore} from '@/features/products'
 import {ProductsFilters} from './products-filters'
-import {ProductsFormModal} from '@/features/products'
+import {ProductsFormModal, ProductsImportModal} from '@/features/products'
 import {productsApi, type StockDetail} from '../api/products-api'
 import type {Product} from '../types/products.types'
 import {
@@ -33,6 +33,7 @@ import {
     getConditionLabel,
     type Condition,
 } from '@/types/condition'
+import {useCanAccess} from '@/lib/privilege-guard'
 
 // Get condition based on category and stock
 // Chemical: Full (>=75%), Half (>=50%), Quarter (>=25%), Habis (<25%)
@@ -195,6 +196,12 @@ export function ProductsTable() {
     const [showStockDetail, setShowStockDetail] = useState(false)
     const [stockProduct, setStockProduct] = useState<Product | null>(null)
     const [stockCache, setStockCache] = useState<Record<number, StockDetail[]>>({})
+
+    // Import modal state
+    const [showImportModal, setShowImportModal] = useState(false)
+
+    // Privilege checks
+    const canAdd = useCanAccess('Product', 'Add')
 
     // Fetch stock for all products on mount
     useEffect(() => {
@@ -382,10 +389,20 @@ export function ProductsTable() {
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <ProductsFilters/>
-                <Button onClick={handleAddNew}>
-                    <Plus className="h-4 w-4 mr-1"/>
-                    Add Product
-                </Button>
+                <div className="flex gap-2">
+                    {canAdd && (
+                        <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
+                            <Upload className="h-4 w-4 mr-1"/>
+                            Import
+                        </Button>
+                    )}
+                    {canAdd && (
+                        <Button onClick={handleAddNew}>
+                            <Plus className="h-4 w-4 mr-1"/>
+                            Add Product
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <DataTable
@@ -414,6 +431,13 @@ export function ProductsTable() {
                 open={showStockDetail}
                 onOpenChange={setShowStockDetail}
                 product={stockProduct}
+            />
+
+            {/* Import Modal */}
+            <ProductsImportModal
+                open={showImportModal}
+                onOpenChange={setShowImportModal}
+                onSuccess={() => fetchProducts()}
             />
 
             {/* Delete Confirmation Dialog */}

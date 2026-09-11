@@ -6,17 +6,14 @@ import {type LucideIcon} from "lucide-react"
 import {AppSidebar} from "@/components/app-sidebar"
 import {Card} from '@/components/ui/card'
 import {SidebarProvider} from "@/components/ui/sidebar"
-import {Sheet, SheetContent, SheetTrigger} from "@/components/ui/sheet"
+import {Sheet, SheetContent} from "@/components/ui/sheet"
+import {Separator} from "@/components/ui/separator"
 import {useSettingsStore} from "@/features/settings/store/settings-store"
-import {useCompanyStore} from '@/stores/company-store'
-import {useTranslationStore} from '@/stores/translation-store'
+import {useTranslationStore} from "@/stores/translation-store"
 import {useAuthStore} from '@/stores/auth-store'
 import {navigationSections} from "@/components/layout/navigation-types"
 import {cn} from "@/lib/utils"
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
-import {Separator} from "@/components/ui/separator"
 import {
-    ShieldCheck,
     LayoutDashboard,
     Briefcase,
     Tags,
@@ -53,23 +50,14 @@ import {
     Network,
     Lock,
     Settings,
-    PanelLeft,
-    PanelLeftClose,
-    Globe,
-    Menu,
     Database,
     ChevronDown,
     ChevronRight,
     List,
 } from "lucide-react"
-import {AsyncSelect, type SelectOption} from '@/components/async-select'
-import {companyApi} from '@/features/companies/api/companies-api'
-import {Button} from '@/components/ui/button'
 import {useIsMobile} from '@/hooks/use-mobile'
 import {CommandPalette, useCommandPalette} from '@/components/ui/command-palette'
-import {Search} from 'lucide-react'
-import {ThemeToggle} from '@/components/ui/theme-toggle'
-import {NotificationBell} from '@/components/layout/notification-bell'
+import {Topbar} from './topbar'
 
 // Re-export for backward compatibility
 export {AppSidebar as Sidebar} from "@/components/app-sidebar"
@@ -272,7 +260,7 @@ function NavMenuMobile({onNavigate}: { onNavigate: () => void }) {
     return (
         <div className="flex flex-col h-full bg-sidebar">
             {/* Navigation Menu - scrollable */}
-            <div className="flex-1 overflow-y-auto py-4">
+            <div className="flex-1 overflow-y-auto py-2">
                 <div className="px-3">
                     {filteredSections.map((section, sectionIndex) => {
                         const sectionLabel = getTranslatedLabelMobile(section.label, t, isLoaded)
@@ -300,77 +288,6 @@ function NavMenuMobile({onNavigate}: { onNavigate: () => void }) {
                 </div>
             </div>
         </div>
-    )
-}
-
-// Mobile sidebar wrapper with Sheet
-function MobileSidebar() {
-    const [open, setOpen] = React.useState(false)
-    const {user} = useAuthStore()
-    const {data: settings} = useSettingsStore()
-
-    const userData = {
-        name: user?.name || "User",
-        email: user?.email || "user@example.com",
-        avatar: "/avatars/default.jpg",
-    }
-
-    const handleNavigate = () => {
-        setOpen(false)
-    }
-
-    return (
-        <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 md:hidden"
-                    aria-label="Open menu"
-                >
-                    <Menu className="h-5 w-5"/>
-                </Button>
-            </SheetTrigger>
-            <SheetContent
-                side="left"
-                className="flex flex-col p-0 w-[280px] bg-sidebar border-r border-sidebar-border"
-            >
-                {/* Header */}
-                <div className="flex items-center gap-3 border-b border-sidebar-border p-4">
-                    <div
-                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                        <ShieldCheck className="h-5 w-5"/>
-                    </div>
-                    <div className="flex flex-col">
-            <span className="text-sm font-medium text-sidebar-foreground">
-              {settings?.company_name || "RGB Corp"}
-            </span>
-                        <span className="text-xs text-sidebar-foreground/60">
-              {settings?.app_title || "Admin"}
-            </span>
-                    </div>
-                </div>
-
-                {/* Navigation */}
-                <NavMenuMobile onNavigate={handleNavigate}/>
-
-                {/* Footer / User */}
-                <div className="border-t border-sidebar-border p-4">
-                    <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10 rounded-lg">
-                            <AvatarImage src={userData.avatar} alt={userData.name}/>
-                            <AvatarFallback className="rounded-lg text-xs">
-                                {userData.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-medium text-sidebar-foreground">{userData.name}</span>
-                            <span className="text-xs text-sidebar-foreground/60">{userData.email}</span>
-                        </div>
-                    </div>
-                </div>
-            </SheetContent>
-        </Sheet>
     )
 }
 
@@ -403,70 +320,17 @@ function useCollapseState() {
     return {isCollapsed, toggleCollapse}
 }
 
-// Load companies for select
-async function loadCompanies(search: string): Promise<SelectOption[]> {
-    try {
-        const response = await companyApi.getSelectOptions({q: search})
-        return response.map((company) => ({
-            value: company.id,
-            label: company.name,
-        }))
-    } catch {
-        return []
-    }
-}
-
-// Command Palette Button Component
-function CommandPaletteButton() {
+// Command Palette Root - renders at root level for proper backdrop
+function CommandPaletteRoot() {
     const {open, setOpen} = useCommandPalette()
-
-    return (
-        <>
-            <button
-                onClick={() => setOpen(true)}
-                className="flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-muted/50 hover:bg-muted text-muted-foreground transition-colors"
-            >
-                <Search className="h-4 w-4 shrink-0"/>
-                <span className="text-sm">Search menus...</span>
-                <kbd
-                    className="pointer-events-none hidden sm:flex h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                    <span className="text-xs">⌘</span>K
-                </kbd>
-            </button>
-            <CommandPalette open={open} onOpenChange={setOpen}/>
-        </>
-    )
+    return <CommandPalette open={open} onOpenChange={setOpen}/>
 }
 
 export function MainLayout({children}: MainLayoutProps) {
     const {isCollapsed, toggleCollapse} = useCollapseState()
     const {data: settings} = useSettingsStore()
-    const {currentCompany, switchCompany, fetchCompanies} = useCompanyStore()
-    const {locale, setLocale} = useTranslationStore()
-    const [langMenuOpen, setLangMenuOpen] = React.useState(false)
     const isMobile = useIsMobile()
-
-    // Fetch companies on mount
-    React.useEffect(() => {
-        fetchCompanies()
-    }, [fetchCompanies])
-
-    // Handle company change
-    const handleCompanyChange = async (value: number | string | null) => {
-        if (!value) return
-        try {
-            await switchCompany(Number(value))
-            window.location.reload()
-        } catch (error) {
-            console.error('Failed to switch company:', error)
-        }
-    }
-
-    // Handle language change
-    const handleLanguageChange = (newLocale: 'en' | 'id') => {
-        setLocale(newLocale)
-        setLangMenuOpen(false)
-    }
+    const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false)
 
     return (
         <SidebarProvider>
@@ -474,102 +338,17 @@ export function MainLayout({children}: MainLayoutProps) {
                 {/* Desktop Sidebar - hidden on mobile */}
                 {!isMobile && <AppSidebar isCollapsed={isCollapsed}/>}
 
-                {/* Content area - adjusts based on sidebar state */}
+                {/* Content area */}
                 <div className={cn(
                     "flex flex-col flex-1 min-h-screen transition-all duration-200 ease-in-out",
                     !isMobile && (isCollapsed ? "md:ml-16" : "md:ml-[280px]")
                 )}>
-                    {/* Header with toggle button */}
-                    <header
-                        className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-around gap-2 border-b border-border bg-card px-4">
-                        {/* Mobile hamburger menu - always rendered, hidden on md+ */}
-                        <MobileSidebar/>
-
-                        {/* Desktop collapse toggle */}
-                        {!isMobile && (
-                            <button
-                                onClick={toggleCollapse}
-                                className="p-1.5 hover:bg-accent rounded-md transition-colors"
-                            >
-                                {isCollapsed ? (
-                                    <PanelLeft className="h-4 w-4"/>
-                                ) : (
-                                    <PanelLeftClose className="h-4 w-4"/>
-                                )}
-                            </button>
-                        )}
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-sm font-medium">{settings?.app_title || 'Dashboard'}</h1>
-                        </div>
-
-                        {/* Clock - Center */}
-                        <div className="flex-1 flex justify-center">
-                        </div>
-
-                        {/* Right side actions */}
-                        <div className="flex items-center gap-2">
-                            {/* Command Palette Search */}
-                            <CommandPaletteButton/>
-
-                            {/* Company Selector - hidden on small mobile */}
-                            {!isMobile && (
-                                <div className="w-[200px]">
-                                    <AsyncSelect
-                                        value={currentCompany?.id ?? null}
-                                        onChange={handleCompanyChange}
-                                        loadOptions={loadCompanies}
-                                        placeholder="Select Company"
-                                    />
-                                </div>
-                            )}
-
-                            {/* Language Switcher */}
-                            <div className="relative" data-state={langMenuOpen ? 'open' : 'closed'}>
-                                <button
-                                    onClick={() => setLangMenuOpen(!langMenuOpen)}
-                                    className="flex items-center gap-1.5 p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                                    title="Change Language"
-                                >
-                                    <Globe className="h-5 w-5"/>
-                                    <span className="text-xs font-medium uppercase">{locale}</span>
-                                </button>
-
-                                {/* Dropdown */}
-                                {langMenuOpen && (
-                                    <>
-                                        <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)}/>
-                                        <div
-                                            className="absolute right-0 mt-2 w-40 bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden">
-                                            <div className="py-1">
-                                                <button
-                                                    onClick={() => handleLanguageChange('id')}
-                                                    className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors ${
-                                                        locale === 'id' ? 'bg-accent text-primary font-medium' : 'text-foreground'
-                                                    }`}
-                                                >
-                                                    🇮🇩 Indonesia
-                                                </button>
-                                                <button
-                                                    onClick={() => handleLanguageChange('en')}
-                                                    className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors ${
-                                                        locale === 'en' ? 'bg-accent text-primary font-medium' : 'text-foreground'
-                                                    }`}
-                                                >
-                                                    🇬🇧 English
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* Notifications */}
-                            <NotificationBell/>
-
-                            {/* Theme Toggle */}
-                            <ThemeToggle/>
-                        </div>
-                    </header>
+                    {/* Topbar */}
+                    <Topbar
+                        onCollapse={toggleCollapse}
+                        isMobile={isMobile}
+                        isCollapsed={isCollapsed}
+                    />
 
                     {/* Main Content */}
                     <main className="flex-1 p-4 sm:p-6 lg:p-8">
@@ -587,6 +366,16 @@ export function MainLayout({children}: MainLayoutProps) {
                     </footer>
                 </div>
             </div>
+
+            {/* Mobile Sidebar */}
+            <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+                <SheetContent side="left" className="p-0 w-[280px]">
+                    <NavMenuMobile onNavigate={() => setMobileSidebarOpen(false)}/>
+                </SheetContent>
+            </Sheet>
+
+            {/* Command Palette - rendered at root level */}
+            <CommandPaletteRoot/>
         </SidebarProvider>
     )
 }

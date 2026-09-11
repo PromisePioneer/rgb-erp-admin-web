@@ -35,9 +35,11 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { Plus, Search, Trash2, X } from "lucide-react"
+import { Plus, Search, Trash2, X, Upload } from "lucide-react"
 import { STATUS_ACTIVE, STATUS_INACTIVE, type DailyTaskItem } from "../types/daily-task-items.types"
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
+import { DailyTaskItemsImportModal } from './daily-task-items-import-modal'
+import { useCanAccess } from '@/lib/privilege-guard'
 
 const STATUS_COLORS: Record<number, string> = {
   [STATUS_ACTIVE]: "bg-green-100 text-green-800",
@@ -91,6 +93,12 @@ export function DailyTaskItemsTable() {
 
   // Roles dropdown state
   const [roles, setRoles] = useState<RoleOption[]>([])
+
+  // Import modal state
+  const [showImportModal, setShowImportModal] = useState(false)
+
+  // Privilege checks
+  const canAdd = useCanAccess('Daily Task Item', 'Add')
 
   // Form
   const form = useForm<FormValues>({
@@ -318,11 +326,21 @@ export function DailyTaskItemsTable() {
           )}
         </div>
 
-        {/* Add Button */}
-        <Button onClick={handleAddNew}>
-          <Plus className="h-4 w-4 mr-1" />
-          Tambah Item
-        </Button>
+        {/* Add & Import Buttons */}
+        <div className="flex gap-2">
+          {canAdd && (
+            <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
+              <Upload className="h-4 w-4 mr-1" />
+              Import
+            </Button>
+          )}
+          {canAdd && (
+            <Button onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-1" />
+              Tambah Item
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -442,6 +460,13 @@ export function DailyTaskItemsTable() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Import Modal */}
+      <DailyTaskItemsImportModal
+        open={showImportModal}
+        onOpenChange={setShowImportModal}
+        onSuccess={() => fetchItems()}
+      />
     </div>
   )
 }

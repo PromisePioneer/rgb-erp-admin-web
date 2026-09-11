@@ -71,7 +71,6 @@ export const navigationSections: NavSection[] = [
         items: [
             {label: 'bank_accounts', path: '/bank-accounts', menu: 'Bank Account', icon: 'wallet'},
             {label: 'salary_components', path: '/salary-components', menu: 'Salary Component', icon: 'coins'},
-            {label: 'petty_cash', path: '/petty-cash', menu: 'Petty Cash', icon: 'banknote'},
             {label: 'invoices', path: '/invoices', menu: 'Invoice', icon: 'receipt'},
             {label: 'payroll', path: '/payroll', menu: 'Payroll', icon: 'wallet'},
         ],

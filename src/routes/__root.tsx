@@ -39,7 +39,6 @@ import {AttendancesTable} from '@/features/attendances'
 // Import SchedulesTable
 import {SchedulesTable} from '@/features/schedules'
 import {BankAccountsTable} from '@/features/bank-accounts'
-import {PettyCashTable} from '@/features/petty-cash'
 import {InvoicesTable} from '@/features/invoices'
 import {
     JournalTable,
@@ -1081,33 +1080,6 @@ const salaryComponentsRoute = createRoute({
         requirePrivilegeInBeforeLoad('Salary Component', 'View')
     },
     component: SalaryComponentsPage,
-})
-
-// Petty Cash
-function PettyCashPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Petty Cash</h2>
-                <p className="text-muted-foreground">Manage petty cash records</p>
-            </div>
-            <PettyCashTable/>
-        </AuthLayout>
-    )
-}
-
-const pettyCashRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/petty-cash',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Petty Cash', 'View')
-    },
-    component: PettyCashPage,
 })
 
 // Invoices
@@ -2521,7 +2493,6 @@ const routeTree = rootRoute.addChildren([
     attendanceRoute,
     schedulesRoute,
     bankAccountsRoute,
-    pettyCashRoute,
     invoicesRoute,
     payrollRoute,
     productsRoute,

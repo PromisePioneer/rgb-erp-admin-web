@@ -3,6 +3,7 @@
  * Endpoints for products management
  */
 import { apiClient } from '@/lib/api-client'
+import { fileToFormData } from '@/utils/download-blob'
 import type {
   ApiResponse,
   Product,
@@ -19,6 +20,17 @@ export interface StockDetail {
   barcode: string
   stock: number
   base_price: number
+}
+
+export interface ImportStatus {
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  percent: number
+  message: string
+  imported: number
+  skipped: number
+  errors: number
+  error_messages: string[]
+  updated_at: string
 }
 
 export const productsApi = {
@@ -99,6 +111,55 @@ export const productsApi = {
     const { data } = await apiClient.get<ApiResponse<ProductSelectOption[]>>(
       '/admin/products/select-options',
       { params }
+    )
+    return data
+  },
+
+  /**
+   * Download import template
+   * GET /api/admin/products/template
+   */
+  getTemplateUrl: (): string => {
+    return '/api/admin/products/template'
+  },
+
+  /**
+   * Import products from Excel file (queued)
+   * POST /api/admin/products/import
+   */
+  importProducts: async (file: File): Promise<ApiResponse<{ job_id: string; message: string }>> => {
+    const formData = fileToFormData(file)
+
+    const { data } = await apiClient.post<ApiResponse<{ job_id: string; message: string }>>(
+      '/admin/products/import',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+    return data
+  },
+
+  /**
+   * Get import job status
+   * GET /api/admin/products/import/status/{jobId}
+   */
+  getImportStatus: async (jobId: string): Promise<ApiResponse<ImportStatus>> => {
+    const { data } = await apiClient.get<ApiResponse<ImportStatus>>(
+      `/admin/products/import/status/${jobId}`
+    )
+    return data
+  },
+
+  /**
+   * Clear import job status
+   * DELETE /api/admin/products/import/status/{jobId}
+   */
+  clearImportStatus: async (jobId: string): Promise<ApiResponse<{ message: string }>> => {
+    const { data } = await apiClient.delete<ApiResponse<{ message: string }>>(
+      `/admin/products/import/status/${jobId}`
     )
     return data
   },
