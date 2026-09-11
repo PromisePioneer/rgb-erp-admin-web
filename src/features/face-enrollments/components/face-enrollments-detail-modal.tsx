@@ -109,7 +109,7 @@ export function FaceEnrollmentsDetailModal({
                       className="relative aspect-square rounded-lg overflow-hidden border bg-muted"
                     >
                       <img
-                        src={`/api/admin/face-enrollments/${selectedItem.id}/photo?photo=${photo.id}`}
+                        src={`https://api-admin-erp.rgb86groups.com/storage/${photo.photo_path}`}
                         alt={`Photo ${photo.id}`}
                         className="w-full h-full object-cover"
                         onError={(e) => {

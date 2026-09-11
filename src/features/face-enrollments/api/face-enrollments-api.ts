@@ -51,13 +51,9 @@ export const faceEnrollmentsApi = {
   },
 
   /**
-   * Get photo URL for face enrollment
+   * Get photo URL for face enrollment - using API domain for storage
    */
-  getPhotoUrl: (enrollmentId: number, photoId?: number) => {
-    let url = `/admin/face-enrollments/${enrollmentId}/photo`
-    if (photoId) {
-      url += `?photo=${photoId}`
-    }
-    return url
+  getPhotoUrl: (photoPath: string) => {
+    return `https://api-admin-erp.rgb86groups.com/storage/${photoPath}`
   },
 }

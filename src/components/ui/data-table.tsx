@@ -46,7 +46,7 @@ interface DataTableProps<T> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function DataTable<T extends { [key: string]: any }>({
   columns,
-  data,
+  data = [],
   pagination,
   isLoading = false,
   onPageChange,
@@ -94,8 +94,8 @@ export function DataTable<T extends { [key: string]: any }>({
     }
   }
 
-  // Check if all rows are selected
-  const isAllSelected = data.length > 0 && data.every((row) => selectedIds.has(String(row[rowKey])))
+  // Check if all rows are selected (defensive: ensure data is array)
+  const isAllSelected = Array.isArray(data) && data.length > 0 && data.every((row) => selectedIds.has(String(row[rowKey])))
 
   // Calculate total columns including selection column
   const totalColumns = columns.length + (enableRowSelection ? 1 : 0)
@@ -148,7 +148,7 @@ export function DataTable<T extends { [key: string]: any }>({
                   ))}
                 </TableRow>
               ))
-            ) : data.length === 0 ? (
+            ) : !Array.isArray(data) || data.length === 0 ? (
               /* Empty state */
               <TableRow>
                 <TableCell colSpan={totalColumns} className="text-center py-12">
@@ -195,7 +195,7 @@ export function DataTable<T extends { [key: string]: any }>({
       </div>
 
       {/* Pagination */}
-      {pagination.total > 0 && (
+      {pagination && pagination.total > 0 && (
         <DataTablePagination
           pagination={pagination}
           onPageChange={onPageChange}

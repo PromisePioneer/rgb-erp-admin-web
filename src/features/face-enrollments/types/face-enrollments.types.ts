@@ -14,6 +14,13 @@ export interface FaceEnrollmentPhoto {
   captured_at: string
 }
 
+export interface FaceEnrollmentPhotoList {
+  id: number
+  photo_path: string | null
+  quality: number
+  confidence: number
+}
+
 export interface FaceEnrollment {
   id: number
   employee_id: number
@@ -31,7 +38,7 @@ export interface FaceEnrollment {
     name: string
     code: string | null
   }
-  photos?: FaceEnrollmentPhoto[]
+  photos?: FaceEnrollmentPhotoList[]
   photo_count?: number
 }
 

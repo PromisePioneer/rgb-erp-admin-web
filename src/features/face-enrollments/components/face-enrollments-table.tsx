@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react'
 import type { FaceEnrollment } from '../types/face-enrollments.types'
-import { Shield, User } from 'lucide-react'
+import { Shield, ImageOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -30,6 +30,7 @@ import { toast } from 'sonner'
 import { useFaceEnrollmentsStore } from '../store/face-enrollments-store'
 import { FaceEnrollmentsFilters } from './face-enrollments-filters'
 import { FaceEnrollmentsDetailModal } from './face-enrollments-detail-modal'
+import { faceEnrollmentsApi } from '../api/face-enrollments-api'
 
 export function FaceEnrollmentsTable() {
   const {
@@ -108,19 +109,44 @@ export function FaceEnrollmentsTable() {
         ),
       },
       {
+        id: 'photo',
+        header: 'Foto',
+        cell: (item) => {
+          // Get first photo from photos array
+          const firstPhoto = item.photos?.[0]
+          const photoUrl = firstPhoto?.photo_path
+            ? faceEnrollmentsApi.getPhotoUrl(firstPhoto.photo_path)
+            : null
+
+          return (
+            <div className="h-10 w-10 rounded-full overflow-hidden border bg-muted">
+              {photoUrl ? (
+                <img
+                  src={photoUrl}
+                  alt={item.employee?.name || 'Face'}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                  }}
+                />
+              ) : null}
+              <div className={`w-full h-full flex items-center justify-center bg-muted ${photoUrl ? 'hidden' : ''}`}>
+                <ImageOff className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+          )
+        },
+      },
+      {
         id: 'employee',
         header: 'Employee',
         cell: (item) => (
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium">{item.employee?.name || '-'}</p>
-              <p className="text-xs text-muted-foreground">
-                {item.employee?.code || 'No code'}
-              </p>
-            </div>
+          <div>
+            <p className="font-medium">{item.employee?.name || '-'}</p>
+            <p className="text-xs text-muted-foreground">
+              {item.employee?.code || 'No code'}
+            </p>
           </div>
         ),
       },
@@ -131,14 +157,16 @@ export function FaceEnrollmentsTable() {
       },
       {
         id: 'photos',
-        header: 'Photos',
-        cell: (item) => <span className="font-mono">{item.photo_count || 0}</span>,
+        header: 'Jumlah Foto',
+        cell: (item) => (
+          <span className="font-mono text-sm">{item.photos?.length || item.photo_count || 0}</span>
+        ),
       },
       {
         id: 'enrolled',
-        header: 'Enrolled',
+        header: 'Tanggal Enroll',
         cell: (item) => (
-          <span className="text-muted-foreground">{formatDate(item.enrolled_at)}</span>
+          <span className="text-sm text-muted-foreground">{formatDate(item.enrolled_at)}</span>
         ),
       },
     ]

@@ -45,17 +45,17 @@ export function RolesPrivilegesForm({ roleId }: RolesPrivilegesFormProps) {
       try {
         // Fetch web privileges
         const webResponse = await rolesApi.getPrivileges(roleId)
-        setPrivileges(webResponse.data.privileges)
-        setRoleName(webResponse.data.role_name)
+        setPrivileges(webResponse.data?.privileges ?? [])
+        setRoleName(webResponse.data?.role_name ?? '')
 
         // Initialize web privilege checked state
         const parentChecked: Record<number, boolean> = {}
         const childChecked: Record<number, Record<number, boolean>> = {}
 
-        webResponse.data.privileges.forEach((group: PrivilegeGroup) => {
+        webResponse.data?.privileges.forEach((group: PrivilegeGroup) => {
           parentChecked[group.id] = group.has_privilege
           childChecked[group.id] = {}
-          group.children.forEach((child: PrivilegeChild) => {
+          group.children?.forEach((child: PrivilegeChild) => {
             childChecked[group.id][child.id] = child.has_privilege
           })
         })
@@ -65,11 +65,11 @@ export function RolesPrivilegesForm({ roleId }: RolesPrivilegesFormProps) {
 
         // Fetch mobile privileges
         const mobileResponse = await rolesApi.getMobilePrivileges(roleId)
-        setMobilePrivileges(mobileResponse.data.mobile_privileges)
+        setMobilePrivileges(mobileResponse.data?.mobile_privileges ?? [])
 
         // Initialize mobile privilege checked state
         const mobileChecked: Record<number, boolean> = {}
-        mobileResponse.data.mobile_privileges.forEach((p: MobilePrivilege) => {
+        mobileResponse.data?.mobile_privileges.forEach((p: MobilePrivilege) => {
           mobileChecked[p.id] = p.has_privilege
         })
         setCheckedMobilePrivileges(mobileChecked)
@@ -92,7 +92,7 @@ export function RolesPrivilegesForm({ roleId }: RolesPrivilegesFormProps) {
     if (group) {
       setCheckedChildren(prev => ({
         ...prev,
-        [groupId]: Object.fromEntries(group.children.map(c => [c.id, checked]))
+        [groupId]: Object.fromEntries(group.children?.map(c => [c.id, checked]))
       }))
     }
   }, [privileges])
@@ -109,7 +109,7 @@ export function RolesPrivilegesForm({ roleId }: RolesPrivilegesFormProps) {
 
     const group = privileges.find(g => g.id === groupId)
     if (group) {
-      const allChildrenChecked = group.children.every(
+      const allChildrenChecked = group.children?.every(
         c => c.id === childId ? checked : (checkedChildren[groupId]?.[c.id] ?? false)
       )
       setCheckedPrivileges(prev => ({ ...prev, [groupId]: allChildrenChecked }))
@@ -136,7 +136,7 @@ export function RolesPrivilegesForm({ roleId }: RolesPrivilegesFormProps) {
           id: group.id,
           has_privilege: checkedPrivileges[group.id] ?? false
         })
-        group.children.forEach(child => {
+        group.children?.forEach(child => {
           webPayload.privileges.push({
             id: child.id,
             has_privilege: checkedChildren[group.id]?.[child.id] ?? false
@@ -236,7 +236,7 @@ export function RolesPrivilegesForm({ roleId }: RolesPrivilegesFormProps) {
 
                   {/* Child Checkboxes */}
                   <div className="pl-7 space-y-2">
-                    {group.children.map((child) => (
+                    {group.children?.map((child) => (
                       <div key={child.id} className="flex items-center gap-3">
                         <Checkbox
                           id={`child-${child.id}`}
