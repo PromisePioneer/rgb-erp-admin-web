@@ -275,7 +275,7 @@ export function Topbar({onCollapse, isMobile = false, isCollapsed = false}: Topb
             <div className="flex items-center gap-2">
                 {/* Company Selector */}
                 {!isMobile && (
-                    <div className="w-[200px]">
+                    <div className="w-50">
                         <AsyncSelect
                             value={currentCompany?.id ?? null}
                             onChange={handleCompanyChange}
