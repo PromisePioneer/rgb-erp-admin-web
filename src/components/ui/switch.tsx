@@ -9,7 +9,7 @@ export interface SwitchProps extends Omit<React.InputHTMLAttributes<HTMLInputEle
 }
 
 const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
-  ({ className, onCheckedChange, checked, ...props }, ref) => {
+  ({ className, onCheckedChange, checked, disabled, ...props }, ref) => {
     return (
       <label className="relative inline-flex items-center cursor-pointer">
         <input
@@ -17,15 +17,31 @@ const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
           ref={ref}
           className="sr-only peer"
           checked={checked}
+          disabled={disabled}
           onChange={(e) => onCheckedChange?.(e.target.checked)}
           {...props}
         />
         <div
           className={cn(
-            "peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/25 dark:peer-focus:ring-primary/25 rounded-full w-9 h-5 bg-input after:content-[''] after:absolute after:rounded-full after:bg-white after:top-0.5 after:start-0.5 after:h-4 after:w-4 after:transition-all after:shadow-sm peer-checked:bg-primary peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+            "peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/25 rounded-full w-9 h-5 bg-input peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+            checked ? "bg-primary" : "bg-input",
             className
           )}
-        />
+          style={{
+            transition: 'background-color 200ms ease-in-out',
+          }}
+        >
+          <span
+            className={cn(
+              "absolute top-0.5 h-4 w-4 bg-white rounded-full shadow-sm",
+              disabled && "pointer-events-none opacity-50"
+            )}
+            style={{
+              left: checked ? '20px' : '2px',
+              transition: 'left 200ms ease-in-out',
+            }}
+          />
+        </div>
       </label>
     )
   }

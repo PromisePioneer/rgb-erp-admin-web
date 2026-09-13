@@ -87,6 +87,7 @@ import {StockOpnameForm} from '@/features/stock-opnames'
 import {MasterDataHub} from '@/features/master-data'
 import {ProcurementHub} from '@/features/procurement'
 import {FinancialReportsHub} from '@/features/financial-reports'
+import {ForcePasswordChangeModal} from '@/components/force-password-change-modal'
 
 // Root route
 const rootRoute = createRootRoute({
@@ -140,7 +141,12 @@ function AuthLayout({children}: { children: React.ReactNode }) {
         return null
     }
 
-    return <MainLayout>{children}</MainLayout>
+    return (
+        <>
+            <MainLayout>{children}</MainLayout>
+            <ForcePasswordChangeModal />
+        </>
+    )
 }
 
 // Index route

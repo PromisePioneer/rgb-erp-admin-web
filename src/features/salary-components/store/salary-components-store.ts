@@ -177,7 +177,6 @@ export const useSalaryComponentsStore = create<SalaryComponentsState>((set, get)
     })
   },
 
-
   clearError: () => {
     set({ error: null })
   },

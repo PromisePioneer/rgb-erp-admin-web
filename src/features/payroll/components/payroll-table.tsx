@@ -25,18 +25,18 @@ import {
 } from '@/components/ui/alert-dialog'
 
 const MONTHS = [
-  { value: 1, label: 'January' },
-  { value: 2, label: 'February' },
-  { value: 3, label: 'March' },
+  { value: 1, label: 'Januari' },
+  { value: 2, label: 'Februari' },
+  { value: 3, label: 'Maret' },
   { value: 4, label: 'April' },
-  { value: 5, label: 'May' },
-  { value: 6, label: 'June' },
-  { value: 7, label: 'July' },
-  { value: 8, label: 'August' },
+  { value: 5, label: 'Mei' },
+  { value: 6, label: 'Juni' },
+  { value: 7, label: 'Juli' },
+  { value: 8, label: 'Agustus' },
   { value: 9, label: 'September' },
-  { value: 10, label: 'October' },
+  { value: 10, label: 'Oktober' },
   { value: 11, label: 'November' },
-  { value: 12, label: 'December' },
+  { value: 12, label: 'Desember' },
 ]
 
 const YEARS = [
@@ -47,7 +47,7 @@ const YEARS = [
 ]
 
 const TYPE_OPTIONS = [
-  { value: 'monthly', label: 'Monthly' },
+  { value: 'monthly', label: 'Bulanan' },
   { value: 'thr', label: 'THR' },
 ]
 
@@ -104,11 +104,11 @@ export function PayrollTable() {
     if (ids.length === 0) return
     try {
       await bulkDelete(ids)
-      toast.success(`${ids.length} item(s) deleted`)
+      toast.success(`${ids.length} data berhasil dihapus`)
       setSelectedIds(new Set())
       setShowBulkDeleteDialog(false)
     } catch (err: any) {
-      toast.error(err.message || 'Delete failed')
+      toast.error(err.message || 'Gagal menghapus')
     }
   }
 
@@ -141,7 +141,7 @@ export function PayrollTable() {
   const baseColumns: DataTableColumn<PayrollRow>[] = [
     {
       accessorKey: 'employee_name',
-      header: 'Employee',
+      header: 'Karyawan',
       cell: (row: PayrollRow) => (
         <div>
           <div className="font-medium">{row.employee_name ?? '—'}</div>
@@ -157,7 +157,7 @@ export function PayrollTable() {
   if (filters.type === 'monthly') {
     baseColumns.push({
       id: 'days',
-      header: 'Days',
+      header: 'Hari',
       className: 'w-[100px]',
       cell: (row: PayrollRow) => (
         <span className="text-muted-foreground">
@@ -170,7 +170,7 @@ export function PayrollTable() {
   baseColumns.push(
     {
       accessorKey: 'gross',
-      header: 'Gross',
+      header: 'Bruto',
       className: 'text-right',
       cell: (row: PayrollRow) => (
         <span className="text-muted-foreground">
@@ -185,7 +185,7 @@ export function PayrollTable() {
     baseColumns.push(
       {
         accessorKey: 'bpjs_ee',
-        header: 'BPJS (EE)',
+        header: 'BPJS (KR)',
         className: 'text-right w-[120px]',
         cell: (row: PayrollRow) => (
           <span className="text-muted-foreground">
@@ -208,7 +208,7 @@ export function PayrollTable() {
 
   baseColumns.push({
     accessorKey: 'net',
-    header: 'Net',
+    header: 'Netto',
     className: 'text-right font-medium',
     cell: (row: PayrollRow) => formatCurrency(row.net),
   })
@@ -222,9 +222,9 @@ export function PayrollTable() {
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium">Generate Monthly Payroll</h3>
+              <h3 className="font-medium">Generate Gaji Bulanan</h3>
               <p className="text-sm text-muted-foreground">
-                Generate payroll for all active employees
+                Generate payroll untuk semua karyawan aktif
               </p>
             </div>
             <Button onClick={() => setShowGenerateDialog(true)} disabled={isLoading}>
@@ -238,7 +238,7 @@ export function PayrollTable() {
             <div>
               <h3 className="font-medium">Generate THR</h3>
               <p className="text-sm text-muted-foreground">
-                Tenure-based THR for all active employees
+                THR berdasarkan masa kerja untuk semua karyawan aktif
               </p>
             </div>
             <PayrollGenerateDialog type="thr" />
@@ -249,9 +249,9 @@ export function PayrollTable() {
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
-          <label className="text-sm text-muted-foreground">Type</label>
+          <label className="text-sm text-muted-foreground">Tipe</label>
           <AsyncSelect
-            placeholder="Select type..."
+            placeholder="Pilih tipe..."
             loadOptions={async () => TYPE_OPTIONS.map(t => ({ value: String(t.value), label: t.label }))}
             value={filters.type}
             onChange={handleTypeChange}
@@ -261,9 +261,9 @@ export function PayrollTable() {
 
         {filters.type === 'monthly' && (
           <div className="space-y-1">
-            <label className="text-sm text-muted-foreground">Month</label>
+            <label className="text-sm text-muted-foreground">Bulan</label>
             <AsyncSelect
-              placeholder="Select month..."
+              placeholder="Pilih bulan..."
               loadOptions={async () => MONTHS.map(m => ({ value: String(m.value), label: m.label }))}
               value={filters.month}
               onChange={handleMonthChange}
@@ -273,9 +273,9 @@ export function PayrollTable() {
         )}
 
         <div className="space-y-1">
-          <label className="text-sm text-muted-foreground">Year</label>
+          <label className="text-sm text-muted-foreground">Tahun</label>
           <AsyncSelect
-            placeholder="Select year..."
+            placeholder="Pilih tahun..."
             loadOptions={async () => YEARS.map(y => ({ value: String(y), label: String(y) }))}
             value={filters.year}
             onChange={handleYearChange}
@@ -295,7 +295,7 @@ export function PayrollTable() {
         <div className="p-4 text-sm text-red-500 bg-red-50 rounded-md">
           {error}
           <Button variant="link" size="sm" onClick={clearError}>
-            Dismiss
+            Tutup
           </Button>
         </div>
       )}
@@ -307,7 +307,7 @@ export function PayrollTable() {
         pagination={pagination ?? { current_page: 1, per_page: 10, last_page: 1, total: 0 }}
         isLoading={isLoading}
         onPageChange={handlePageChange}
-        emptyMessage="No payslips for this period"
+        emptyMessage="Belum ada slip gaji untuk periode ini"
         rowKey="id"
         onRowClick={handleEdit}
         enableRowSelection
@@ -321,7 +321,7 @@ export function PayrollTable() {
               onClick={() => setShowBulkDeleteDialog(true)}
             >
               <Trash2 className="h-4 w-4 mr-1" />
-              Delete {selectedIds.size} item(s)
+              Hapus {selectedIds.size} data
             </Button>
           )
         }
@@ -331,18 +331,18 @@ export function PayrollTable() {
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Payroll Records</AlertDialogTitle>
+            <AlertDialogTitle>Hapus Data Payroll</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedIds.size} selected payroll record(s)? This action cannot be undone.
+              Apakah Anda yakin ingin menghapus {selectedIds.size} data payroll yang dipilih? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              Hapus
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

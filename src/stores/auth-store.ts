@@ -20,6 +20,7 @@ export interface User {
   name: string
   email: string
   status: number
+  force_password_change: boolean
   role: Role | null
   department: { id: number; name: string } | null
   company: { id: number; name: string } | null
@@ -43,6 +44,7 @@ interface AuthState {
   fetchUser: () => Promise<void>
   setCurrentCompany: (company: Company | null) => void
   hasMobilePrivilege: (key: string) => boolean
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -122,6 +124,31 @@ export const useAuthStore = create<AuthState>()(
        */
       hasMobilePrivilege: (key: string) => {
         return get().mobilePrivileges.includes(key)
+      },
+
+      /**
+       * Change password for the current user.
+       * After successful change, updates the user state to clear force_password_change flag.
+       */
+      changePassword: async (currentPassword: string, newPassword: string) => {
+        const { data } = await apiClient.post('/admin/change-password', {
+          current_password: currentPassword,
+          new_password: newPassword,
+          new_password_confirmation: newPassword, // Laravel requires confirmation field
+        })
+
+        // Update local user state to reflect password change
+        const currentUser = get().user
+        if (currentUser) {
+          set({
+            user: {
+              ...currentUser,
+              force_password_change: false,
+            },
+          })
+        }
+
+        return data
       },
     }),
     {

@@ -23,9 +23,12 @@ export function DatePicker({
   placeholder = "Pilih tanggal",
   className,
   disabled = false,
-  format: formatStr = "yyyy-MM-dd",
+  format: formatStr,
   selectionMode = "date",
 }: DatePickerProps) {
+  // Auto-set format based on selectionMode if not provided
+  const resolvedFormat = formatStr ?? (selectionMode === "month" ? "yyyy-MM" : "yyyy-MM-dd")
+
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
     value && isValid(parseISO(value)) ? parseISO(value) : undefined
   )
@@ -41,7 +44,7 @@ export function DatePicker({
   const handleSelect = (date: Date | undefined) => {
     setSelectedDate(date)
     if (date) {
-      onChange?.(format(date, formatStr))
+      onChange?.(format(date, resolvedFormat))
     } else {
       onChange?.(undefined)
     }
