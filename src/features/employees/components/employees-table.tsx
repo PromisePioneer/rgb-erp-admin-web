@@ -3,7 +3,7 @@
  * Using standardized DataTable with row selection
  */
 import { useEffect, useState, useCallback } from 'react'
-import { Trash2, UserPlus, Upload } from 'lucide-react'
+import { Trash2, UserPlus, Upload, Globe, Smartphone } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,10 +16,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Switch } from '@/components/ui/switch'
+import { toast } from 'sonner'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import { useEmployeesStore } from '@/features/employees'
 import { EmployeesFilters } from './employees-filters'
 import { EmployeesImportModal } from './employees-import-modal'
+import { employeesApi } from '@/features/employees/api/employees-api'
 import type { Employee } from '@/features/employees'
 
 export function EmployeesTable() {
@@ -39,13 +42,43 @@ export function EmployeesTable() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
 
-  // Single source of truth for fetch - debounced, primitive dependencies
+  // Toggle login access handlers
+  const handleToggleLoginAccess = async (employee: Employee, type: 'web' | 'mobile', enabled: boolean) => {
+    if (!employee.user_id) {
+      toast.error('Employee has no user account')
+      return
+    }
+    try {
+      await employeesApi.toggleLoginAccess(employee.id, type, enabled)
+      toast.success(`${type === 'web' ? 'Web' : 'Mobile'} login ${enabled ? 'enabled' : 'disabled'}`)
+      // Refresh data
+      fetchEmployees({
+        search: filters.search,
+        client_id: filters.client_id,
+        area_id: filters.area_id,
+        backoffice: filters.backoffice,
+        page: 1,
+        per_page: 15
+      })
+    } catch {
+      toast.error('Failed to update login access')
+    }
+  }
+
+  // Single source of truth for fetch
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchEmployees({ search: filters.search, page: 1, per_page: 15 })
+      fetchEmployees({
+        search: filters.search,
+        client_id: filters.client_id,
+        area_id: filters.area_id,
+        backoffice: filters.backoffice,
+        page: 1,
+        per_page: 15
+      })
     }, 300)
     return () => clearTimeout(timer)
-  }, [filters.search])
+  }, [filters.search, filters.client_id, filters.area_id, filters.backoffice])
 
   // Reset selection when data changes
   useEffect(() => {
@@ -62,8 +95,15 @@ export function EmployeesTable() {
 
   const handlePageChange = useCallback((newPage: number) => {
     if (newPage < 1 || newPage > pagination.last_page) return
-    fetchEmployees({ search: filters.search, page: newPage, per_page: 15 })
-  }, [fetchEmployees, filters.search, pagination.last_page])
+    fetchEmployees({
+      search: filters.search,
+      client_id: filters.client_id,
+      area_id: filters.area_id,
+      backoffice: filters.backoffice,
+      page: newPage,
+      per_page: 15
+    })
+  }, [fetchEmployees, filters, pagination.last_page])
 
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return
@@ -91,98 +131,117 @@ export function EmployeesTable() {
   const columns: DataTableColumn<Employee>[] = [
     {
       accessorKey: 'photo',
-      header: 'Photo',
+      header: '',
       cell: (row) => {
         const photoUrl = row.photo ? `/storage/${row.photo}` : null
-        return photoUrl ? (
-          <img
-            src={photoUrl}
-            alt={row.name}
-            className="h-10 w-10 rounded-full object-cover"
-            onError={(e) => {
-              // Hide broken image and show initial instead
-              const target = e.target as HTMLImageElement
-              target.style.display = 'none'
-              target.nextElementSibling?.classList.remove('hidden')
-            }}
-          />
-        ) : null
+        if (photoUrl) {
+          return (
+            <img
+              src={photoUrl}
+              alt={row.name}
+              className="h-10 w-10 rounded-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.style.display = 'none'
+              }}
+            />
+          )
+        }
+        return (
+          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+            {row.name?.charAt(0).toUpperCase()}
+          </div>
+        )
       },
-    },
-    {
-      accessorKey: 'code',
-      header: 'Code',
-      cell: (row) => (
-        <span className="font-mono text-sm">{row.code || '-'}</span>
-      ),
     },
     {
       accessorKey: 'name',
       header: 'Name',
       cell: (row) => (
-        <span className="font-medium">{row.name}</span>
-      ),
-    },
-    {
-      accessorKey: 'company_name',
-      header: 'Company',
-      cell: (row) => (
-        <span className="text-muted-foreground">
-          {row.company_name ?? '-'}
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'role_name',
-      header: 'Role',
-      cell: (row) => (
-        <span className="text-muted-foreground">
-          {row.role_name ?? '-'}
-        </span>
+        <div className="space-y-0.5">
+          <span className="font-medium block">{row.name || '-'}</span>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="font-mono">NIK: {row.code || '-'}</span>
+            {row.role_name && (
+              <>
+                <span>|</span>
+                <span>{row.role_name}</span>
+              </>
+            )}
+          </div>
+        </div>
       ),
     },
     {
       accessorKey: 'client_name',
-      header: 'Client',
+      header: 'Placement',
       cell: (row) => (
-        <span className="text-muted-foreground">
-          {row.client_name ?? '-'}
-        </span>
+        <div className="text-xs">
+          {row.client_name ? (
+            <div className="space-y-0.5">
+              <span className="font-medium text-foreground">{row.client_name}</span>
+              {row.area_name && <div className="text-muted-foreground">{row.area_name}</div>}
+              {row.pos_name && <div className="text-muted-foreground/70">{row.pos_name}</div>}
+            </div>
+          ) : (
+            <span className="italic text-yellow-600">No placement</span>
+          )}
+        </div>
       ),
     },
     {
-      accessorKey: 'area_name',
-      header: 'Area',
+      accessorKey: 'user_email',
+      header: 'Login Access',
       cell: (row) => (
-        <span className="text-muted-foreground">
-          {row.area_name ?? '-'}
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'pos_name',
-      header: 'POS',
-      cell: (row) => (
-        <span className="text-muted-foreground">
-          {row.pos_name ?? '-'}
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'phone',
-      header: 'Phone',
-      cell: (row) => (
-        <span className="font-mono text-sm">
-          {row.phone ?? '-'}
-        </span>
+        <div className="text-xs" onClick={(e) => e.stopPropagation()}>
+          {row.user_email ? (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-muted-foreground truncate max-w-[120px]">{row.user_email}</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                    row.user_status === 1
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-red-100 text-red-700'
+                  }`}
+                >
+                  {row.user_status === 1 ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              {/* Login Access Toggles */}
+              <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1">
+                  <Globe className="h-3 w-3 text-muted-foreground" />
+                  <Switch
+                    checked={row.can_login_web ?? true}
+                    onCheckedChange={(checked) => handleToggleLoginAccess(row, 'web', checked)}
+                    disabled={!row.user_id}
+                    className="h-4 w-7"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <Smartphone className="h-3 w-3 text-muted-foreground" />
+                  <Switch
+                    checked={row.can_login_mobile ?? true}
+                    onCheckedChange={(checked) => handleToggleLoginAccess(row, 'mobile', checked)}
+                    disabled={!row.user_id}
+                    className="h-4 w-7"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <span className="text-muted-foreground italic">No user account</span>
+          )}
+        </div>
       ),
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: '',
       cell: (row) => (
         <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
             row.status === 1
               ? 'bg-green-100 text-green-800'
               : 'bg-red-100 text-red-800'
@@ -239,7 +298,7 @@ export function EmployeesTable() {
         onRowClick={handleEdit}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -263,8 +322,13 @@ export function EmployeesTable() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Import Employees Modal */}
-      <EmployeesImportModal open={showImportModal} onOpenChange={setShowImportModal} />
+      {/* Import Modal */}
+      {showImportModal && (
+        <EmployeesImportModal
+          open={showImportModal}
+          onOpenChange={setShowImportModal}
+        />
+      )}
     </div>
   )
 }

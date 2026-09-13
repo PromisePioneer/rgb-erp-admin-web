@@ -5,8 +5,7 @@
 import { useState } from 'react'
 import { RefreshCw, Gift, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogFooter,

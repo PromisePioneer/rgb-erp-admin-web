@@ -7,8 +7,7 @@ import {QrCodeIcon, Printer, Download, History, User, Filter, X, Trash2, CheckCi
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
 import {Badge} from '@/components/ui/badge'
-import {
-    Dialog,
+import Dialog, {
     DialogContent,
     DialogHeader,
     DialogTitle,

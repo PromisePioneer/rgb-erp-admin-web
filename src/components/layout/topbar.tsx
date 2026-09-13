@@ -7,10 +7,7 @@
 import * as React from "react"
 import {useLocation, useNavigate} from "@tanstack/react-router"
 import {useTranslationStore} from '@/stores/translation-store'
-import {useCompanyStore} from '@/stores/company-store'
 import {navigationSections} from "@/components/layout/navigation-types"
-import {AsyncSelect, type SelectOption} from '@/components/async-select'
-import {companyApi} from '@/features/companies/api/companies-api'
 import {NotificationBell} from '@/components/layout/notification-bell'
 import {ThemeToggle} from '@/components/ui/theme-toggle'
 import {
@@ -182,38 +179,8 @@ export function Topbar({onCollapse, isMobile = false, isCollapsed = false}: Topb
     const location = useLocation()
     const navigate = useNavigate()
     const {locale, setLocale} = useTranslationStore()
-    const {currentCompany, switchCompany, fetchCompanies} = useCompanyStore()
     const breadcrumbs = useBreadcrumbs(location.pathname)
     const [langMenuOpen, setLangMenuOpen] = React.useState(false)
-
-    // Fetch companies on mount
-    React.useEffect(() => {
-        fetchCompanies()
-    }, [fetchCompanies])
-
-    // Handle company change
-    const handleCompanyChange = async (value: number | string | null) => {
-        if (!value) return
-        try {
-            await switchCompany(Number(value))
-            window.location.reload()
-        } catch (error) {
-            console.error('Failed to switch company:', error)
-        }
-    }
-
-    // Load companies for select
-    const loadCompanies = React.useCallback(async (search: string): Promise<SelectOption[]> => {
-        try {
-            const response = await companyApi.getSelectOptions({q: search})
-            return response.map((company) => ({
-                value: company.id,
-                label: company.name,
-            }))
-        } catch {
-            return []
-        }
-    }, [])
 
     // Handle breadcrumb navigation
     const handleBreadcrumbClick = (path?: string) => {
@@ -273,18 +240,6 @@ export function Topbar({onCollapse, isMobile = false, isCollapsed = false}: Topb
 
             {/* Right side actions */}
             <div className="flex items-center gap-2">
-                {/* Company Selector */}
-                {!isMobile && (
-                    <div className="w-50">
-                        <AsyncSelect
-                            value={currentCompany?.id ?? null}
-                            onChange={handleCompanyChange}
-                            loadOptions={loadCompanies}
-                            placeholder="Select Company"
-                        />
-                    </div>
-                )}
-
                 {/* Language Switcher */}
                 <div className="relative" data-state={langMenuOpen ? 'open' : 'closed'}>
                     <button

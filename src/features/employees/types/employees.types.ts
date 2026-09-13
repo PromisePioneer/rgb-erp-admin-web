@@ -22,6 +22,12 @@ export interface Employee {
   pos_id: number | null
   pos_name: string | null
   status: number
+  // User account info
+  user_id?: number | null
+  user_email?: string | null
+  user_status?: number | null
+  can_login_web?: boolean
+  can_login_mobile?: boolean
   created_at: string
   updated_at: string
 }
@@ -65,6 +71,10 @@ export interface EmployeeDetail extends Employee {
   drive_license_number: string | null
   client_id: number | null
   client_name: string | null
+  // User account info (auto-created with employee)
+  user_id?: number | null
+  user_email?: string | null
+  user_status?: number | null
   children: EmployeeChild[]
   siblings: EmployeeSibling[]
   educations: EmployeeEducation[]
@@ -120,6 +130,9 @@ export interface EmployeeSocialActivity {
 export interface EmployeesFilters {
   search?: string
   status?: number
+  client_id?: number
+  area_id?: number
+  backoffice?: boolean
   page?: number
   per_page?: number
 }

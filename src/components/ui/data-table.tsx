@@ -101,7 +101,7 @@ export function DataTable<T extends { [key: string]: any }>({
   const totalColumns = columns.length + (enableRowSelection ? 1 : 0)
 
   return (
-    <div className={className}>
+    <div className={cn('w-full min-w-0 space-y-4', className)}>
       {/* Bulk Actions Bar */}
       {enableRowSelection && selectedIds.size > 0 && bulkActions && (
         <div className="flex items-center gap-3 mb-3 px-3 py-2 bg-muted/50 rounded-md border">
@@ -111,8 +111,8 @@ export function DataTable<T extends { [key: string]: any }>({
         </div>
       )}
 
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-x-auto w-full">
+        <Table className="min-w-[800px] max-w-full">
           <TableHeader>
             <TableRow>
               {enableRowSelection && (
@@ -125,7 +125,7 @@ export function DataTable<T extends { [key: string]: any }>({
                 </TableHead>
               )}
               {columns.map((column, index) => (
-                <TableHead key={index} className={column.className}>
+                <TableHead key={index} className={cn('whitespace-nowrap', column.className)}>
                   {column.header}
                 </TableHead>
               ))}
@@ -182,7 +182,7 @@ export function DataTable<T extends { [key: string]: any }>({
                       </TableCell>
                     )}
                     {columns.map((column, colIndex) => (
-                      <TableCell key={colIndex} className={column.className}>
+                      <TableCell key={colIndex} className={cn('whitespace-nowrap', column.className)}>
                         {renderCell(row, column)}
                       </TableCell>
                     ))}
@@ -199,7 +199,6 @@ export function DataTable<T extends { [key: string]: any }>({
         <DataTablePagination
           pagination={pagination}
           onPageChange={onPageChange}
-          className="mt-4"
         />
       )}
     </div>

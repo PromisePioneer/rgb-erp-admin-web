@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useDailyTaskReportsStore } from "../store/daily-task-reports-store"
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogHeader,
   DialogTitle,

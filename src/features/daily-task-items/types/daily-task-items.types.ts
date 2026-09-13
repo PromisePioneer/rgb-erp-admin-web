@@ -2,10 +2,10 @@
  * Daily Task Items Types
  */
 
-// Status constants
-export const STATUS_ACTIVE = 1
-export const STATUS_INACTIVE = 2
-export const STATUS_LABELS: Record<number, string> = {
+// Status constants - string to match backend enum
+export const STATUS_ACTIVE = 'active'
+export const STATUS_INACTIVE = 'inactive'
+export const STATUS_LABELS: Record<string, string> = {
   [STATUS_ACTIVE]: "Aktif",
   [STATUS_INACTIVE]: "Tidak Aktif",
 }
@@ -14,21 +14,25 @@ export interface DailyTaskItem {
   id: number
   name: string
   description: string | null
-  status: number // 1 = active, 2 = inactive
+  status: 'active' | 'inactive'  // string to match backend enum
   status_label: string
   role_id: number | null
   role_name: string | null
+  parent_item_id: number | null
+  parent_item_name: string | null
+  is_root: boolean
+  has_children: boolean
   created_at: string
   updated_at: string
 }
 
 export interface DailyTaskItemDetail extends DailyTaskItem {
-  // Additional fields if needed
+  children?: Pick<DailyTaskItem, 'id' | 'name'>[]
 }
 
 export interface DailyTaskItemsFilters {
   search?: string
-  status?: number // 1 = active, 2 = inactive
+  status?: 'active' | 'inactive'
   role_id?: number
   page?: number
   per_page?: number
@@ -37,8 +41,9 @@ export interface DailyTaskItemsFilters {
 export interface CreateDailyTaskItem {
   name: string
   description?: string | null
-  status: number // 1 = active, 2 = inactive
+  status: 'active' | 'inactive'
   role_id?: number | null
+  parent_item_id?: number | null
 }
 
 export interface UpdateDailyTaskItem extends CreateDailyTaskItem {}
@@ -59,6 +64,9 @@ export interface ApiResponse<T> {
 }
 
 export interface SelectOption {
-  value: number
-  label: string
+  id: number
+  name: string
+  text: string
+  is_root?: boolean
+  status?: 'active' | 'inactive'
 }

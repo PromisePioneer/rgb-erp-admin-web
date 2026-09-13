@@ -6,8 +6,7 @@ import { useEffect, useCallback } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Plus, Trash2, Save, FileText } from 'lucide-react'
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogFooter,

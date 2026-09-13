@@ -3,8 +3,7 @@
  * Read-only view of invoice with line items
  */
 import {useEffect} from 'react'
-import {
-    Dialog,
+import Dialog, {
     DialogContent,
     DialogDescription,
     DialogHeader,

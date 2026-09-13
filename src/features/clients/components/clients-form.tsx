@@ -358,7 +358,7 @@ export function ClientsForm() {
         await update(clientId, updatePayload)
         toast.success('Client berhasil diperbarui')
       }
-      navigate({ to: '/clients' })
+      navigate({ to: '/master-data' })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Terjadi kesalahan')
     }
@@ -376,7 +376,7 @@ export function ClientsForm() {
             {isEdit ? 'Perbarui informasi client' : 'Lengkapi informasi client baru'}
           </p>
         </div>
-        <Button variant="outline" onClick={() => navigate({ to: '/clients' })}>
+        <Button variant="outline" onClick={() => navigate({ to: '/master-data' })}>
           Batal
         </Button>
       </div>

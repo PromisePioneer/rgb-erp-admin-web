@@ -36,7 +36,6 @@ import { useTranslationStore } from "@/stores/translation-store"
 import { navigationSections } from "./layout/navigation-types"
 import { cn } from "@/lib/utils"
 import {
-  ShieldCheck,
   LayoutDashboard,
   Briefcase,
   Tags,
@@ -488,8 +487,8 @@ export function AppSidebar({ isCollapsed }: AppSidebarProps) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <a href="#" className="flex items-center gap-2">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <ShieldCheck className="size-4" />
+                <div className="flex aspect-square size-10 items-center justify-center rounded-lg">
+                  <img src="/logo-compact.svg" alt="Logo" className="h-full w-full object-contain"/>
                 </div>
                 {!isCollapsed && (
                   <div className="grid flex-1 text-left text-sm leading-tight">

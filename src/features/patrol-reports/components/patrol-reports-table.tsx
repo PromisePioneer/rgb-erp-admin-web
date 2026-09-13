@@ -17,8 +17,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogHeader,
   DialogTitle,

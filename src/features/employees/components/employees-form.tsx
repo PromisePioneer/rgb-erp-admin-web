@@ -20,6 +20,7 @@ import {useEmployeesStore} from '@/features/employees'
 import {useEmployeeCode} from '@/features/employees'
 import {EmployeeCodeField} from '@/features/employees'
 import type {CreateEmployeePayload} from '@/features/employees'
+import {MasterDataTopBar} from '@/features/master-data/components/MasterDataTopBar'
 
 // Role names that REQUIRE client_id, area_id, pos_id
 const REQUIRED_PLACEMENT_ROLES = [
@@ -30,6 +31,8 @@ const REQUIRED_PLACEMENT_ROLES = [
     'Cleaning Crew',
     'Team Leader'
 ]
+
+const LAST_SELECTED_TAB_KEY = 'master-data-last-tab'
 
 export function EmployeesForm() {
     const {id} = useParams({strict: false}) as { id?: string }
@@ -47,6 +50,24 @@ export function EmployeesForm() {
     } = useEmployeesStore()
 
     const hasShownValidationToast = useRef(false)
+
+    // Track selected item for topbar
+    const [selectedItemId, setSelectedItemId] = useState('employees')
+
+    // Load last selected tab from localStorage on mount
+    useEffect(() => {
+        const lastTab = localStorage.getItem(LAST_SELECTED_TAB_KEY)
+        if (lastTab) {
+            setSelectedItemId(lastTab)
+        }
+    }, [])
+
+    // User account info state (for showing after creation) - kept for potential future use
+    // const [createdUserInfo, setCreatedUserInfo] = useState<{
+    //     user_id: number
+    //     user_email: string
+    //     user_password: string
+    // } | null>(null)
 
     // Form sections state
     const [children, setChildren] = useState<Array<{
@@ -351,7 +372,18 @@ export function EmployeesForm() {
     }
 
     const handleClose = () => {
-        navigate({to: '/employees'})
+        // Save current item to localStorage before navigating back
+        localStorage.setItem(LAST_SELECTED_TAB_KEY, 'employees')
+        navigate({to: '/master-data'})
+    }
+
+    // Handle topbar item selection
+    const handleTopBarSelect = (itemId: string) => {
+        // Save to localStorage
+        localStorage.setItem(LAST_SELECTED_TAB_KEY, itemId)
+        setSelectedItemId(itemId)
+        // Navigate to master data with the selected tab
+        navigate({to: '/master-data'})
     }
 
     const onSubmit = async (values: CreateEmployeePayload) => {
@@ -405,8 +437,24 @@ export function EmployeesForm() {
                 toast.success('Employee updated successfully')
                 handleClose()
             } else {
-                await create(payload)
-                toast.success('Employee created successfully')
+                const response = await create(payload)
+                // Show user account info from response
+                const responseData = (response as any)?.data
+                if (responseData?.user_id && responseData?.user_email) {
+                    toast.success(
+                        <div>
+                            <p>Employee & User Account created successfully!</p>
+                            <div className="text-sm mt-1 space-y-0.5">
+                                <p><strong>Email:</strong> {responseData.user_email}</p>
+                                <p><strong>Password:</strong> {responseData.user_password || 'password'}</p>
+                                <p className="text-xs text-yellow-200 mt-1">⚠️ Default password: "password" - harus diubah saat login pertama</p>
+                            </div>
+                        </div>,
+                        { duration: 8000 }
+                    )
+                } else {
+                    toast.success('Employee created successfully')
+                }
                 handleClose()
             }
         } catch (err) {
@@ -606,23 +654,31 @@ export function EmployeesForm() {
     const removeSocialActivity = (index: number) => setSocialActivities(socialActivities.filter((_, i) => i !== index))
 
     return (
-        <div className="max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={handleClose}>
-                        <ArrowLeft className="h-5 w-5"/>
-                    </Button>
-                    <div>
-                        <h1 className="text-2xl font-bold">{isEdit ? 'Edit Employee' : 'Add New Employee'}</h1>
-                        <p className="text-muted-foreground">Fill in the employee details below</p>
+        <div className="flex flex-col h-full">
+            {/* Master Data TopBar */}
+            <MasterDataTopBar
+                selectedItemId={selectedItemId}
+                onItemSelect={handleTopBarSelect}
+            />
+
+            <div className="flex-1 overflow-auto p-6">
+                <div className="max-w-6xl mx-auto">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                            <Button variant="ghost" size="icon" onClick={handleClose}>
+                                <ArrowLeft className="h-5 w-5"/>
+                            </Button>
+                            <div>
+                                <h1 className="text-2xl font-bold">{isEdit ? 'Edit Employee' : 'Add New Employee'}</h1>
+                                <p className="text-muted-foreground">Fill in the employee details below</p>
+                            </div>
+                        </div>
+                        <Button type="submit" form="employee-form" disabled={isSubmitting || isLoading}>
+                            <Save className="h-4 w-4 mr-2"/>
+                            {isSubmitting ? 'Saving...' : 'Save'}
+                        </Button>
                     </div>
-                </div>
-                <Button type="submit" form="employee-form" disabled={isSubmitting || isLoading}>
-                    <Save className="h-4 w-4 mr-2"/>
-                    {isSubmitting ? 'Saving...' : 'Save'}
-                </Button>
-            </div>
 
             <form id="employee-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 
@@ -1228,6 +1284,8 @@ export function EmployeesForm() {
                     </Button>
                 </div>
             </form>
+                </div>
+            </div>
         </div>
     )
 }

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { RefreshCw, Lock, Unlock, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import Dialog, { DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { getActionHint } from '@/components/ui/data-table-actions'
 import { useAccountingPeriodsStore, type AccountingPeriod } from '../store/accounting-periods-store'
 

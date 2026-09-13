@@ -4,7 +4,7 @@ import { CheckCircle, XCircle, Trash2, RotateCcw, RefreshCw, Plus, ChevronDown, 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import Dialog, { DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { useJournalStore, type JournalEntry } from '../store/journal-store'
 import { JournalFormModal } from './journal-form-modal'

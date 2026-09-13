@@ -47,10 +47,24 @@ export const dailyTaskItemsApi = {
 
   /**
    * Get select options for dropdown
+   * @param rootsOnly If true, only return root/parent items (for parent selection)
+   * @param excludeId Exclude this item ID (for editing)
    */
-  getSelectOptions: async (): Promise<ApiResponse<SelectOption[]>> => {
+  getSelectOptions: async (
+    rootsOnly?: boolean,
+    excludeId?: number
+  ): Promise<ApiResponse<SelectOption[]>> => {
+    const params: Record<string, string | number> = {}
+    if (rootsOnly) {
+      params.roots_only = 1
+    }
+    if (excludeId) {
+      params.exclude = excludeId
+    }
+
     const { data } = await apiClient.get<ApiResponse<SelectOption[]>>(
-      '/admin/daily-task-items/select-options'
+      '/admin/daily-task-items/select-options',
+      { params }
     )
     return data
   },

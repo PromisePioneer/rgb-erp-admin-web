@@ -6,8 +6,7 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 import { Download, Upload, FileDown, RefreshCw, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogFooter,

@@ -14,8 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogHeader,
   DialogTitle,

@@ -10,8 +10,7 @@ import {Loader2, RefreshCw} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
 import {Label} from '@/components/ui/label'
-import {
-    Dialog,
+import Dialog, {
     DialogContent,
     DialogHeader,
     DialogTitle,
@@ -23,7 +22,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
+import {AsyncSelect, type SelectOption} from '@/components/async-select'
 import {useCheckpointsStore} from '@/features/checkpoints'
+import {areasApi} from '@/features/areas/api/areas-api'
 import type {Checkpoint} from '@/features/checkpoints'
 import {toast} from 'sonner'
 
@@ -53,8 +54,6 @@ interface CheckpointsFormModalProps {
 export function CheckpointsFormModal({checkpoint, open, onOpenChange}: CheckpointsFormModalProps) {
     const {
         selectedItem,
-        areasOptions,
-        fetchAreasOptions,
         fetchById,
         fetchNextSequence,
         regenerateSecret,
@@ -83,20 +82,18 @@ export function CheckpointsFormModal({checkpoint, open, onOpenChange}: Checkpoin
     // Fetch data on mount
     useEffect(() => {
         if (open) {
-            fetchAreasOptions()
             clearError()
-
             if (checkpoint) {
                 fetchById(checkpoint.id)
             }
         }
-    }, [open, checkpoint, fetchById, fetchAreasOptions, clearError])
+    }, [open, checkpoint, fetchById, clearError])
 
     // Populate form when selectedItem changes (for edit)
     useEffect(() => {
         if (selectedItem && isEdit) {
             form.reset({
-                area_id: selectedItem.area_id,
+                area_id: selectedItem.area_id ?? 0,
                 name: selectedItem.name,
                 lat: selectedItem.lat?.toString() ?? '',
                 lng: selectedItem.lng?.toString() ?? '',
@@ -106,14 +103,25 @@ export function CheckpointsFormModal({checkpoint, open, onOpenChange}: Checkpoin
         }
     }, [selectedItem, isEdit, form])
 
-    // Handle area change to get next sequence
-    const handleAreaChange = async (areaId: string) => {
-        const id = parseInt(areaId)
-        form.setValue('area_id', id)
+    // Load areas for dropdown
+    const loadAreas = async (search: string): Promise<SelectOption[]> => {
+        const response = await areasApi.getSelectOptions({q: search})
+        return response.data.map((item) => ({
+            value: item.id,
+            label: item.client_name ? `${item.name} (${item.client_name})` : item.name,
+        }))
+    }
 
-        if (!isEdit) {
-            const sequence = await fetchNextSequence(id)
-            toast.info(`Next sequence: ${sequence}`)
+    // Handle area change to get next sequence
+    const handleAreaChange = async (value: number | string | null) => {
+        if (value) {
+            const id = Number(value)
+            form.setValue('area_id', id, {shouldValidate: true})
+
+            if (!isEdit) {
+                const sequence = await fetchNextSequence(id)
+                toast.info(`Next sequence: ${sequence}`)
+            }
         }
     }
 
@@ -170,25 +178,12 @@ export function CheckpointsFormModal({checkpoint, open, onOpenChange}: Checkpoin
                     {/* Area */}
                     <div className="space-y-2">
                         <Label htmlFor="area_id">Area *</Label>
-                        <Select
-                            value={form.watch('area_id')?.toString() ?? ''}
-                            onValueChange={(value) => {
-                                if (value) {
-                                    handleAreaChange(value)
-                                }
-                            }}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select area"/>
-                            </SelectTrigger>
-                            <SelectContent>
-                                {areasOptions.map((area) => (
-                                    <SelectItem key={area.id} value={area.id.toString()}>
-                                        {area.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <AsyncSelect
+                            placeholder="Select area..."
+                            loadOptions={loadAreas}
+                            value={form.watch('area_id') || null}
+                            onChange={handleAreaChange}
+                        />
                         {form.formState.errors.area_id && (
                             <p className="text-sm text-destructive">{form.formState.errors.area_id.message}</p>
                         )}

@@ -6,8 +6,7 @@ import { useRef, useState, useEffect } from 'react'
 import { Download, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogFooter,

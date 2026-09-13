@@ -112,6 +112,18 @@ export const employeesApi = {
   },
 
   /**
+   * Toggle login access for an employee's user account
+   * POST /api/admin/employees/:id/toggle-login-access
+   */
+  toggleLoginAccess: async (id: number, type: 'web' | 'mobile', enabled: boolean) => {
+    const { data } = await apiClient.post<ApiResponse<{ can_login_web: boolean; can_login_mobile: boolean }>>(
+      `/admin/employees/${id}/toggle-login-access`,
+      { type, enabled }
+    )
+    return data
+  },
+
+  /**
    * Get select options for dropdown
    * GET /api/admin/employees/select-options
    */

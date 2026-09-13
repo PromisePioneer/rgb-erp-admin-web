@@ -31,6 +31,7 @@ interface DailyTaskItemsState {
   bulkDelete: (ids: number[]) => Promise<void>
   setFilters: (filters: Partial<DailyTaskItemsFilters>) => void
   resetFilters: () => void
+  resetForm: () => void
   clearError: () => void
 }
 
@@ -178,6 +179,10 @@ export const useDailyTaskItemsStore = create<DailyTaskItemsState>((set, get) => 
 
   resetFilters: () => {
     set({ filters: defaultFilters })
+  },
+
+  resetForm: () => {
+    set({ selectedItem: null })
   },
 
   clearError: () => {

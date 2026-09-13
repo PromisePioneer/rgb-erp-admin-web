@@ -17,8 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogHeader,
   DialogTitle,

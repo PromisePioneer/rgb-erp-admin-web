@@ -10,8 +10,7 @@ import { Save, Shield } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogHeader,
   DialogTitle,

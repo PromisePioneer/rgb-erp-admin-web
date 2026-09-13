@@ -13,7 +13,7 @@ import {useAuthStore} from '@/stores/auth-store'
 import {useTranslationStore} from '@/stores/translation-store'
 import {requirePrivilegeInBeforeLoad} from '@/lib/privilege-guard'
 import {useNavigate} from '@tanstack/react-router'
-import {ArrowLeft, ShieldCheck, Eye, EyeOff} from 'lucide-react'
+import {ArrowLeft, Eye, EyeOff} from 'lucide-react'
 import {ReportsTable} from '@/features/reports/components/reports-table'
 import {ClientsTable} from '@/features/clients/components/clients-table'
 import {ClientsForm} from '@/features/clients/components/clients-form'
@@ -66,7 +66,7 @@ import {PanicAlertsTable} from '@/features/panic-alerts'
 import {ApprovalsTable} from '@/features/approvals'
 import {ApprovalFlowsTable} from '@/features/approval-flows'
 import {ApprovalTypesTable} from '@/features/approval-types'
-import {CheckpointsTable} from '@/features/checkpoints'
+import {CheckpointsByAreaTable} from '@/features/checkpoints/components/checkpoints-by-area-table'
 import {PatrolReportsTable} from '@/features/patrol-reports'
 import {DailyTaskReportsList} from '@/features/daily-task-reports'
 import {DailyTaskItemsTable} from '@/features/daily-task-items'
@@ -85,6 +85,8 @@ import {
 import {ProductAreasTable} from '@/features/product-areas/components/product-areas-table'
 import {StockOpnameForm} from '@/features/stock-opnames'
 import {MasterDataHub} from '@/features/master-data'
+import {ProcurementHub} from '@/features/procurement'
+import {FinancialReportsHub} from '@/features/financial-reports'
 
 // Root route
 const rootRoute = createRootRoute({
@@ -267,9 +269,8 @@ function LoginPage() {
 
                 <div className="relative z-10 flex flex-1 flex-col justify-center px-16 py-12">
                     <div className="mb-10 flex items-center gap-3">
-                        <div
-                            className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/15 ring-1 ring-sky-400/30">
-                            <ShieldCheck className="h-5 w-5 text-sky-400"/>
+                        <div className="flex h-12 w-12 items-center justify-center">
+                            <img src="/logo-3d.svg" alt="Logo" className="h-full w-full object-contain"/>
                         </div>
                         <span className="font-mono text-xs uppercase tracking-[0.25em] text-slate-400">
               {appTitle}
@@ -319,8 +320,8 @@ function LoginPage() {
             <div className="flex min-h-screen items-center justify-center px-6 py-12 lg:col-span-2">
                 <div className="w-full max-w-sm">
                     <div className="mb-8 flex items-center gap-2 lg:hidden">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                            <ShieldCheck className="h-5 w-5 text-primary"/>
+                        <div className="flex h-10 w-10 items-center justify-center">
+                            <img src="/logo-compact.svg" alt="Logo" className="h-full w-full object-contain"/>
                         </div>
                         <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
               {appTitle}
@@ -450,6 +451,29 @@ const reportsRoute = createRoute({
         requirePrivilegeInBeforeLoad('Field Report', 'View')
     },
     component: ReportsPage,
+})
+
+// Financial Reports Hub
+function FinancialReportsPage() {
+    return (
+        <AuthLayout>
+            <FinancialReportsHub/>
+        </AuthLayout>
+    )
+}
+
+const financialReportsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/financial-reports',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Financial Report', 'View')
+    },
+    component: FinancialReportsPage,
 })
 
 // Clients
@@ -1194,10 +1218,6 @@ const provincesRoute = createRoute({
 function MasterDataPage() {
     return (
         <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Master Data</h2>
-                <p className="text-muted-foreground">Kelola data referensi yang digunakan di seluruh sistem</p>
-            </div>
             <MasterDataHub/>
         </AuthLayout>
     )
@@ -1318,6 +1338,29 @@ const inventoryRoute = createRoute({
         requirePrivilegeInBeforeLoad('Product', 'View')
     },
     component: InventoryPageWrapper,
+})
+
+// Procurement Hub (PR, PO, Reception, Distribution, Fund Request)
+function ProcurementPage() {
+    return (
+        <AuthLayout>
+            <ProcurementHub/>
+        </AuthLayout>
+    )
+}
+
+const procurementRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/procurement',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        // Allow access if user has any procurement privilege
+    },
+    component: ProcurementPage,
 })
 
 // Inventory Tracking (Legacy - redirects to /inventory)
@@ -1957,9 +2000,9 @@ function CheckpointsPage() {
         <AuthLayout>
             <div className="mb-6">
                 <h2 className="text-2xl font-bold mb-2">Checkpoints</h2>
-                <p className="text-muted-foreground">Manage patrol checkpoints for projects</p>
+                <p className="text-muted-foreground">Kelola titik checkpoint patroli per area</p>
             </div>
-            <CheckpointsTable/>
+            <CheckpointsByAreaTable/>
         </AuthLayout>
     )
 }
@@ -2472,6 +2515,7 @@ const routeTree = rootRoute.addChildren([
     dashboardRoute,
     // Fully migrated
     reportsRoute,
+    financialReportsRoute,
     clientsRoute, clientsNewRoute, clientsEditRoute,
     departmentsRoute,
     rolesRoute,
@@ -2501,12 +2545,15 @@ const routeTree = rootRoute.addChildren([
     // Product Areas
     productAreasRoute,
     inventoryTrackingRoute,
-    assetsRoute, assetsNewRoute, assetsEditRoute,
+    // Procurement Hub
+    procurementRoute,
+    // Old routes (keep for backward compatibility)
     purchaseRequestsRoute, purchaseRequestsNewRoute, purchaseRequestsEditRoute,
     purchaseOrdersRoute, purchaseOrdersNewRoute, purchaseOrdersEditRoute,
     fundRequestsRoute, fundRequestsNewRoute, fundRequestsEditRoute,
     distributionRequestsRoute, distributionRequestsNewRoute, distributionRequestsDetailRoute, distributionRequestsEditRoute,
     receptionsRoute, receptionsNewRoute, receptionsEditRoute,
+    assetsRoute, assetsNewRoute, assetsEditRoute,
     stockOpnamesRoute,
     projectsRoute, projectsNewRoute, projectsEditRoute,
     faceEnrollmentsRoute,

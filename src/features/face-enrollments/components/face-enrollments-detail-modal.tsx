@@ -4,8 +4,7 @@
  */
 import { useEffect } from 'react'
 import { User, Calendar, Camera, Shield } from 'lucide-react'
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogHeader,
   DialogTitle,

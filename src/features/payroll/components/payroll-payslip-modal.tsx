@@ -5,8 +5,7 @@
 import { useEffect } from 'react'
 import { Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogHeader,
   DialogTitle,

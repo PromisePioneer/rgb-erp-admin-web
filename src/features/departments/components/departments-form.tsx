@@ -141,10 +141,10 @@ export function DepartmentsForm({ mode, departmentId }: DepartmentsFormProps) {
     try {
       if (mode === 'create') {
         await create(values)
-        navigate({ to: '/departments' })
+        navigate({ to: '/master-data' })
       } else if (departmentId) {
         await update(departmentId, values)
-        navigate({ to: '/departments' })
+        navigate({ to: '/master-data' })
       }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'An error occurred')
@@ -154,7 +154,7 @@ export function DepartmentsForm({ mode, departmentId }: DepartmentsFormProps) {
   return (
     <div className="max-w-2xl">
       <div className="flex items-center gap-4 mb-6">
-        <Link to="/departments">
+        <Link to="/master-data">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -213,7 +213,7 @@ export function DepartmentsForm({ mode, departmentId }: DepartmentsFormProps) {
           />
 
           <div className="flex gap-3 pt-4">
-            <Link to="/departments">
+            <Link to="/master-data">
               <Button type="button" variant="outline">
                 Cancel
               </Button>

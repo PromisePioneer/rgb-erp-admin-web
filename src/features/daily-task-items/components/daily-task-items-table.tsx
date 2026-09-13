@@ -1,360 +1,310 @@
-"use client"
-
-import { useEffect, useState, useCallback } from "react"
-import { useDailyTaskItemsStore } from "../store/daily-task-items-store"
-import { dailyTaskItemsApi } from "../api/daily-task-items-api"
-import { rolesApi, type RoleOption } from "@/features/roles"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+/**
+ * Daily Task Items Table Component
+ * With proper hierarchy display (parent -> children)
+ */
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Plus, Trash2, Upload, ChevronRight, ChevronDown } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { toast } from "sonner"
-import { Plus, Search, Trash2, X, Upload } from "lucide-react"
-import { STATUS_ACTIVE, STATUS_INACTIVE, type DailyTaskItem } from "../types/daily-task-items.types"
-import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { DataTablePagination } from '@/components/ui/data-table-pagination'
+import { DailyTaskItemsFormModal } from './daily-task-items-form-modal'
+import { DailyTaskItemsFilters } from './daily-task-items-filters'
 import { DailyTaskItemsImportModal } from './daily-task-items-import-modal'
+import { useDailyTaskItemsStore } from '../store/daily-task-items-store'
 import { useCanAccess } from '@/lib/privilege-guard'
-
-const STATUS_COLORS: Record<number, string> = {
-  [STATUS_ACTIVE]: "bg-green-100 text-green-800",
-  [STATUS_INACTIVE]: "bg-gray-100 text-gray-800",
-}
-
-const STATUS_LABELS: Record<number, string> = {
-  [STATUS_ACTIVE]: "Aktif",
-  [STATUS_INACTIVE]: "Tidak Aktif",
-}
-
-// Map number to string for form display
-const statusToString = (status: number): string => (status === STATUS_ACTIVE ? "active" : "inactive")
-
-// Map string to number for API
-const stringToStatus = (str: string): number => (str === "active" ? STATUS_ACTIVE : STATUS_INACTIVE)
-
-const formSchema = z.object({
-  name: z.string().min(1, "Nama harus diisi"),
-  description: z.string().optional().nullable(),
-  status: z.enum(["active", "inactive"]),
-  role_id: z.number().optional().nullable(),
-})
-
-type FormValues = z.infer<typeof formSchema>
+import { cn } from '@/lib/utils'
+import type { DailyTaskItem } from '../types/daily-task-items.types'
 
 export function DailyTaskItemsTable() {
   const {
     items,
     isLoading,
-    isSubmitting,
-    filters,
     pagination,
+    filters,
     fetchItems,
-    create,
-    update,
     bulkDelete,
-    setFilters,
-    resetFilters,
+    isSubmitting,
   } = useDailyTaskItemsStore()
 
-  // Local state
-  const [searchValue, setSearchValue] = useState(filters.search || "")
-  const [statusFilter, setStatusFilter] = useState<string>(filters.status === undefined ? "all" : (filters.status === STATUS_ACTIVE ? "active" : "inactive"))
-  const [roleFilter, setRoleFilter] = useState<string>(filters.role_id === undefined ? "all" : String(filters.role_id))
   const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set())
+  const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [expandedParents, setExpandedParents] = useState<Set<number>>(new Set())
+
+  // Modal state
   const [showFormModal, setShowFormModal] = useState(false)
-  const [formMode, setFormMode] = useState<"create" | "edit">("create")
-  const [editingId, setEditingId] = useState<number | null>(null)
-
-  // Roles dropdown state
-  const [roles, setRoles] = useState<RoleOption[]>([])
-
-  // Import modal state
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create')
+  const [editingId, setEditingId] = useState<number | undefined>(undefined)
   const [showImportModal, setShowImportModal] = useState(false)
 
-  // Privilege checks
   const canAdd = useCanAccess('Daily Task Item', 'Add')
 
-  // Form
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      status: "active",
-      role_id: undefined,
-    },
-  })
-
-  // Fetch roles for dropdown
-  const fetchRoles = useCallback(async () => {
-    try {
-      const response = await rolesApi.getSelectOptions()
-      if (response.success) {
-        setRoles(response.data)
-      }
-    } catch (error) {
-      console.error("Failed to fetch roles:", error)
-    }
-  }, [])
-
-  // Fetch on mount
+  // Debounced fetch on filter changes
   useEffect(() => {
-    fetchItems()
-    fetchRoles()
+    const timer = setTimeout(() => {
+      fetchItems({ ...filters, page: 1 })
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [filters.search, filters.status, filters.role_id])
+
+  // Reset selection when data changes
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const newSelection = new Set<number | string>()
+      prev.forEach((id) => {
+        if (items.some((item) => item.id === id)) {
+          newSelection.add(id)
+        }
+      })
+      return newSelection
+    })
+  }, [items])
+
+  // Group items into parents and children
+  const { parents, childrenByParent } = useMemo(() => {
+    const parentItems = items.filter((item) => item.is_root)
+    const childItems = items.filter((item) => !item.is_root)
+    const childrenMap = new Map<number, DailyTaskItem[]>()
+
+    childItems.forEach((child) => {
+      if (child.parent_item_id) {
+        const existing = childrenMap.get(child.parent_item_id) || []
+        childrenMap.set(child.parent_item_id, [...existing, child])
+      }
+    })
+
+    // Sort children by name
+    childrenMap.forEach((children) => {
+      children.sort((a, b) => a.name.localeCompare(b.name))
+    })
+
+    return { parents: parentItems, childrenByParent: childrenMap }
+  }, [items])
+
+  // Toggle parent expansion
+  const toggleExpand = useCallback((parentId: number) => {
+    setExpandedParents((prev) => {
+      const next = new Set(prev)
+      if (next.has(parentId)) {
+        next.delete(parentId)
+      } else {
+        next.add(parentId)
+      }
+      return next
+    })
   }, [])
 
-  // Handle search
-  const handleSearch = useCallback(() => {
-    setFilters({ search: searchValue })
-    fetchItems({ ...filters, search: searchValue, page: 1 })
-  }, [searchValue])
+  // Handle row selection
+  const handleSelect = useCallback((id: number | string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (checked) {
+        next.add(String(id))
+      } else {
+        next.delete(String(id))
+      }
+      return next
+    })
+  }, [])
 
-  // Handle status filter - convert string to number for API
-  const handleStatusFilter = useCallback(
-    (value: string | null) => {
-      const val = value || "all"
-      setStatusFilter(val)
-      // Convert string filter to number for API
-      const status = val === "all" ? undefined : (val === "active" ? STATUS_ACTIVE : STATUS_INACTIVE)
-      setFilters({ status })
-      fetchItems({ ...filters, status, page: 1 })
-    },
-    [filters]
-  )
+  // Handle select all
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(items.map((item) => String(item.id))))
+    } else {
+      setSelectedIds(new Set())
+    }
+  }, [items])
 
-  // Handle role filter
-  const handleRoleFilter = useCallback(
-    (value: string | null) => {
-      const val = value || "all"
-      setRoleFilter(val)
-      const roleId = val === "all" ? undefined : Number(val)
-      setFilters({ role_id: roleId })
-      fetchItems({ ...filters, role_id: roleId, page: 1 })
-    },
-    [filters]
-  )
+  const isAllSelected = items.length > 0 && items.every((item) => selectedIds.has(String(item.id)))
 
-  // Handle pagination
   const handlePageChange = useCallback(
-    (page: number) => {
-      setFilters({ page })
-      fetchItems({ ...filters, page })
+    (newPage: number) => {
+      if (newPage < 1 || newPage > pagination.last_page) return
+      fetchItems({ ...filters, page: newPage })
     },
-    [filters]
+    [fetchItems, filters, pagination.last_page]
   )
 
-  // Reset filters
-  const handleResetFilters = useCallback(() => {
-    setSearchValue("")
-    setStatusFilter("all")
-    setRoleFilter("all")
-    resetFilters()
-    fetchItems({})
-  }, [])
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    setIsDeleting(true)
+    try {
+      await bulkDelete(Array.from(selectedIds).map(Number))
+      setSelectedIds(new Set())
+      setShowDeleteConfirm(false)
+    } catch {
+      // Error handled in store
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
-  // Open create modal
   const handleAddNew = () => {
-    form.reset({ name: "", description: "", status: "active", role_id: undefined })
-    setFormMode("create")
-    setEditingId(null)
+    setFormMode('create')
+    setEditingId(undefined)
     setShowFormModal(true)
   }
 
-  // Open edit modal
-  const handleEdit = async (id: number) => {
-    try {
-      const response = await dailyTaskItemsApi.getById(id)
-      if (response.success) {
-        form.reset({
-          name: response.data.name,
-          description: response.data.description || "",
-          status: statusToString(response.data.status) as "active" | "inactive", // Convert number to string
-          role_id: response.data.role_id || undefined,
-        })
-        setFormMode("edit")
-        setEditingId(id)
-        setShowFormModal(true)
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Gagal mengambil data")
-    }
+  const handleEdit = (item: DailyTaskItem) => {
+    setFormMode('edit')
+    setEditingId(item.id)
+    setShowFormModal(true)
   }
 
-  // Submit form - convert status to number for API
-  const handleSubmit = async (values: FormValues) => {
-    const payload = {
-      ...values,
-      status: stringToStatus(values.status), // Convert string to number
+  // Status badge helper
+  const getStatusBadge = (status: 'active' | 'inactive') => {
+    if (status === 'active') {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          Aktif
+        </span>
+      )
     }
-
-    try {
-      if (formMode === "create") {
-        await create(payload)
-        toast.success("Item berhasil ditambahkan")
-      } else if (editingId) {
-        await update(editingId, payload)
-        toast.success("Item berhasil diperbarui")
-      }
-      setShowFormModal(false)
-      form.reset()
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Terjadi kesalahan")
-    }
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+        Tidak Aktif
+      </span>
+    )
   }
 
-  // Bulk delete
-  const handleBulkDelete = async () => {
-    try {
-      await bulkDelete(Array.from(selectedIds).map(Number))
-      toast.success(`${selectedIds.size} item berhasil dihapus`)
-      setSelectedIds(new Set())
-      setShowDeleteConfirm(false)
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Gagal menghapus item")
-    }
+  // Render parent row with children
+  const renderParentRow = (parent: DailyTaskItem) => {
+    const children = childrenByParent.get(parent.id) || []
+    const isExpanded = expandedParents.has(parent.id)
+    const isSelected = selectedIds.has(String(parent.id))
+    const hasChildren = children.length > 0
+
+    return (
+      <TableRow
+        key={parent.id}
+        className={cn(
+          'cursor-pointer hover:bg-muted/50',
+          isSelected && 'bg-muted/50'
+        )}
+        onClick={() => handleEdit(parent)}
+      >
+        <TableCell className="w-[40px]">
+          <Checkbox
+            checked={isSelected}
+            onChange={(e) => handleSelect(parent.id, e.target.checked)}
+          />
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center gap-2">
+            {hasChildren ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleExpand(parent.id)
+                }}
+                className="p-0.5 hover:bg-muted rounded"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+            ) : (
+              <span className="w-5" />
+            )}
+            <span className="text-yellow-600">📁</span>
+            <span className="font-medium">{parent.name}</span>
+            {hasChildren && (
+              <span className="text-xs text-muted-foreground ml-2">
+                ({children.length} anak)
+              </span>
+            )}
+          </div>
+        </TableCell>
+        <TableCell>
+          <span className="text-sm text-muted-foreground">
+            {parent.role_name || '-'}
+          </span>
+        </TableCell>
+        <TableCell>{getStatusBadge(parent.status)}</TableCell>
+      </TableRow>
+    )
   }
 
-  // Has active filters
-  const hasActiveFilters = searchValue || statusFilter !== "all" || roleFilter !== "all"
+  // Render child rows
+  const renderChildRow = (child: DailyTaskItem) => {
+    const isSelected = selectedIds.has(String(child.id))
 
-  // Column definitions
-  const columns: DataTableColumn<DailyTaskItem>[] = [
-    {
-      accessorKey: 'name',
-      header: 'Nama',
-    },
-    {
-      accessorKey: 'role_name',
-      header: 'Role',
-      cell: (row) => row.role_name || '-',
-    },
-    {
-      accessorKey: 'description',
-      header: 'Deskripsi',
-      cell: (row) => row.description || '-',
-    },
-    {
-      accessorKey: 'status',
-      header: 'Status',
-      cell: (row) => (
-        <Badge className={STATUS_COLORS[row.status]}>
-          {STATUS_LABELS[row.status]}
-        </Badge>
-      ),
-    },
-  ]
-
-  // Create edit handler for onRowClick
-  const handleRowEdit = (item: DailyTaskItem) => handleEdit(item.id)
+    return (
+      <TableRow
+        key={child.id}
+        className={cn(
+          'cursor-pointer hover:bg-muted/50 bg-muted/30',
+          isSelected && 'bg-muted'
+        )}
+        onClick={() => handleEdit(child)}
+      >
+        <TableCell className="w-[40px]">
+          <Checkbox
+            checked={isSelected}
+            onChange={(e) => handleSelect(child.id, e.target.checked)}
+          />
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center gap-2 pl-8">
+            <span className="text-muted-foreground">└──</span>
+            <span>{child.name}</span>
+          </div>
+        </TableCell>
+        <TableCell>
+          <span className="text-sm text-muted-foreground italic">
+            {child.parent_item_name || '-'}
+          </span>
+        </TableCell>
+        <TableCell>{getStatusBadge(child.status)}</TableCell>
+      </TableRow>
+    )
+  }
 
   return (
     <div className="space-y-4">
-      {/* Header & Filters */}
-      <div className="flex justify-between items-center gap-4">
-        <div className="flex items-center gap-2 flex-1">
-          {/* Search */}
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Cari nama..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="pl-9"
-            />
-          </div>
-
-          {/* Role Filter */}
-          <Select value={roleFilter} onValueChange={handleRoleFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Role</SelectItem>
-              {roles.map((role) => (
-                <SelectItem key={role.id} value={String(role.id)}>
-                  {role.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Status Filter */}
-          <Select value={statusFilter} onValueChange={handleStatusFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Status</SelectItem>
-              <SelectItem value="active">Aktif</SelectItem>
-              <SelectItem value="inactive">Tidak Aktif</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Reset Filters */}
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={handleResetFilters}>
-              <X className="h-4 w-4 mr-1" />
-              Reset
-            </Button>
-          )}
-        </div>
-
-        {/* Add & Import Buttons */}
-        <div className="flex gap-2">
-          {canAdd && (
-            <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
+      <div className="flex justify-between items-center">
+        <DailyTaskItemsFilters />
+        {canAdd && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowImportModal(true)}>
               <Upload className="h-4 w-4 mr-1" />
               Import
             </Button>
-          )}
-          {canAdd && (
             <Button onClick={handleAddNew}>
               <Plus className="h-4 w-4 mr-1" />
               Tambah Item
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Table */}
-      <DataTable
-        columns={columns}
-        data={items}
-        pagination={pagination}
-        isLoading={isLoading}
-        onPageChange={handlePageChange}
-        emptyMessage="Tidak ada data"
-        enableRowSelection
-        selectedIds={selectedIds}
-        onSelectionChange={setSelectedIds}
-        bulkActions={
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 px-3 py-2 bg-muted/50 rounded-md border">
+          <span className="text-sm font-medium">{selectedIds.size} dipilih</span>
+          <div className="flex-1" />
           <Button
             variant="destructive"
             size="sm"
@@ -363,9 +313,63 @@ export function DailyTaskItemsTable() {
             <Trash2 className="h-4 w-4 mr-1" />
             Hapus Terpilih
           </Button>
-        }
-        onRowClick={handleRowEdit}
-      />
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[40px]">
+                <Checkbox
+                  checked={isAllSelected}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                />
+              </TableHead>
+              <TableHead>Nama</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 8 }).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                </TableRow>
+              ))
+            ) : items.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                  Tidak ada data
+                </TableCell>
+              </TableRow>
+            ) : (
+              parents.map((parent) => {
+                const children = childrenByParent.get(parent.id) || []
+                const isExpanded = expandedParents.has(parent.id)
+
+                return [
+                  renderParentRow(parent),
+                  isExpanded && children.map((child) => renderChildRow(child))
+                ]
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination */}
+      {pagination.total > 0 && (
+        <DataTablePagination
+          pagination={pagination}
+          onPageChange={handlePageChange}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
@@ -378,94 +382,32 @@ export function DailyTaskItemsTable() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setShowDeleteConfirm(false)}>Batal</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDelete}
-              className="bg-destructive hover:bg-destructive/90"
+              disabled={isDeleting || isSubmitting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Hapus
+              {isDeleting ? 'Menghapus...' : 'Hapus'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Form Modal */}
-      <Dialog open={showFormModal} onOpenChange={setShowFormModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {formMode === "create" ? "Tambah Item Tugas Harian" : "Edit Item Tugas Harian"}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Nama</label>
-              <Input
-                {...form.register("name")}
-                placeholder="Masukkan nama item"
-              />
-              {form.formState.errors.name && (
-                <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Role</label>
-              <select
-                {...form.register("role_id", { valueAsNumber: true })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="">Pilih Role (Opsional)</option>
-                {roles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Deskripsi</label>
-              <textarea
-                {...form.register("description")}
-                placeholder="Masukkan deskripsi (opsional)"
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Status</label>
-              <select
-                {...form.register("status")}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="active">Aktif</option>
-                <option value="inactive">Tidak Aktif</option>
-              </select>
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowFormModal(false)}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Menyimpan..." : "Simpan"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Item Form Modal */}
+      <DailyTaskItemsFormModal
+        open={showFormModal}
+        onOpenChange={setShowFormModal}
+        mode={formMode}
+        itemId={editingId}
+        onSuccess={() => fetchItems(filters)}
+      />
 
       {/* Import Modal */}
       <DailyTaskItemsImportModal
         open={showImportModal}
         onOpenChange={setShowImportModal}
-        onSuccess={() => fetchItems()}
+        onSuccess={() => fetchItems(filters)}
       />
     </div>
   )

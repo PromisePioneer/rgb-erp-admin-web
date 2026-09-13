@@ -145,7 +145,6 @@ function DialogDescription({
 }
 
 export {
-  Dialog,
   DialogClose,
   DialogContent,
   DialogDescription,
@@ -156,3 +155,4 @@ export {
   DialogTitle,
   DialogTrigger,
 }
+export default Dialog

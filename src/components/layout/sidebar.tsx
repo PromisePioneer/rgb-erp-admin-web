@@ -58,6 +58,7 @@ import {
 import {useIsMobile} from '@/hooks/use-mobile'
 import {CommandPalette, useCommandPalette} from '@/components/ui/command-palette'
 import {Topbar} from './topbar'
+import {FloatingCompanySwitcher} from './floating-company-switcher'
 
 // Re-export for backward compatibility
 export {AppSidebar as Sidebar} from "@/components/app-sidebar"
@@ -334,13 +335,13 @@ export function MainLayout({children}: MainLayoutProps) {
 
     return (
         <SidebarProvider>
-            <div className="flex min-h-screen w-full">
+            <div className="flex min-h-screen w-full max-w-[100vw] overflow-hidden">
                 {/* Desktop Sidebar - hidden on mobile */}
                 {!isMobile && <AppSidebar isCollapsed={isCollapsed}/>}
 
                 {/* Content area */}
                 <div className={cn(
-                    "flex flex-col flex-1 min-h-screen transition-all duration-200 ease-in-out",
+                    "flex flex-col flex-1 min-h-screen max-w-full overflow-hidden transition-all duration-200 ease-in-out",
                     !isMobile && (isCollapsed ? "md:ml-16" : "md:ml-[280px]")
                 )}>
                     {/* Topbar */}
@@ -351,9 +352,9 @@ export function MainLayout({children}: MainLayoutProps) {
                     />
 
                     {/* Main Content */}
-                    <main className="flex-1 p-4 sm:p-6 lg:p-8">
-                        <Card className="min-h-[calc(100vh-180px)]">
-                            <div className="p-4 sm:p-6">
+                    <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-hidden">
+                        <Card className="h-full w-full overflow-hidden">
+                            <div className="h-full w-full overflow-auto p-4 sm:p-6">
                                 {children}
                             </div>
                         </Card>
@@ -376,6 +377,9 @@ export function MainLayout({children}: MainLayoutProps) {
 
             {/* Command Palette - rendered at root level */}
             <CommandPaletteRoot/>
+
+            {/* Floating Company Switcher */}
+            <FloatingCompanySwitcher/>
         </SidebarProvider>
     )
 }

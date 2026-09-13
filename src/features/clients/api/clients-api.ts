@@ -70,4 +70,15 @@ export const clientsApi = {
     )
     return data
   },
+
+  /**
+   * Get select options for clients dropdown
+   * GET /api/admin/clients/select-options
+   */
+  getSelectOptions: async (params?: { q?: string; selected?: number }) => {
+    const { data } = await apiClient.get<
+      ApiResponse<{ id: number; name: string; text: string }[]>
+    >('/admin/clients/select-options', { params })
+    return data
+  },
 }

@@ -163,23 +163,23 @@ export function ProvincesTable() {
 
       <DataTable
         columns={columnsWithActions}
-        data={items}
-        pagination={pagination}
-        isLoading={isLoading}
-        onPageChange={handlePageChange}
-        emptyMessage="No provinces found"
-        onRowClick={handleEdit}
-        enableRowSelection
-        selectedIds={selectedIds}
-        onSelectionChange={setSelectedIds}
-        bulkActions={
-          selectedIds.size > 0 && (
-            <Button variant="destructive" size="sm" onClick={() => setShowBulkDeleteDialog(true)}>
-              Delete {selectedIds.size} item(s)
-            </Button>
-          )
-        }
-      />
+          data={items}
+          pagination={pagination}
+          isLoading={isLoading}
+          onPageChange={handlePageChange}
+          emptyMessage="No provinces found"
+          onRowClick={handleEdit}
+          enableRowSelection
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+          bulkActions={
+            selectedIds.size > 0 && (
+              <Button variant="destructive" size="sm" onClick={() => setShowBulkDeleteDialog(true)}>
+                Delete {selectedIds.size} item(s)
+              </Button>
+            )
+          }
+        />
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

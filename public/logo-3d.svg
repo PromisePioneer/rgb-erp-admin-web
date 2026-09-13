@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0ea5e9"/>
+      <stop offset="50%" style="stop-color:#0284c7"/>
+      <stop offset="100%" style="stop-color:#0369a1"/>
+    </linearGradient>
+    <linearGradient id="shieldHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#38bdf8"/>
+      <stop offset="100%" style="stop-color:#0284c7"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+    <filter id="innerShadow">
+      <feOffset dx="0" dy="2"/>
+      <feGaussianBlur stdDeviation="2" result="offset-blur"/>
+      <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
+      <feFlood flood-color="#000" flood-opacity="0.2" result="color"/>
+      <feComposite operator="in" in="color" in2="inverse" result="shadow"/>
+      <feComposite operator="over" in="shadow" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <!-- Shield Shadow -->
+  <path d="M50 8 L85 22 L85 50 C85 72 50 92 50 92 C50 92 15 72 15 50 L15 22 Z"
+        fill="rgba(0,0,0,0.2)" transform="translate(3, 3)"/>
+
+  <!-- Shield Main Body - 3D effect -->
+  <path d="M50 8 L85 22 L85 50 C85 72 50 92 50 92 C50 92 15 72 15 50 L15 22 Z"
+        fill="url(#shieldGrad)" filter="url(#shadow)"/>
+
+  <!-- Shield Highlight - left side -->
+  <path d="M50 8 L85 22 L85 50 C85 72 50 92 50 92 C50 92 50 90 50 8 Z"
+        fill="url(#shieldHighlight)" opacity="0.4"/>
+
+  <!-- Inner Border - 3D effect -->
+  <path d="M50 14 L80 26 L80 50 C80 69 50 87 50 87 C50 87 20 69 20 50 L20 26 Z"
+        fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.5"/>
+
+  <!-- Checkmark - Main -->
+  <path d="M30 48 L42 60 L68 34"
+        fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Checkmark Highlight -->
+  <path d="M30 48 L42 60 L68 34"
+        fill="none" stroke="#e0f2fe" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+</svg>

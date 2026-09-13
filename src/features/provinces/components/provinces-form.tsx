@@ -107,7 +107,7 @@ export function ProvincesForm() {
         await update(provinceId, values)
         toast.success('Province berhasil diperbarui')
       }
-      navigate({ to: '/provinces' })
+      navigate({ to: '/master-data' })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Terjadi kesalahan')
     }
@@ -116,7 +116,7 @@ export function ProvincesForm() {
   return (
     <div className="max-w-xl mx-auto p-6">
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" onClick={() => navigate({ to: '/provinces' })}>
+        <Button variant="ghost" onClick={() => navigate({ to: '/master-data' })}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Kembali
         </Button>
@@ -163,7 +163,7 @@ export function ProvincesForm() {
         </div>
 
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => navigate({ to: '/provinces' })}>
+          <Button type="button" variant="outline" onClick={() => navigate({ to: '/master-data' })}>
             Batal
           </Button>
           <Button type="submit" disabled={isSubmitting || isLoading}>

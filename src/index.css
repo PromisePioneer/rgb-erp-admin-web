@@ -120,6 +120,42 @@
   --sidebar-ring: oklch(0.542 0.034 322.5);
 }
 
+/* ============================================
+   3D Icon Effects - Pure Tailwind Compatible
+   ============================================ */
+
+/* Apply shadow to all SVG icons */
+svg[class*="lucide"] {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+/* Hover effect for icons */
+svg[class*="lucide"]:hover {
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Sidebar specific */
+[data-sidebar] svg[class*="lucide"] {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+}
+
+/* Master data cards */
+.master-card svg[class*="lucide"] {
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.12));
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.master-card:hover svg[class*="lucide"] {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+  transform: translateY(-1px);
+}
+
+/* Stats cards */
+.stats-card svg[class*="lucide"] {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -127,9 +163,16 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
   }
   html {
     @apply font-sans;
+    overflow-x: hidden;
+  }
+  /* Prevent horizontal overflow */
+  #root {
+    @apply max-w-full;
+    overflow-x: hidden;
   }
 
   /* Scrollbar styling for sidebar and other scrollable elements */

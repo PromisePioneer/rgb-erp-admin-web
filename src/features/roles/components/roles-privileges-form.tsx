@@ -76,7 +76,7 @@ export function RolesPrivilegesForm({ roleId }: RolesPrivilegesFormProps) {
 
       } catch (error) {
         toast.error('Failed to load privileges')
-        navigate({ to: '/roles' })
+        navigate({ to: '/master-data' })
       } finally {
         setIsLoading(false)
       }
