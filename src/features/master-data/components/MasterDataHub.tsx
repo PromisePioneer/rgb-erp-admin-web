@@ -22,6 +22,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -40,6 +41,7 @@ import { ProductsTable } from '@/features/products'
 import { AreasTable } from '@/features/areas'
 import { PossTable } from '@/features/poss'
 import { DailyTaskItemsTable } from '@/features/daily-task-items'
+import { ReviewCriteriaTable } from '@/features/daily-task-review-criteria'
 import { ShiftsTable } from '@/features/shifts'
 import { AccountsTable as ChartOfAccountsTable } from '@/features/chart-of-accounts/components/accounts-table'
 import { TangibleAssetClassesTable } from '@/features/tangible-asset-classes/components/tangible-asset-classes-table'
@@ -88,6 +90,7 @@ const allMasterDataItems: MasterDataItem[] = [
 
   // Operasional
   { id: 'daily-task-items', name: 'Daily Task Items', nameId: 'Item Tugas Harian', description: 'Daily task items', descriptionId: 'Item tugas harian', icon: AlertTriangle, section: 'operasional', isImplemented: true },
+  { id: 'daily-task-review-criteria', name: 'Review Criteria', nameId: 'Criteria Review', description: 'Daily task review criteria', descriptionId: 'Criteria review tugas harian', icon: ClipboardCheck, section: 'operasional', isImplemented: true },
 
   // Akunting
   { id: 'chart-of-accounts', name: 'Chart of Accounts', nameId: 'Daftar Akun', description: 'Chart of accounts', descriptionId: 'Chart of accounts', icon: Book, section: 'akunting', isImplemented: true },
@@ -127,6 +130,7 @@ const ItemContent: Record<string, React.ReactNode> = {
   areas: <AreasTable />,
   poss: <PossTable />,
   'daily-task-items': <DailyTaskItemsTable />,
+  'daily-task-review-criteria': <ReviewCriteriaTable />,
   'chart-of-accounts': <ChartOfAccountsTable />,
   'tangible-asset-classes': <TangibleAssetClassesTable />,
   settings: <SettingsForm />,

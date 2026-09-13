@@ -1,12 +1,12 @@
 /**
  * Roles Form Modal Component
- * Create and edit form with parent hierarchy selection
+ * Create and edit form with parent hierarchy selection and company selection
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Save, Shield } from 'lucide-react'
+import { Save, Shield, Building2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +15,10 @@ import Dialog, {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { AsyncSelect } from '@/components/async-select'
 import { useRolesStore } from '../store/roles-store'
+import { companyApi } from '@/features/companies/api/companies-api'
+import type { SelectOption } from '@/components/async-select'
 
 interface RolesFormModalProps {
   open: boolean
@@ -28,6 +31,7 @@ const roleFormSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi').max(255, 'Maksimal 255 karakter'),
   status: z.number(),
   parent_role_id: z.number().nullable().optional(),
+  company_id: z.number().nullable().optional(),
 })
 
 type RoleFormValues = z.infer<typeof roleFormSchema>
@@ -57,6 +61,7 @@ export function RolesFormModal({
       name: '',
       status: 1,
       parent_role_id: null,
+      company_id: null,
     },
   })
 
@@ -67,6 +72,7 @@ export function RolesFormModal({
         name: '',
         status: 1,
         parent_role_id: null,
+        company_id: null,
       })
       hasShownValidationToast.current = false
     }
@@ -119,6 +125,7 @@ export function RolesFormModal({
         name: selectedItem.name,
         status: selectedItem.status,
         parent_role_id: selectedItem.parent_role_id,
+        company_id: selectedItem.company_id,
       })
     }
   }, [mode, selectedItem, open, form])
@@ -133,6 +140,7 @@ export function RolesFormModal({
         name: values.name,
         status: values.status,
         parent_role_id: values.parent_role_id,
+        company_id: values.company_id,
       }
 
       if (mode === 'create') {
@@ -151,6 +159,19 @@ export function RolesFormModal({
 
   // Get roles for parent dropdown (exclude current role to avoid self-reference)
   const parentRoles = allRoles.filter(r => mode === 'create' || r.id !== roleId)
+
+  // Load companies for AsyncSelect
+  const loadCompanies = useCallback(async (search: string): Promise<SelectOption[]> => {
+    try {
+      const companies = await companyApi.getSelectOptions({ q: search })
+      return companies.map((c) => ({
+        value: c.id,
+        label: c.name,
+      }))
+    } catch {
+      return []
+    }
+  }, [])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -181,10 +202,34 @@ export function RolesFormModal({
             )}
           </div>
 
+          {/* Company */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              Company *
+            </label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Pilih company untuk role ini. Kosongkan jika role bersama (bisa dipakai semua company).
+            </p>
+            <AsyncSelect
+              value={form.watch('company_id')}
+              onChange={(value) => form.setValue('company_id', value as number | null)}
+              loadOptions={loadCompanies}
+              placeholder="-- Role Bersama (Semua Company) --"
+              defaultOptions={true}
+              className="w-full"
+            />
+            {form.formState.errors.company_id && (
+              <p className="text-sm text-red-500">
+                {form.formState.errors.company_id.message}
+              </p>
+            )}
+          </div>
+
           {/* Parent Role (Approver) */}
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Atasan (Approver) *
+              Atasan (Approver)
             </label>
             <p className="text-xs text-muted-foreground mb-2">
               Pilih role yang akan menyetujui request dari role ini. Kosongkan jika tidak butuh approval.

@@ -15,8 +15,15 @@ export interface Role {
   status: number
   parent_role_id: number | null
   parent_role_name: string | null
+  company_id: number | null
   created_at: string
   updated_at: string
+}
+
+export interface RoleWithHierarchy extends Role {
+  is_root: boolean
+  level?: number
+  child_count?: number
 }
 
 export interface RolesFilters {
