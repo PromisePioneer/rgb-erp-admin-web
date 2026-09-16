@@ -24,6 +24,7 @@ export interface MasterDataStats {
   bank_accounts: number
   daily_task_items: number
   daily_task_review_criteria: number
+  umk: number
 }
 
 export interface MasterDataStatsResponse {

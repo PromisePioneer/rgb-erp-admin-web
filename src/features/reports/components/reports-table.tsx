@@ -53,11 +53,11 @@ export function ReportsTable() {
     setIsDeleting(true)
     try {
       await bulkDelete(ids)
-      toast.success(`${ids.length} report(s) deleted`)
+      toast.success(`${ids.length} laporan berhasil dihapus`)
       setSelectedIds(new Set())
       setShowBulkDeleteDialog(false)
     } catch {
-      toast.error('Delete failed')
+      toast.error('Gagal menghapus')
     } finally {
       setIsDeleting(false)
     }
@@ -103,10 +103,10 @@ export function ReportsTable() {
       {/* Bulk Actions Bar */}
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 px-3 py-2 bg-muted/50 rounded-md border">
-          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <span className="text-sm font-medium">{selectedIds.size} dipilih</span>
           <div className="flex-1" />
           <Button variant="destructive" size="sm" onClick={() => setShowBulkDeleteDialog(true)}>
-            Delete {selectedIds.size} item(s)
+            Hapus {selectedIds.size} data
           </Button>
         </div>
       )}
@@ -119,15 +119,15 @@ export function ReportsTable() {
                 <Checkbox
                   checked={isAllSelected}
                   onChange={(e) => handleSelectAll(e.target.checked)}
-                  aria-label="Select all"
+                  aria-label="Pilih semua"
                 />
               </TableHead>
-              <TableHead className="w-[100px]">Date</TableHead>
-              <TableHead className="w-[80px]">Time</TableHead>
-              <TableHead>Employee</TableHead>
+              <TableHead className="w-[100px]">Tanggal</TableHead>
+              <TableHead className="w-[80px]">Jam</TableHead>
+              <TableHead>Karyawan</TableHead>
               <TableHead>Client</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>Lokasi</TableHead>
+              <TableHead>Deskripsi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -143,9 +143,9 @@ export function ReportsTable() {
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8">
                   <div className="text-muted-foreground">
-                    <p className="text-lg font-medium mb-1">No reports found</p>
+                    <p className="text-lg font-medium mb-1">Belum ada laporan</p>
                     <p className="text-sm">
-                      Try adjusting your filters or check back later
+                      Sesuaikan filter atau coba lagi nanti
                     </p>
                   </div>
                 </TableCell>
@@ -155,35 +155,35 @@ export function ReportsTable() {
                 const { date, time } = formatDateTime(report.created_at)
                 const isSelected = selectedIds.has(String(report.id))
                 return (
-                <TableRow key={report.id} className={isSelected ? 'bg-muted/50' : ''}>
-                  <TableCell>
-                    <Checkbox
-                      checked={isSelected}
-                      onChange={(e) => handleRowSelect(report.id, e.target.checked)}
-                      aria-label={`Select row ${report.id}`}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {date}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {time}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {report.employee_name}
-                  </TableCell>
-                  <TableCell>{report.client_name}</TableCell>
-                  <TableCell className="max-w-[150px] truncate">
-                    {report.location}
-                  </TableCell>
-                  <TableCell className="max-w-[250px]">
-                    <p className="truncate" title={report.note}>
-                      {report.note}
-                    </p>
-                  </TableCell>
-                </TableRow>
+                  <TableRow key={report.id} className={isSelected ? 'bg-muted/50' : ''}>
+                    <TableCell>
+                      <Checkbox
+                        checked={isSelected}
+                        onChange={(e) => handleRowSelect(report.id, e.target.checked)}
+                        aria-label={`Pilih baris ${report.id}`}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {date}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {time}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {report.employee_name}
+                    </TableCell>
+                    <TableCell>{report.client_name}</TableCell>
+                    <TableCell className="max-w-[150px] truncate">
+                      {report.location}
+                    </TableCell>
+                    <TableCell className="max-w-[250px]">
+                      <p className="truncate" title={report.note}>
+                        {report.note}
+                      </p>
+                    </TableCell>
+                  </TableRow>
                 )
               })
             )}
@@ -195,9 +195,9 @@ export function ReportsTable() {
       {pagination.total > 0 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
-            {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-            {pagination.total} results
+            Menampilkan {(pagination.page - 1) * pagination.limit + 1} sampai{' '}
+            {Math.min(pagination.page * pagination.limit, pagination.total)} dari{' '}
+            {pagination.total} hasil
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -209,7 +209,7 @@ export function ReportsTable() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm">
-              Page {pagination.page} of {pagination.total_pages}
+              Halaman {pagination.page} dari {pagination.total_pages}
             </span>
             <Button
               variant="outline"
@@ -229,7 +229,7 @@ export function ReportsTable() {
           <AlertDialogHeader>
             <AlertDialogTitle>Konfirmasi Hapus Massal</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus {selectedIds.size} report(s)? Tindakan tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus {selectedIds.size} laporan? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -33,6 +33,9 @@ interface SchedulesState {
   // Area filter state
   selectedAreaId: number | null
 
+  // Template download filter state
+  selectedClientId: number | null
+
   // Actions
   fetchSchedules: (params?: SchedulesFilters) => Promise<void>
   fetchCalendarData: (params?: { month?: string; search?: string }) => Promise<void>
@@ -46,6 +49,7 @@ interface SchedulesState {
   resetForm: () => void
   clearError: () => void
   setSelectedAreaId: (areaId: number | null) => void
+  setSelectedClientId: (clientId: number | null) => void
 
   // Calendar helpers
   getFilteredCalendarRows: () => EmployeeScheduleRow[]
@@ -83,6 +87,7 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
   calendarDates: [],
   currentMonth: new Date().toISOString().substring(0, 7), // YYYY-MM
   selectedAreaId: null,
+  selectedClientId: null,
 
   // Actions
   fetchSchedules: async (params?: SchedulesFilters) => {
@@ -225,6 +230,10 @@ export const useSchedulesStore = create<SchedulesState>((set, get) => ({
 
   setSelectedAreaId: (areaId: number | null) => {
     set({ selectedAreaId: areaId })
+  },
+
+  setSelectedClientId: (clientId: number | null) => {
+    set({ selectedClientId: clientId, selectedAreaId: null }) // Reset area when client changes
   },
 
   // Calendar helpers

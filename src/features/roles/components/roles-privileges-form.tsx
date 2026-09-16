@@ -45,14 +45,20 @@ export function RolesPrivilegesForm({ roleId }: RolesPrivilegesFormProps) {
       try {
         // Fetch web privileges
         const webResponse = await rolesApi.getPrivileges(roleId)
-        setPrivileges(webResponse.data?.privileges ?? [])
-        setRoleName(webResponse.data?.role_name ?? '')
+
+        // Handle different API response structures
+        const webData = webResponse?.data
+        const privilegesData = webData?.privileges ?? []
+        const roleNameData = webData?.role_name ?? ''
+
+        setPrivileges(privilegesData)
+        setRoleName(roleNameData)
 
         // Initialize web privilege checked state
         const parentChecked: Record<number, boolean> = {}
         const childChecked: Record<number, Record<number, boolean>> = {}
 
-        webResponse.data?.privileges.forEach((group: PrivilegeGroup) => {
+        privilegesData.forEach((group: PrivilegeGroup) => {
           parentChecked[group.id] = group.has_privilege
           childChecked[group.id] = {}
           group.children?.forEach((child: PrivilegeChild) => {
@@ -65,11 +71,14 @@ export function RolesPrivilegesForm({ roleId }: RolesPrivilegesFormProps) {
 
         // Fetch mobile privileges
         const mobileResponse = await rolesApi.getMobilePrivileges(roleId)
-        setMobilePrivileges(mobileResponse.data?.mobile_privileges ?? [])
+
+        // Handle different API response structures
+        const mobileData = (mobileResponse?.data as any)?.mobile_privileges ?? []
+        setMobilePrivileges(mobileData)
 
         // Initialize mobile privilege checked state
         const mobileChecked: Record<number, boolean> = {}
-        mobileResponse.data?.mobile_privileges.forEach((p: MobilePrivilege) => {
+        mobileData.forEach((p: MobilePrivilege) => {
           mobileChecked[p.id] = p.has_privilege
         })
         setCheckedMobilePrivileges(mobileChecked)
@@ -186,7 +195,7 @@ export function RolesPrivilegesForm({ roleId }: RolesPrivilegesFormProps) {
     <div className="max-w-4xl">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/roles' })}>
+        <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/master-data' })}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
@@ -302,7 +311,7 @@ export function RolesPrivilegesForm({ roleId }: RolesPrivilegesFormProps) {
 
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-6">
-        <Button variant="outline" onClick={() => navigate({ to: '/roles' })}>
+        <Button variant="outline" onClick={() => navigate({ to: '/master-data' })}>
           Batal
         </Button>
         <Button onClick={handleSubmit} disabled={isSubmitting}>

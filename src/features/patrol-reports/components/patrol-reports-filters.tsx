@@ -1,7 +1,6 @@
 /**
  * Patrol Reports Filters Component
  */
-import { useEffect } from 'react'
 import { Calendar, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -16,14 +15,7 @@ import { usePatrolReportsStore } from '../store/patrol-reports-store'
 import type { PatrolReportsFilters as FiltersType } from '../types/patrol-reports.types'
 
 export function PatrolReportsFilters() {
-  const { filters, setFilters, resetFilters, projects, fetchProjects } = usePatrolReportsStore()
-
-  // Fetch projects on mount if not loaded
-  useEffect(() => {
-    if (projects.length === 0) {
-      fetchProjects()
-    }
-  }, [projects.length, fetchProjects])
+  const { filters, setFilters, resetFilters } = usePatrolReportsStore()
 
   // Get current month in YYYY-MM format
   const currentMonth = new Date().toISOString().slice(0, 7)
@@ -40,28 +32,6 @@ export function PatrolReportsFilters() {
           className="pl-9"
         />
       </div>
-
-      {/* Project filter */}
-      <Select
-        value={filters.project_id?.toString() ?? 'all'}
-        onValueChange={(value) => {
-          if (value) {
-            setFilters({ project_id: value === 'all' ? undefined : parseInt(value) })
-          }
-        }}
-      >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="All Projects" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Projects</SelectItem>
-          {projects.map((project) => (
-            <SelectItem key={project.id} value={project.id.toString()}>
-              {project.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
 
       {/* Status filter */}
       <Select
@@ -87,7 +57,7 @@ export function PatrolReportsFilters() {
       </Select>
 
       {/* Clear button */}
-      {(filters.month !== currentMonth || filters.project_id || filters.status) && (
+      {(filters.month !== currentMonth || filters.status) && (
         <Button variant="ghost" size="sm" onClick={resetFilters}>
           <X className="h-4 w-4 mr-1" />
           Clear

@@ -3,7 +3,7 @@
  * Full CRUD with DataTable and modal form
  */
 import {useEffect, useCallback, useState, useRef} from 'react'
-import {Plus, Trash2, MapPin, Key, QrCodeIcon, Printer} from 'lucide-react'
+import {Plus, Trash2, MapPin, Key, QrCodeIcon, Printer, Loader2} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {
     AlertDialog,
@@ -24,6 +24,22 @@ import {toast} from 'sonner'
 import {apiClient} from "@/lib/api-client.ts";
 import {QRCodeSVG} from 'qrcode.react'
 
+interface QRData {
+    qr_content: string
+    checkpoint: {
+        id: number
+        code: string
+        name: string
+        area_name?: string
+        client_name?: string
+        has_secret?: boolean
+        lat?: number
+        lng?: number
+        sequence_order?: number
+        radius_meters?: number
+    }
+}
+
 export function CheckpointsTable() {
     const {
         items,
@@ -43,9 +59,38 @@ export function CheckpointsTable() {
 
     // QR Preview Modal State
     const [showQRModal, setShowQRModal] = useState(false)
-    const [qrCheckpoint] = useState<{code: string, name: string, qr_content: string} | null>(null)
-    const [isLoadingQR] = useState(false)
+    const [qrCheckpoint, setQrCheckpoint] = useState<QRData | null>(null)
+    const [isLoadingQR, setIsLoadingQR] = useState(false)
     const qrPrintRef = useRef<HTMLDivElement>(null)
+
+    // Fetch QR data for a checkpoint
+    const fetchQRData = useCallback(async (checkpoint: Checkpoint) => {
+        setIsLoadingQR(true)
+        setShowQRModal(true)
+        try {
+            const {data} = await apiClient.get<{
+                success: boolean
+                data: QRData
+            }>(`/admin/checkpoints/${checkpoint.id}/qr`)
+
+            if (data.success) {
+                setQrCheckpoint(data.data)
+            } else {
+                toast.error('Failed to load QR data')
+                setShowQRModal(false)
+            }
+        } catch {
+            toast.error('Failed to fetch QR code')
+            setShowQRModal(false)
+        } finally {
+            setIsLoadingQR(false)
+        }
+    }, [])
+
+    // Handle view QR details
+    const handleViewQR = useCallback((checkpoint: Checkpoint) => {
+        fetchQRData(checkpoint)
+    }, [fetchQRData])
 
     // Single source of truth for fetch - debounced, primitive dependencies
     useEffect(() => {
@@ -124,7 +169,7 @@ export function CheckpointsTable() {
             <!DOCTYPE html>
             <html lang="en">
             <head>
-                <title>Print QR Code - ${qrCheckpoint?.code}</title>
+                <title>Print QR Code - ${qrCheckpoint?.checkpoint?.code}</title>
                 <style>
                     @page { size: 100mm 150mm; margin: 0; }
                     body {
@@ -192,7 +237,7 @@ export function CheckpointsTable() {
             }
 
             const link = document.createElement('a')
-            link.download = `QR-${qrCheckpoint?.code}.png`
+            link.download = `QR-${qrCheckpoint?.checkpoint?.code}.png`
             link.href = canvas.toDataURL('image/png')
             link.click()
             toast.success('QR code downloaded')
@@ -414,6 +459,25 @@ export function CheckpointsTable() {
         </span>
             ),
         },
+        {
+            id: 'actions',
+            header: '',
+            cell: (row) => (
+                <div className="flex items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            handleViewQR(row)
+                        }}
+                        title="View QR Code"
+                    >
+                        <QrCodeIcon className="h-4 w-4 text-blue-600"/>
+                    </Button>
+                </div>
+            ),
+        },
     ]
 
     // Bulk actions
@@ -488,57 +552,109 @@ export function CheckpointsTable() {
 
             {/* QR Code Preview Modal */}
             <AlertDialog open={showQRModal} onOpenChange={setShowQRModal}>
-                <AlertDialogContent className="sm:max-w-md">
+                <AlertDialogContent className="sm:max-w-lg">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>QR Code - {qrCheckpoint?.name}</AlertDialogTitle>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                            <QrCodeIcon className="h-5 w-5"/>
+                            Detail QR Code
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                            Scan QR ini dengan aplikasi patroli mobile
+                            Scan QR ini dengan aplikasi patroli mobile untuk melakukanabsen di checkpoint ini
                         </AlertDialogDescription>
                     </AlertDialogHeader>
 
-                    <div className="flex flex-col items-center py-4">
+                    <div className="py-4">
                         {isLoadingQR ? (
-                            <div className="flex items-center justify-center p-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            <div className="flex flex-col items-center justify-center py-12">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+                                <p className="mt-2 text-sm text-muted-foreground">Memuat data QR...</p>
                             </div>
                         ) : qrCheckpoint ? (
-                            <>
+                            <div className="space-y-4">
                                 {/* QR Code Display */}
                                 <div ref={qrPrintRef} className="qr-print-area">
-                                    <div className="text-center p-4 border-2 border-gray-200 rounded-lg">
-                                        <p className="font-bold text-lg mb-2">{qrCheckpoint.name}</p>
-                                        <QRCodeSVG
-                                            value={qrCheckpoint.qr_content}
-                                            size={200}
-                                            level="M"
-                                            includeMargin={true}
-                                        />
-                                        <p className="font-mono text-sm mt-2">{qrCheckpoint.code}</p>
-                                        <p className="text-xs text-gray-500 mt-2">
+                                    <div className="text-center p-6 border-2 border-dashed border-gray-300 rounded-xl bg-gradient-to-b from-gray-50 to-white">
+                                        {/* Header */}
+                                        <div className="mb-4">
+                                            <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                                                {qrCheckpoint.checkpoint.client_name || qrCheckpoint.checkpoint.area_name || 'Unknown Area'}
+                                            </p>
+                                            <p className="font-bold text-xl mt-1">{qrCheckpoint.checkpoint.name}</p>
+                                        </div>
+
+                                        {/* QR Code */}
+                                        <div className="inline-block p-3 bg-white rounded-lg shadow-sm border border-gray-200">
+                                            <QRCodeSVG
+                                                value={qrCheckpoint.qr_content}
+                                                size={200}
+                                                level="M"
+                                                includeMargin={true}
+                                            />
+                                        </div>
+
+                                        {/* Code */}
+                                        <p className="font-mono text-sm mt-4 font-semibold bg-muted px-3 py-1.5 rounded-md inline-block">
+                                            {qrCheckpoint.checkpoint.code}
+                                        </p>
+
+                                        {/* Instructions */}
+                                        <p className="text-xs text-muted-foreground mt-4">
                                             Scan dengan aplikasi patroli mobile
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="flex gap-2 mt-4">
+                                {/* QR Content Info */}
+                                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                                    <h4 className="text-sm font-semibold text-foreground">Informasi QR</h4>
+                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                        <div>
+                                            <p className="text-muted-foreground text-xs">Kode</p>
+                                            <p className="font-mono font-medium">{qrCheckpoint.checkpoint.code}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground text-xs">Client</p>
+                                            <p className="font-medium truncate">{qrCheckpoint.checkpoint.client_name || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground text-xs">OTP</p>
+                                            <p className={`font-medium ${qrCheckpoint.checkpoint.has_secret ? 'text-green-600' : 'text-gray-400'}`}>
+                                                {qrCheckpoint.checkpoint.has_secret ? '✓ Aktif' : '✗ Nonaktif'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground text-xs">Area</p>
+                                            <p className="font-medium truncate">{qrCheckpoint.checkpoint.area_name || '-'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2 justify-center">
                                     <Button onClick={handlePrintQR} variant="outline">
                                         <Printer className="h-4 w-4 mr-2"/>
                                         Print QR
                                     </Button>
-                                    <Button onClick={handleDownloadQR}>
+                                    <Button onClick={handleDownloadQR} variant="outline">
                                         <QrCodeIcon className="h-4 w-4 mr-2"/>
-                                        Download
+                                        Download PNG
                                     </Button>
                                 </div>
-                            </>
+                            </div>
                         ) : (
-                            <p className="text-muted-foreground">Failed to load QR code</p>
+                            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                                <QrCodeIcon className="h-12 w-12 mb-2 opacity-20"/>
+                                <p>Gagal memuat QR code</p>
+                            </div>
                         )}
                     </div>
 
                     <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setShowQRModal(false)}>
-                            Close
+                        <AlertDialogCancel onClick={() => {
+                            setShowQRModal(false)
+                            setQrCheckpoint(null)
+                        }}>
+                            Tutup
                         </AlertDialogCancel>
                     </AlertDialogFooter>
                 </AlertDialogContent>

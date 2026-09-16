@@ -80,7 +80,6 @@ import {
   List,
   Search,
 } from "lucide-react"
-import { useCommandPalette } from '@/components/ui/command-palette'
 
 // Icon map
 const iconMap: Record<string, LucideIcon> = {
@@ -384,32 +383,148 @@ function NavMenu({
     }
   }
 
-  // Command Palette Button Component
-  function CommandPaletteButton() {
-    const {setOpen} = useCommandPalette()
+  // Inline Search Component
+  function InlineSearch() {
+    const { t, isLoaded } = useTranslationStore()
+    const navigate = useNavigate()
+    const [query, setQuery] = React.useState("")
+    const [isOpen, setIsOpen] = React.useState(false)
+    const inputRef = React.useRef<HTMLInputElement>(null)
+    const dropdownRef = React.useRef<HTMLDivElement>(null)
+
+    // Flatten all navigation items for search
+    const allItems = React.useMemo(() => {
+      const items: { label: string; path: string; icon: string; section: string }[] = []
+      navigationSections.forEach(section => {
+        section.items.forEach(item => {
+          items.push({
+            label: getTranslatedLabel(item.label, t, isLoaded),
+            path: item.path,
+            icon: item.icon || 'list',
+            section: section.label
+          })
+          // Include children
+          if (item.children) {
+            item.children.forEach(child => {
+              items.push({
+                label: getTranslatedLabel(child.label, t, isLoaded),
+                path: child.path,
+                icon: child.icon || 'list',
+                section: section.label
+              })
+            })
+          }
+        })
+      })
+      return items
+    }, [t, isLoaded])
+
+    // Filter items based on query
+    const filteredItems = React.useMemo(() => {
+      if (!query.trim()) return []
+      const lowerQuery = query.toLowerCase()
+      return allItems.filter(item =>
+        item.label.toLowerCase().includes(lowerQuery) ||
+        item.path.toLowerCase().includes(lowerQuery)
+      ).slice(0, 10) // Limit to 10 results
+    }, [query, allItems])
+
+    // Close dropdown when clicking outside
+    React.useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target as Node) &&
+          inputRef.current &&
+          !inputRef.current.contains(event.target as Node)
+        ) {
+          setIsOpen(false)
+        }
+      }
+
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
+
+    const handleSelect = (path: string) => {
+      navigate({ to: path })
+      setQuery("")
+      setIsOpen(false)
+    }
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false)
+        setQuery("")
+      }
+    }
 
     return (
-        <button
-            onClick={() => setOpen(true)}
-            className="flex items-center gap-2 h-9 w-full px-3 rounded-md border border-sidebar-border bg-sidebar-accent/50 hover:bg-sidebar-accent text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors"
-        >
-            <Search className="h-4 w-4 shrink-0"/>
-            <span className="text-sm flex-1 text-left">Search menus...</span>
-            <kbd
-                className="pointer-events-none hidden sm:flex h-5 select-none items-center gap-1 rounded border bg-sidebar-accent px-1.5 font-mono text-[10px] font-medium text-sidebar-foreground/60">
-                <span className="text-xs">⌘</span>K
-            </kbd>
-        </button>
+      <div className="relative px-2 py-3">
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/50" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setIsOpen(true)
+            }}
+            onFocus={() => setIsOpen(true)}
+            onKeyDown={handleKeyDown}
+            placeholder="Cari menu..."
+            className="flex h-9 w-full rounded-md border border-sidebar-border bg-sidebar-accent/50 pl-9 pr-3 py-2 text-sm placeholder:text-sidebar-foreground/50 focus:bg-sidebar-accent focus:outline-none focus:ring-1 focus:ring-sidebar-ring transition-colors"
+          />
+          <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex h-5 select-none items-center gap-1 rounded border bg-sidebar-accent px-1.5 font-mono text-[10px] font-medium text-sidebar-foreground/60">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </div>
+
+        {/* Dropdown Results */}
+        {isOpen && filteredItems.length > 0 && (
+          <div
+            ref={dropdownRef}
+            className="absolute left-2 right-2 mt-1 z-50 bg-card rounded-lg border border-border shadow-lg overflow-hidden"
+          >
+            <div className="py-1 max-h-[300px] overflow-y-auto">
+              {filteredItems.map((item, index) => {
+                const Icon = iconMap[item.icon] || List
+                return (
+                  <button
+                    key={`${item.path}-${index}`}
+                    onClick={() => handleSelect(item.path)}
+                    className="flex items-center gap-3 w-full px-3 py-2 text-sm text-left hover:bg-accent transition-colors"
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-sidebar-foreground/60" />
+                    <span className="flex-1 truncate">{item.label}</span>
+                    <span className="text-xs text-sidebar-foreground/40">{item.section}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* No results */}
+        {isOpen && query.trim() && filteredItems.length === 0 && (
+          <div
+            ref={dropdownRef}
+            className="absolute left-2 right-2 mt-1 z-50 bg-card rounded-lg border border-border shadow-lg p-4 text-center text-sm text-muted-foreground"
+          >
+            Tidak ada hasil untuk "{query}"
+          </div>
+        )}
+      </div>
     )
   }
 
   return (
     <TooltipProvider delayDuration={0}>
       <SidebarGroup className="px-2 py-0">
-        {/* Search Button */}
-        <div className="px-2 py-3">
-          <CommandPaletteButton/>
-        </div>
+        {/* Search Input - Clickable inline search */}
+        <InlineSearch/>
 
         <SidebarMenu className="gap-0">
           {filteredSections.map((section, sectionIndex) => {

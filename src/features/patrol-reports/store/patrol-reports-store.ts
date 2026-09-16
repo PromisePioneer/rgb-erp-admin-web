@@ -9,26 +9,27 @@ import type {
   PatrolReportsFilters,
   PatrolReportsPagination,
   PatrolStats,
-  ProjectOption,
+  PatrolRound,
+  PatrolAreaRounds,
 } from '../types/patrol-reports.types'
 import { patrolReportsApi } from '../api/patrol-reports-api'
 
 interface PatrolReportsState {
   // State
   items: PatrolSession[]
+  rounds: PatrolAreaRounds[]     // New: grouped by area with checkpoint details
   selectedItem: PatrolSessionDetail | null
   stats: PatrolStats | null
   isLoading: boolean
   error: string | null
   filters: PatrolReportsFilters
   pagination: PatrolReportsPagination
-  projects: ProjectOption[]
 
   // Actions
   fetchSessions: (params?: PatrolReportsFilters) => Promise<void>
+  fetchRounds: (params?: PatrolReportsFilters) => Promise<void>
   fetchById: (sessionId: number) => Promise<void>
   fetchStats: () => Promise<void>
-  fetchProjects: () => Promise<void>
   bulkDelete: (ids: number[]) => Promise<void>
   setFilters: (filters: Partial<PatrolReportsFilters>) => void
   resetFilters: () => void
@@ -61,13 +62,13 @@ const initialStats: PatrolStats = {
 export const usePatrolReportsStore = create<PatrolReportsState>((set, get) => ({
   // Initial state
   items: [],
+  rounds: [],
   selectedItem: null,
   stats: null,
   isLoading: false,
   error: null,
   filters: initialFilters,
   pagination: initialPagination,
-  projects: [],
 
   // Actions
   fetchSessions: async (params?: PatrolReportsFilters) => {
@@ -88,6 +89,25 @@ export const usePatrolReportsStore = create<PatrolReportsState>((set, get) => ({
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to fetch patrol reports'
+      set({ error: message, isLoading: false })
+    }
+  },
+
+  fetchRounds: async (params?: PatrolReportsFilters) => {
+    set({ isLoading: true, error: null })
+
+    try {
+      const currentFilters = { ...get().filters, ...params }
+      const response = await patrolReportsApi.getRounds(currentFilters)
+
+      set({
+        rounds: response.data,
+        pagination: response.meta ?? get().pagination,
+        isLoading: false,
+      })
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to fetch patrol rounds'
       set({ error: message, isLoading: false })
     }
   },
@@ -116,15 +136,6 @@ export const usePatrolReportsStore = create<PatrolReportsState>((set, get) => ({
     } catch (error) {
       console.error('Failed to fetch patrol stats:', error)
       set({ stats: initialStats })
-    }
-  },
-
-  fetchProjects: async () => {
-    try {
-      const response = await patrolReportsApi.getProjects()
-      set({ projects: response.data })
-    } catch (error) {
-      console.error('Failed to fetch projects:', error)
     }
   },
 
@@ -161,6 +172,7 @@ export const usePatrolReportsStore = create<PatrolReportsState>((set, get) => ({
   reset: () => {
     set({
       items: [],
+      rounds: [],
       selectedItem: null,
       stats: null,
       isLoading: false,

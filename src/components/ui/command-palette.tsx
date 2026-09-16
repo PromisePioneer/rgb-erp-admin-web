@@ -1,6 +1,6 @@
 /**
  * Command Palette Component
- * Dropdown search menu for sidebar navigation
+ * Dropdown search menu for sidebar navigation (cmdk)
  */
 import * as React from 'react'
 import { useState, useEffect, useRef } from 'react'
@@ -26,18 +26,15 @@ import {
   Scan,
   ClipboardList,
   ShoppingCart,
-  Inbox,
   Boxes,
-  FolderKanban,
   ScanFace,
   AlertTriangle,
   Clock,
   Coins,
   Receipt,
-  X,
 } from 'lucide-react'
 
-interface CommandPaletteItem {
+interface CommandItem {
   id: string
   label: string
   path: string
@@ -45,40 +42,40 @@ interface CommandPaletteItem {
   category: string
 }
 
-const menuItems: CommandPaletteItem[] = [
+const menuItems: CommandItem[] = [
   { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, category: 'Overview' },
-  { id: 'master-data', label: 'Master Data', path: '/master-data', icon: Database, category: 'Master Data' },
-  { id: 'chart-of-accounts', label: 'Chart of Accounts', path: '/chart-of-accounts', icon: Book, category: 'Accounting' },
-  { id: 'journal-entries', label: 'Journal Entries', path: '/journal-entries', icon: FileText, category: 'Accounting' },
-  { id: 'opening-balance', label: 'Opening Balance', path: '/opening-balance', icon: Scale, category: 'Accounting' },
-  { id: 'fixed-assets', label: 'Fixed Assets', path: '/fixed-assets', icon: Building, category: 'Accounting' },
-  { id: 'accounting-periods', label: 'Accounting Periods', path: '/accounting-periods', icon: Calendar, category: 'Accounting' },
-  { id: 'employees', label: 'Employees', path: '/employees', icon: Users, category: 'HR' },
-  { id: 'attendance', label: 'Attendance', path: '/attendance', icon: Clock, category: 'HR' },
-  { id: 'schedules', label: 'Work Schedules', path: '/schedules', icon: Calendar, category: 'HR' },
-  { id: 'shifts', label: 'Shifts', path: '/shifts', icon: Clock, category: 'HR' },
-  { id: 'bank-accounts', label: 'Bank Accounts', path: '/bank-accounts', icon: FolderKanban, category: 'Finance' },
-  { id: 'salary-components', label: 'Salary Components', path: '/salary-components', icon: Coins, category: 'Finance' },
-  { id: 'invoices', label: 'Invoices', path: '/invoices', icon: Receipt, category: 'Finance' },
-  { id: 'payroll', label: 'Payroll', path: '/payroll', icon: FolderKanban, category: 'Finance' },
-  { id: 'warehouses', label: 'Warehouses', path: '/warehouses', icon: Warehouse, category: 'Inventory' },
-  { id: 'product-categories', label: 'Product Categories', path: '/product-categories', icon: Layers, category: 'Inventory' },
-  { id: 'products', label: 'Products', path: '/products', icon: Package, category: 'Inventory' },
-  { id: 'inventory-tracking', label: 'Inventory Tracking', path: '/inventory-tracking', icon: Scan, category: 'Inventory' },
-  { id: 'purchase-requests', label: 'Purchase Requests', path: '/purchase-requests', icon: ClipboardList, category: 'Inventory' },
-  { id: 'purchase-orders', label: 'Purchase Orders', path: '/purchase-orders', icon: ShoppingCart, category: 'Inventory' },
-  { id: 'stock-opnames', label: 'Stock Opname', path: '/stock-opnames', icon: Boxes, category: 'Inventory' },
-  { id: 'stock-card', label: 'Stock Card', path: '/stock-card', icon: Layers, category: 'Inventory' },
-  { id: 'projects', label: 'Projects', path: '/projects', icon: FolderKanban, category: 'Projects' },
-  { id: 'face-enrollments', label: 'Face Enrollments', path: '/face-enrollments', icon: ScanFace, category: 'Security' },
-  { id: 'panic-alerts', label: 'Panic Alerts', path: '/panic-alerts', icon: AlertTriangle, category: 'Security' },
-  { id: 'approvals', label: 'Approvals', path: '/approvals', icon: Inbox, category: 'Security' },
-  { id: 'daily-task-items', label: 'Daily Task Items', path: '/daily-task-items', icon: ClipboardList, category: 'Security' },
+  { id: 'master-data', label: 'Master Data', path: '/master-data', icon: Database, category: 'Umum' },
+  { id: 'chart-of-accounts', label: 'Chart of Accounts', path: '/chart-of-accounts', icon: Book, category: 'Akuntansi' },
+  { id: 'journal-entries', label: 'Jurnal Umum', path: '/journal-entries', icon: FileText, category: 'Akuntansi' },
+  { id: 'opening-balance', label: 'Saldo Awal', path: '/opening-balance', icon: Scale, category: 'Akuntansi' },
+  { id: 'fixed-assets', label: 'Aset Tetap', path: '/fixed-assets', icon: Building, category: 'Akuntansi' },
+  { id: 'accounting-periods', label: 'Periode Akuntansi', path: '/accounting-periods', icon: Calendar, category: 'Akuntansi' },
+  { id: 'employees', label: 'Karyawan', path: '/employees', icon: Users, category: 'HR' },
+  { id: 'attendance', label: 'Kehadiran', path: '/attendance', icon: Clock, category: 'HR' },
+  { id: 'schedules', label: 'Jadwal Kerja', path: '/schedules', icon: Calendar, category: 'HR' },
+  { id: 'shifts', label: 'Shift', path: '/shifts', icon: Clock, category: 'HR' },
+  { id: 'bank-accounts', label: 'Rekening Bank', path: '/bank-accounts', icon: ClipboardList, category: 'Keuangan' },
+  { id: 'salary-components', label: 'Komponen Gaji', path: '/salary-components', icon: Coins, category: 'Keuangan' },
+  { id: 'invoices', label: 'Invoice', path: '/invoices', icon: Receipt, category: 'Keuangan' },
+  { id: 'payroll', label: 'Payroll', path: '/payroll', icon: Coins, category: 'Keuangan' },
+  { id: 'warehouses', label: 'Gudang', path: '/warehouses', icon: Warehouse, category: 'Inventori' },
+  { id: 'product-categories', label: 'Kategori Produk', path: '/product-categories', icon: Layers, category: 'Inventori' },
+  { id: 'products', label: 'Produk', path: '/products', icon: Package, category: 'Inventori' },
+  { id: 'inventory-tracking', label: 'Tracking Inventori', path: '/inventory', icon: Scan, category: 'Inventori' },
+  { id: 'purchase-requests', label: 'Pengajuan Pembelian', path: '/purchase-requests', icon: ClipboardList, category: 'Inventori' },
+  { id: 'purchase-orders', label: 'Purchase Order', path: '/purchase-orders', icon: ShoppingCart, category: 'Inventori' },
+  { id: 'stock-opnames', label: 'Stock Opname', path: '/stock-opnames', icon: Boxes, category: 'Inventori' },
+  { id: 'stock-card', label: 'Kartu Stok', path: '/stock-card', icon: Layers, category: 'Inventori' },
+  { id: 'projects', label: 'Proyek', path: '/projects', icon: Building, category: 'Proyek' },
+  { id: 'face-enrollments', label: 'Face Enrollment', path: '/face-enrollments', icon: ScanFace, category: 'Keamanan' },
+  { id: 'panic-alerts', label: 'Panic Alert', path: '/panic-alerts', icon: AlertTriangle, category: 'Keamanan' },
+  { id: 'approvals', label: 'Persetujuan', path: '/approvals', icon: ClipboardList, category: 'Keamanan' },
+  { id: 'daily-task-items', label: 'Item Tugas Harian', path: '/daily-task-items', icon: ClipboardList, category: 'Keamanan' },
   { id: 'users', label: 'Users', path: '/users', icon: UserCog, category: 'Admin' },
   { id: 'clients', label: 'Clients', path: '/clients', icon: Building2, category: 'Admin' },
-  { id: 'departments', label: 'Departments', path: '/departments', icon: Briefcase, category: 'Admin' },
+  { id: 'departments', label: 'Departemen', path: '/departments', icon: Briefcase, category: 'Admin' },
   { id: 'roles', label: 'Roles', path: '/roles', icon: UserCog, category: 'Admin' },
-  { id: 'settings', label: 'Settings', path: '/settings', icon: Settings, category: 'Admin' },
+  { id: 'settings', label: 'Pengaturan', path: '/settings', icon: Settings, category: 'Admin' },
 ]
 
 interface CommandPaletteProps {
@@ -87,21 +84,18 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
-  const [search, setSearch] = React.useState('')
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 50)
-      setSearch('')
     }
   }, [open])
 
   const handleSelect = (path: string) => {
     navigate({ to: path })
     onOpenChange(false)
-    setSearch('')
   }
 
   if (!open) return null
@@ -112,45 +106,34 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       onClick={() => onOpenChange(false)}
     >
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50" />
+      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
 
       {/* Search Panel */}
       <div
         className="relative mx-auto mt-[15vh] w-full max-w-md bg-card rounded-xl shadow-2xl border border-border overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Search Input */}
-        <div className="flex items-center border-b border-border px-4">
-          <Search className="h-5 w-5 text-muted-foreground shrink-0" />
-          <input
-            ref={inputRef}
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search menus..."
-            className="flex-1 h-12 bg-transparent border-0 outline-none text-sm placeholder:text-muted-foreground"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="p-1 hover:bg-accent rounded"
-            >
-              <X className="h-4 w-4 text-muted-foreground" />
-            </button>
-          )}
-          <kbd className="ml-2 pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:flex">
-            ESC
-          </kbd>
-        </div>
+        <Command shouldFilter={true}>
+          {/* Search Input */}
+          <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+            <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
+            <Command.Input
+              ref={inputRef}
+              placeholder="Ketik untuk mencari menu..."
+              className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground"
+            />
+            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:flex">
+              ESC
+            </kbd>
+          </div>
 
-        {/* Results - using cmdk Command */}
-        <Command className="overflow-y-auto max-h-[300px]" shouldFilter={true}>
-          <Command.List className="overflow-y-auto max-h-[300px] py-2">
+          {/* Results */}
+          <Command.List className="overflow-y-auto max-h-[300px] p-2">
             <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
-              No results found.
+              Tidak ada hasil.
             </Command.Empty>
 
-            <Command.Group heading="Menus" className="px-2">
+            <Command.Group heading="Menu" className="px-2 py-1 text-xs text-muted-foreground">
               {menuItems.map((item) => {
                 const Icon = item.icon
                 return (
@@ -173,19 +156,16 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium sm:flex">
-              ↑
+            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] sm:flex">
+              ↑↓
             </kbd>
-            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium sm:flex">
-              ↓
-            </kbd>
-            <span className="ml-1">navigate</span>
+            <span>Navigasi</span>
           </div>
           <div className="flex items-center gap-1">
-            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium sm:flex">
+            <kbd className="pointer-events-none hidden h-5 select-none items-center rounded border bg-muted px-1.5 font-mono text-[10px]">
               ↵
             </kbd>
-            <span className="ml-1">select</span>
+            <span>Pilih</span>
           </div>
         </div>
       </div>

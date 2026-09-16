@@ -1,7 +1,63 @@
 /**
- * Patrol Report Type Definitions
- * API endpoint: /api/admin/patrol-reports
+ * Patrol Reports Type Definitions
+ * API endpoints: /api/admin/patrol-reports & /api/admin/patrol-reports/rounds
  */
+
+// Checkpoint scan detail
+export interface PatrolCheckpointScan {
+  id: number
+  name: string
+  sequence_order: number
+  scanned: boolean
+  scanned_at: string | null
+  employee_id: number | null
+  employee_name: string | null
+}
+
+// Round with checkpoint details (grouped by area)
+export interface PatrolRoundWithCheckpoints {
+  round_id: number
+  round_number: number
+  start_time: string
+  date: string
+  shift_id: number | null
+  shift_name: string
+  total_checkpoints: number
+  scanned_checkpoints: number
+  progress_percent: number
+  status: 'completed' | 'skipped'
+  status_text: string
+  checkpoints: PatrolCheckpointScan[]
+}
+
+// Area with its rounds
+export interface PatrolAreaRounds {
+  area_id: number
+  area_name: string
+  client_id: number | null
+  client_name: string
+  total_rounds: number
+  rounds: PatrolRoundWithCheckpoints[]
+}
+
+// Legacy patrol round (old structure)
+export interface PatrolRound {
+  id: number | null
+  round_id: number | null
+  round_number: number
+  start_time: string
+  area_id: number | null
+  client_id: number | null
+  employee_id: number | null
+  employee_name: string | null
+  area_name: string
+  status: 'completed' | 'in_progress' | 'incomplete' | 'failed' | 'skipped'
+  status_text: string
+  scanned_count: number
+  total_checkpoints: number
+  progress: string
+  progress_percent: number
+}
 
 export interface PatrolSession {
   id: number
@@ -11,6 +67,7 @@ export interface PatrolSession {
   project_id: number
   project_name: string
   round_number: string
+  time_based_round_number: number
   round_start_time: string
   total_checkpoints: number
   scanned_count: number
@@ -59,6 +116,7 @@ export interface PatrolSessionDetail {
     employee_code: string
     project_name: string
     round_number: string
+    time_based_round_number: number
     round_start_time: string
     status: string
     status_text: string
@@ -109,8 +167,3 @@ export interface ApiResponse<T> {
   message?: string
 }
 
-// Select options
-export interface ProjectOption {
-  id: number
-  name: string
-}

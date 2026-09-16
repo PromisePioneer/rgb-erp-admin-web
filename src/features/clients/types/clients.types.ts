@@ -19,6 +19,7 @@ export interface Client {
   client_type_id: number
   client_type_name: string | null
   area_count: number
+  company_id: number | null
   created_at: string
   updated_at: string
 }

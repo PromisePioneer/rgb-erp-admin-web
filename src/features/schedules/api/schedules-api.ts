@@ -113,7 +113,7 @@ export const schedulesApi = {
    * Get shifts select options
    * GET /api/admin/schedules/shifts/select-options
    */
-  getShiftsSelectOptions: async (params?: { q?: string }) => {
+  getShiftsSelectOptions: async (params?: { area_id?: number; q?: string }) => {
     const { data } = await apiClient.get<ApiResponse<SelectOption[]>>(
       '/admin/schedules/shifts/select-options',
       { params }

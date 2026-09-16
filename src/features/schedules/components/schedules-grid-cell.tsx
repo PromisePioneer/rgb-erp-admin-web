@@ -47,11 +47,6 @@ export function SchedulesGridCell({
           <div className={`text-sm font-semibold truncate ${isOff ? 'text-white/90' : ''}`}>
             {schedule.shift_name || 'Jadwal'}
           </div>
-          {schedule.pos_name && (
-            <div className={`text-[10px] truncate ${isOff ? 'text-white/70' : 'text-white/80'}`}>
-              {schedule.pos_name}
-            </div>
-          )}
         </div>
       </div>
     )

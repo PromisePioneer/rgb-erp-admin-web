@@ -13,23 +13,26 @@ import { Input } from '@/components/ui/input'
 import { Lock, Eye, EyeOff, ShieldAlert } from 'lucide-react'
 
 const changePasswordSchema = z.object({
-  current_password: z.string().min(1, 'Password saat ini wajib diisi'),
   new_password: z.string()
     .min(8, 'Password minimal 8 karakter')
     .regex(/[A-Z]/, 'Password harus mengandung huruf besar')
     .regex(/[a-z]/, 'Password harus mengandung huruf kecil')
     .regex(/[0-9]/, 'Password harus mengandung angka'),
   new_password_confirmation: z.string().min(1, 'Konfirmasi password wajib diisi'),
-}).refine((data) => data.new_password === data.new_password_confirmation, {
-  message: 'Password baru dan konfirmasi tidak cocok',
-  path: ['new_password_confirmation'],
+}).superRefine((data, ctx) => {
+  if (data.new_password !== data.new_password_confirmation) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Password baru dan konfirmasi tidak cocok',
+      path: ['new_password_confirmation'],
+    })
+  }
 })
 
 type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>
 
 export function ForcePasswordChangeModal() {
   const { user, changePassword } = useAuthStore()
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -37,10 +40,10 @@ export function ForcePasswordChangeModal() {
   const form = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: {
-      current_password: '',
       new_password: '',
       new_password_confirmation: '',
     },
+    mode: 'onTouched',
   })
 
   // Only show if force_password_change is true
@@ -51,7 +54,8 @@ export function ForcePasswordChangeModal() {
   const onSubmit = async (values: ChangePasswordFormValues) => {
     setIsLoading(true)
     try {
-      await changePassword(values.current_password, values.new_password)
+      // For force password change, current password is not required (user has default password)
+      await changePassword('', values.new_password)
       toast.success('Password berhasil diubah. Silakan login ulang.')
       // Force logout after password change
       window.location.href = '/logout'
@@ -82,30 +86,6 @@ export function ForcePasswordChangeModal() {
 
         {/* Form */}
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Current Password */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Password Saat Ini</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type={showCurrentPassword ? 'text' : 'password'}
-                placeholder="Masukkan password saat ini"
-                className="pl-10 pr-10"
-                {...form.register('current_password')}
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {form.formState.errors.current_password && (
-              <p className="text-sm text-red-500">{form.formState.errors.current_password.message}</p>
-            )}
-          </div>
-
           {/* New Password */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Password Baru</label>

@@ -264,12 +264,11 @@ export function AsyncSelect({
         className={cn(
           'flex items-center justify-between w-full h-10 px-3 py-2 text-sm rounded-md border bg-background',
           'hover:bg-accent hover:text-accent-foreground',
-          'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted',
           readOnly && !isDisabled && 'cursor-pointer',
-          isOpen && 'ring-2 ring-ring ring-offset-2',
           !selectedOption && 'text-muted-foreground',
-          error && 'border-destructive border-2'
+          error && 'border-destructive'
         )}
       >
         <span className={cn('truncate', !selectedOption && 'text-muted-foreground')}>

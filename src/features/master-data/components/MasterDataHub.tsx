@@ -1,9 +1,9 @@
 /**
  * Master Data Hub Component
- * Horizontal tabs navigation at top + Content area
+ * Sidebar navigation on left + Content area on right
  */
 
-import {useState, useEffect, useCallback, useRef} from 'react'
+import {useState, useEffect, useCallback} from 'react'
 import {
     Globe,
     Building2,
@@ -20,9 +20,11 @@ import {
     Coins,
     Search,
     X,
-    ChevronLeft,
+    ChevronDown,
     ChevronRight,
     ClipboardCheck,
+    PanelLeftClose,
+    PanelLeft,
 } from 'lucide-react'
 import type {LucideIcon} from 'lucide-react'
 import {cn} from '@/lib/utils'
@@ -47,6 +49,7 @@ import {AccountsTable as ChartOfAccountsTable} from '@/features/chart-of-account
 import {TangibleAssetClassesTable} from '@/features/tangible-asset-classes/components/tangible-asset-classes-table'
 import {SettingsForm} from '@/features/settings'
 import {SalaryComponentsTable} from '@/features/salary-components'
+import {UmkTable} from '@/features/umk'
 
 // Master data item configuration
 interface MasterDataItem {
@@ -73,6 +76,17 @@ const allMasterDataItems: MasterDataItem[] = [
         icon: Globe,
         section: 'referensi',
         countKey: 'provinces',
+        isImplemented: true
+    },
+    {
+        id: 'umk',
+        name: 'UMK',
+        nameId: 'UMK',
+        description: 'Regional Minimum Wage',
+        descriptionId: 'Upah Minimum Kota',
+        icon: Coins,
+        section: 'referensi',
+        countKey: 'umk',
         isImplemented: true
     },
     {
@@ -309,6 +323,7 @@ const sections = [
 // Map item ID to component
 const ItemContent: Record<string, React.ReactNode> = {
     provinces: <ProvincesTable/>,
+    umk: <UmkTable/>,
     departments: <DepartmentsTable/>,
     clients: <ClientsTable/>,
     employees: <EmployeesTable/>,
@@ -331,8 +346,8 @@ const ItemContent: Record<string, React.ReactNode> = {
 }
 
 export function MasterDataHub() {
+    // Load from localStorage on initial render
     const [selectedItemId, setSelectedItemId] = useState<string>(() => {
-        // Load from localStorage on initial render
         if (typeof window !== 'undefined') {
             return localStorage.getItem('master-data-last-tab') || 'provinces'
         }
@@ -341,9 +356,8 @@ export function MasterDataHub() {
     const [stats, setStats] = useState<MasterDataStats | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
-    const tabsContainerRef = useRef<HTMLDivElement>(null)
-    const [canScrollLeft, setCanScrollLeft] = useState(false)
-    const [canScrollRight, setCanScrollRight] = useState(false)
+    const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
     const fetchStats = useCallback(async () => {
         try {
@@ -369,185 +383,230 @@ export function MasterDataHub() {
         }
     }, [selectedItemId])
 
-    // Check scroll position for arrows
-    const checkScroll = () => {
-        if (tabsContainerRef.current) {
-            const {scrollLeft, scrollWidth, clientWidth} = tabsContainerRef.current
-            setCanScrollLeft(scrollLeft > 0)
-            setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1)
-        }
-    }
-
+    // Auto-expand section when selecting an item
     useEffect(() => {
-        checkScroll()
-        window.addEventListener('resize', checkScroll)
-        return () => window.removeEventListener('resize', checkScroll)
-    }, [])
-
-    const scrollTabs = (direction: 'left' | 'right') => {
-        if (tabsContainerRef.current) {
-            const scrollAmount = 200
-            tabsContainerRef.current.scrollBy({
-                left: direction === 'left' ? -scrollAmount : scrollAmount,
-                behavior: 'smooth'
+        const selectedItem = allMasterDataItems.find(i => i.id === selectedItemId)
+        if (selectedItem) {
+            setCollapsedSections(prev => {
+                const next = new Set(prev)
+                next.delete(selectedItem.section)
+                return next
             })
         }
-    }
+    }, [selectedItemId])
 
     const getCount = (item: MasterDataItem): number => {
         if (!stats || !item.countKey) return 0
         return (stats as any)[item.countKey] || 0
     }
 
-    // Filter items based on search
-    const filteredItems = allMasterDataItems.filter((item) =>
-        !searchQuery ||
-        item.nameId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    // Get items for a section
+    const getSectionItems = (sectionId: string) => {
+        return allMasterDataItems.filter(item =>
+            item.section === sectionId && (
+                !searchQuery ||
+                item.nameId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                item.name.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+        )
+    }
 
-    const selectedItem = allMasterDataItems.find((i) => i.id === selectedItemId)
-    const SelectedContent = selectedItemId ? ItemContent[selectedItemId] : null
+    // Toggle section collapse
+    const toggleSection = (sectionId: string) => {
+        setCollapsedSections(prev => {
+            const next = new Set(prev)
+            if (next.has(sectionId)) {
+                next.delete(sectionId)
+            } else {
+                next.add(sectionId)
+            }
+            return next
+        })
+    }
 
     // Get section color for selected item
+    const selectedItem = allMasterDataItems.find((i) => i.id === selectedItemId)
     const selectedSection = sections.find(s => s.id === selectedItem?.section)
     const sectionColor = selectedSection?.color || ''
 
+    const SelectedContent = selectedItemId ? ItemContent[selectedItemId] : null
+
     return (
-        <div className="flex flex-col h-screen overflow-hidden">
-            {/* ===== TOP BAR WITH TABS ===== */}
-            <div className="shrink-0 border-b bg-card">
-                {/* Header with search and navigation */}
-                <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/30">
-                    {/* Search */}
-                    <div className="relative flex-1 max-w-xs">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
-                        <input
-                            type="text"
-                            placeholder="Cari..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-8 py-1.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        />
-                        {searchQuery && (
-                            <button
-                                onClick={() => setSearchQuery('')}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-accent rounded"
-                            >
-                                <X className="h-3 w-3"/>
-                            </button>
+        <div className="flex h-screen overflow-hidden">
+            {/* ===== SIDEBAR ===== */}
+            <div
+                className={cn(
+                    'shrink-0 border-r bg-card flex flex-col transition-all duration-300',
+                    isSidebarCollapsed ? 'w-16' : 'w-72'
+                )}
+            >
+                {/* Sidebar Header */}
+                <div className="shrink-0 border-b p-3">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                            className={cn(
+                                'p-1.5 rounded-md transition-colors hover:bg-accent',
+                                isSidebarCollapsed ? 'mx-auto' : ''
+                            )}
+                            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        >
+                            {isSidebarCollapsed ? (
+                                <PanelLeft className="h-4 w-4 text-muted-foreground"/>
+                            ) : (
+                                <PanelLeftClose className="h-4 w-4 text-muted-foreground"/>
+                            )}
+                        </button>
+
+                        {!isSidebarCollapsed && (
+                            <span className="font-semibold text-sm">Master Data</span>
                         )}
                     </div>
 
-                    {/* Section indicator */}
-                    {selectedSection && (
-                        <span className={cn('px-2 py-1 rounded-full text-xs font-medium border', sectionColor)}>
-              {selectedSection.name}
-            </span>
+                    {/* Search (only when expanded) */}
+                    {!isSidebarCollapsed && (
+                        <div className="relative mt-3">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
+                            <input
+                                type="text"
+                                placeholder="Cari..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-9 pr-8 py-1.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-accent rounded"
+                                >
+                                    <X className="h-3 w-3"/>
+                                </button>
+                            )}
+                        </div>
                     )}
-
-                    {/* Current item name */}
-                    <span className="font-medium text-sm truncate flex-1">
-            {selectedItem?.nameId || 'Pilih data'}
-          </span>
-
-                    {/* Scroll navigation arrows */}
-                    <div className="flex gap-1">
-                        <button
-                            onClick={() => scrollTabs('left')}
-                            className={cn(
-                                'p-1.5 rounded-md transition-colors',
-                                canScrollLeft ? 'hover:bg-accent text-foreground' : 'text-muted-foreground/30 cursor-not-allowed'
-                            )}
-                            disabled={!canScrollLeft}
-                        >
-                            <ChevronLeft className="h-4 w-4"/>
-                        </button>
-                        <button
-                            onClick={() => scrollTabs('right')}
-                            className={cn(
-                                'p-1.5 rounded-md transition-colors',
-                                canScrollRight ? 'hover:bg-accent text-foreground' : 'text-muted-foreground/30 cursor-not-allowed'
-                            )}
-                            disabled={!canScrollRight}
-                        >
-                            <ChevronRight className="h-4 w-4"/>
-                        </button>
-                    </div>
                 </div>
 
-                {/* Horizontal Scrollable Tabs */}
-                <div className="relative">
-                    {/* Left fade */}
-                    {canScrollLeft && (
-                        <div
-                            className="absolute left-0 top-0 bottom-0 w-8 bg-linear-to-r from-card to-transparent z-10 pointer-events-none"/>
-                    )}
+                {/* Sections & Items */}
+                <div className="flex-1 overflow-y-auto py-2">
+                    {sections.map(section => {
+                        const sectionItems = getSectionItems(section.id)
+                        if (sectionItems.length === 0) return null
 
-                    {/* Scrollable tabs container */}
-                    <div
-                        ref={tabsContainerRef}
-                        onScroll={checkScroll}
-                        className="flex gap-1 px-3 py-2 overflow-x-auto scrollbar-hide"
-                        style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}
-                    >
-                        {filteredItems.map((item) => {
-                            const Icon = item.icon
-                            const isSelected = selectedItemId === item.id
-                            const itemSection = sections.find(s => s.id === item.section)
-                            const count = getCount(item)
+                        const isCollapsed = collapsedSections.has(section.id)
+                        const SectionIcon = isCollapsed ? ChevronRight : ChevronDown
 
-                            return (
+                        return (
+                            <div key={section.id} className="mb-1">
+                                {/* Section Header */}
                                 <button
-                                    key={item.id}
-                                    onClick={() => setSelectedItemId(item.id)}
-                                    disabled={!item.isImplemented}
+                                    onClick={() => toggleSection(section.id)}
                                     className={cn(
-                                        'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap shrink-0',
-                                        'border',
-                                        isSelected
-                                            ? cn('bg-primary text-primary-foreground border-primary shadow-sm', itemSection?.color.replace('bg-', 'bg-opacity-20 '))
-                                            : 'bg-background text-muted-foreground border-transparent hover:bg-accent hover:text-accent-foreground',
-                                        !item.isImplemented && 'opacity-50 cursor-not-allowed'
+                                        'w-full flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors',
+                                        'hover:bg-accent/50',
+                                        isSidebarCollapsed && 'justify-center'
                                     )}
                                 >
-                                    <Icon className="h-3.5 w-3.5"/>
-                                    <span>{item.nameId}</span>
-                                    {count > 0 && (
-                                        <span className={cn(
-                                            'px-1.5 py-0.5 rounded-full text-[10px] font-semibold',
-                                            isSelected ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
-                                        )}>
-                      {count}
-                    </span>
+                                    <SectionIcon className="h-4 w-4 shrink-0"/>
+                                    {!isSidebarCollapsed && (
+                                        <>
+                                            <span className={cn(
+                                                'px-2 py-0.5 rounded-full text-xs font-medium border',
+                                                section.color
+                                            )}>
+                                                {section.name}
+                                            </span>
+                                        </>
                                     )}
                                 </button>
-                            )
-                        })}
-                    </div>
 
-                    {/* Right fade */}
-                    {canScrollRight && (
-                        <div
-                            className="absolute right-0 top-0 bottom-0 w-8 bg-linear-to-l from-card to-transparent z-10 pointer-events-none"/>
-                    )}
+                                {/* Section Items */}
+                                {!isCollapsed && !isSidebarCollapsed && (
+                                    <div className="ml-2">
+                                        {sectionItems.map(item => {
+                                            const Icon = item.icon
+                                            const isSelected = selectedItemId === item.id
+                                            const count = getCount(item)
+
+                                            return (
+                                                <button
+                                                    key={item.id}
+                                                    onClick={() => setSelectedItemId(item.id)}
+                                                    disabled={!item.isImplemented}
+                                                    className={cn(
+                                                        'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all',
+                                                        isSelected
+                                                            ? 'bg-primary text-primary-foreground'
+                                                            : 'hover:bg-accent',
+                                                        !item.isImplemented && 'opacity-50 cursor-not-allowed'
+                                                    )}
+                                                >
+                                                    <Icon className="h-4 w-4 shrink-0"/>
+                                                    <span className="flex-1 text-left truncate">{item.nameId}</span>
+                                                    {count > 0 && (
+                                                        <span className={cn(
+                                                            'px-1.5 py-0.5 rounded-full text-[10px] font-semibold',
+                                                            isSelected
+                                                                ? 'bg-primary-foreground/20 text-primary-foreground'
+                                                                : 'bg-muted text-muted-foreground'
+                                                        )}>
+                                                            {count}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
                 </div>
+
+                {/* Current Selection (only when collapsed) */}
+                {isSidebarCollapsed && selectedItem && (
+                    <div className="shrink-0 border-t p-2">
+                        <div className="flex flex-col items-center gap-1">
+                            <selectedItem.icon className="h-5 w-5 text-primary"/>
+                            <span className="text-[10px] text-center truncate w-full" title={selectedItem.nameId}>
+                                {selectedItem.nameId.slice(0, 8)}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* ===== CONTENT AREA ===== */}
-            <div className="flex-1 min-h-0 overflow-auto">
-                <div className="p-4 md:p-6">
-                    {isLoading ? (
-                        <div className="flex h-full items-center justify-center">
-                            <div className="flex flex-col items-center gap-3">
-                                <div
-                                    className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"/>
-                                <span className="text-sm text-muted-foreground">Memuat data...</span>
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                {/* Content Header */}
+                <div className="shrink-0 border-b bg-muted/30 px-6 py-3">
+                    <div className="flex items-center gap-3">
+                        {selectedSection && (
+                            <span className={cn('px-2 py-1 rounded-full text-xs font-medium border', sectionColor)}>
+                                {selectedSection.name}
+                            </span>
+                        )}
+                        <div className="h-4 w-px bg-border"/>
+                        <span className="font-medium">
+                            {selectedItem?.nameId || 'Pilih data'}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Content Body */}
+                <div className="flex-1 min-h-0 overflow-auto">
+                    <div className="p-4 md:p-6">
+                        {isLoading ? (
+                            <div className="flex h-full items-center justify-center">
+                                <div className="flex flex-col items-center gap-3">
+                                    <div
+                                        className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"/>
+                                    <span className="text-sm text-muted-foreground">Memuat data...</span>
+                                </div>
                             </div>
-                        </div>
-                    ) : (
-                        SelectedContent
-                    )}
+                        ) : (
+                            SelectedContent
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

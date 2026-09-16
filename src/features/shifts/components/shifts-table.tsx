@@ -21,14 +21,6 @@ import { useShiftsStore } from '../store/shifts-store'
 import { ShiftsFilters } from './shifts-filters'
 import type { Shift } from '../types/shifts.types'
 
-const SHIFT_TYPE_LABELS: Record<string, string> = {
-  morning: 'Morning',
-  middle: 'Middle',
-  night: 'Night',
-  off: 'Off',
-  back_office: 'Back Office',
-}
-
 export function ShiftsTable() {
   const {
     items,
@@ -104,30 +96,25 @@ export function ShiftsTable() {
   // Define columns
   const columns: DataTableColumn<Shift>[] = [
     {
+      accessorKey: 'code',
+      header: 'Code',
+      cell: (row) => (
+        <span className="font-mono font-medium bg-muted px-2 py-0.5 rounded text-sm">
+          {row.code ?? '-'}
+        </span>
+      ),
+    },
+    {
       accessorKey: 'name',
       header: 'Shift Name',
       cell: (row) => <span className="font-medium">{row.name}</span>,
     },
     {
-      accessorKey: 'type',
-      header: 'Type',
+      accessorKey: 'client_name',
+      header: 'Client',
       cell: (row) => (
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            row.type === 'morning'
-              ? 'bg-yellow-100 text-yellow-800'
-              : row.type === 'night'
-              ? 'bg-blue-100 text-blue-800'
-              : row.type === 'middle'
-              ? 'bg-orange-100 text-orange-800'
-              : row.type === 'off'
-              ? 'bg-gray-100 text-gray-800'
-              : row.type === 'back_office'
-              ? 'bg-purple-100 text-purple-800'
-              : 'bg-gray-100 text-gray-800'
-          }`}
-        >
-          {row.type ? SHIFT_TYPE_LABELS[row.type] || row.type : '-'}
+        <span className="text-sm">
+          {row.client_name ?? <span className="text-muted-foreground">-</span>}
         </span>
       ),
     },
@@ -136,24 +123,24 @@ export function ShiftsTable() {
       header: 'Area',
       cell: (row) => (
         <span className="text-sm">
-          {row.area_name ?? <span className="text-muted-foreground">Global</span>}
+          {row.area_name ?? <span className="text-muted-foreground">-</span>}
         </span>
       ),
     },
     {
       accessorKey: 'start_time',
-      header: 'Start Time',
+      header: 'Start',
       cell: (row) => (
-        <span className="font-mono">
+        <span className="font-mono text-sm">
           {row.start_time ?? '-'}
         </span>
       ),
     },
     {
       accessorKey: 'end_time',
-      header: 'End Time',
+      header: 'End',
       cell: (row) => (
-        <span className="font-mono">
+        <span className="font-mono text-sm">
           {row.end_time ?? '-'}
         </span>
       ),
