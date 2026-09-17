@@ -9,7 +9,6 @@ import type {
   PatrolReportsFilters,
   PatrolReportsPagination,
   PatrolStats,
-  PatrolRound,
   PatrolAreaRounds,
 } from '../types/patrol-reports.types'
 import { patrolReportsApi } from '../api/patrol-reports-api'

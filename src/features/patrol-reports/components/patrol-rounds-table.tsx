@@ -19,25 +19,6 @@ export function PatrolRoundsTable(props?: PatrolRoundsTableProps) {
         })
     }, [filters?.month, filters?.project_id])
 
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'completed':
-                return <CheckCircle className="h-4 w-4 text-green-600" />
-            case 'skipped':
-                return <AlertCircle className="h-4 w-4 text-gray-400" />
-            default:
-                return <AlertCircle className="h-4 w-4 text-gray-400" />
-        }
-    }
-
-    const getStatusBadge = (status: string) => {
-        const colors = {
-            completed: 'bg-green-100 text-green-800',
-            skipped: 'bg-gray-100 text-gray-600',
-        }
-        return colors[status as keyof typeof colors] ?? 'bg-gray-100 text-gray-800'
-    }
-
     if (isLoading && rounds.length === 0) {
         return (
             <div className="text-center py-8 text-muted-foreground">
@@ -83,15 +64,15 @@ function AreaRoundCard({ area }: { area: PatrolAreaRounds }) {
 
             {/* Rounds List */}
             <div className="divide-y">
-                {area.rounds.map((round, index) => (
-                    <RoundCard key={round.round_id} round={round} index={index} />
+                {area.rounds.map((round) => (
+                    <RoundCard key={round.round_id} round={round} />
                 ))}
             </div>
         </div>
     )
 }
 
-function RoundCard({ round, index }: { round: PatrolRoundWithCheckpoints; index: number }) {
+function RoundCard({ round }: { round: PatrolRoundWithCheckpoints }) {
     const isCompleted = round.status === 'completed'
 
     return (
