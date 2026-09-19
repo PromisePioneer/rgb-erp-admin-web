@@ -1,216 +1,290 @@
 /**
  * Topbar Component
- * Header with breadcrumbs, user menu, and notifications
+ * Header with breadcrumbs, company selector, language switcher, notifications, and theme toggle
  */
-import { useState, useCallback, useEffect } from 'react'
-import { useLocation } from '@tanstack/react-router'
+"use client"
+
+import * as React from "react"
+import {useLocation, useNavigate} from "@tanstack/react-router"
+import {useTranslationStore} from '@/stores/translation-store'
+import {navigationSections} from "@/components/layout/navigation-types"
+import {NotificationBell} from '@/components/layout/notification-bell'
+import {ThemeToggle} from '@/components/ui/theme-toggle'
 import {
-  Bell,
-  User,
-  LogOut,
-  ChevronDown,
-  PanelLeftClose,
-} from 'lucide-react'
-import { useAuthStore } from '@/stores/auth-store'
-import { useCompanyStore } from '@/stores/company-store'
-import { SidebarToggle } from './sidebar'
-import { AsyncSelect, type SelectOption } from '@/components/async-select'
-import { companyApi } from '@/features/companies/api/companies-api'
+    ChevronRight,
+    Globe,
+    Home,
+    LayoutDashboard,
+} from "lucide-react"
+import {cn} from "@/lib/utils"
+import {
+    type LucideIcon,
+    Briefcase,
+    FileText,
+    Users,
+    MapPin,
+    Clock,
+    CalendarDays,
+    Wallet,
+    Coins,
+    Receipt,
+    Book,
+    Scale,
+    Warehouse,
+    Layers,
+    Package,
+    ClipboardList,
+    ShoppingCart,
+    Boxes,
+    AlertTriangle,
+    ScanFace,
+    Camera,
+    Scan,
+    UserCog,
+    Network,
+    Lock,
+    Settings,
+    TrendingUp,
+    Building,
+    Inbox,
+    FolderKanban,
+    BarChart3,
+    Database,
+    List,
+    GitBranch,
+    Calendar,
+    Megaphone,
+} from "lucide-react"
 
-// Get page title from path
-function getPageTitle(path: string): string {
-  const titles: Record<string, string> = {
-    '/dashboard': 'Dashboard',
-    '/clients': 'Clients',
-    '/client-types': 'Client Types',
-    '/banks': 'Banks',
-    '/positions': 'Positions',
-    '/documents': 'Documents',
-    '/employees': 'Employees',
-    '/employee-placements': 'Employee Placements',
-    '/attendance': 'Attendance',
-    '/schedules': 'Work Schedule',
-    '/shifts': 'Shifts',
-    '/bank-accounts': 'Bank Accounts',
-    '/salary-components': 'Salary Components',
-    '/petty-cash': 'Petty Cash',
-    '/invoices': 'Invoices',
-    '/payroll': 'Payroll',
-    '/finance/journal': 'Journal',
-    '/finance/ledger': 'Ledger',
-    '/finance/balance-sheet': 'Balance Sheet',
-    '/finance/profit-loss': 'Profit & Loss',
-    '/warehouses': 'Warehouses',
-    '/product-categories': 'Product Categories',
-    '/products': 'Products',
-    '/assets': 'Assets',
-    '/purchase-requests': 'Purchase Requests',
-    '/purchase-orders': 'Purchase Orders',
-    '/receptions': 'Receptions',
-    '/stock-opnames': 'Stock Opname',
-    '/projects': 'Projects',
-    '/face-enrollments': 'Face Enrollment',
-    '/reports': 'Field Reports',
-    '/panic-alerts': 'Panic Alert',
-    '/news': 'News',
-    '/approvals': 'Approvals',
-    '/approval-flows': 'Approval Flows',
-    '/patrol-report': 'Patrol Report',
-    '/checkpoints': 'Checkpoints',
-    '/users': 'Users',
-    '/departments': 'Departments',
-    '/roles': 'Roles',
-    '/settings': 'Settings',
-  }
+// Icon map
+const iconMap: Record<string, LucideIcon> = {
+    'layout': LayoutDashboard,
+    'layout-dashboard': LayoutDashboard,
+    'briefcase': Briefcase,
+    'file-text': FileText,
+    'users': Users,
+    'map-pin': MapPin,
+    'clock': Clock,
+    'calendar-days': CalendarDays,
+    'calendar': Calendar,
+    'wallet': Wallet,
+    'coins': Coins,
+    'receipt': Receipt,
+    'book-open': Book,
+    'book': Book,
+    'scale': Scale,
+    'trending-up': TrendingUp,
+    'warehouse': Warehouse,
+    'layers': Layers,
+    'package': Package,
+    'clipboard-list': ClipboardList,
+    'shopping-cart': ShoppingCart,
+    'inbox': Inbox,
+    'boxes': Boxes,
+    'folder-kanban': FolderKanban,
+    'scan-face': ScanFace,
+    'camera': Camera,
+    'alert-triangle': AlertTriangle,
+    'megaphone': Megaphone,
+    'git-branch': GitBranch,
+    'scan': Scan,
+    'user-cog': UserCog,
+    'network': Network,
+    'lock': Lock,
+    'settings': Settings,
+    'building': Building,
+    'bar-chart': BarChart3,
+    'database': Database,
+    'list': List,
+}
 
-  // Check exact match first
-  if (titles[path]) return titles[path]
+// Build breadcrumb from current path
+function useBreadcrumbs(pathname: string) {
+    const {t, isLoaded} = useTranslationStore()
+    const breadcrumbs: Array<{label: string; path?: string; iconName?: string}> = []
 
-  // Check parent paths
-  for (const [key, title] of Object.entries(titles)) {
-    if (path.startsWith(key)) return title
-  }
+    // Helper to translate label (direct key, same as backend structure)
+    const translateLabel = (key: string): string => {
+        if (isLoaded) {
+            const translated = t(key)
+            if (translated !== key) {
+                return translated
+            }
+        }
+        // Fallback: format key like "dashboard" -> "Dashboard"
+        return key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    }
 
-  return 'Admin Panel'
+    // Add Home first
+    breadcrumbs.push({label: translateLabel('home') || 'Home', path: '/dashboard', iconName: 'layout'})
+
+    // Find matching section and item
+    let matchingSection: typeof navigationSections[0] | null = null
+    let matchingItem: any = null
+
+    // Check exact match first
+    for (const section of navigationSections) {
+        for (const item of section.items) {
+            if (item.path === pathname) {
+                matchingSection = section
+                matchingItem = item
+                break
+            }
+        }
+        if (matchingItem) break
+    }
+
+    // Check prefix match if no exact match
+    if (!matchingItem) {
+        for (const section of navigationSections) {
+            for (const item of section.items) {
+                if (pathname.startsWith(item.path) && item.path !== '/') {
+                    matchingSection = section
+                    matchingItem = item
+                    break
+                }
+            }
+            if (matchingItem) break
+        }
+    }
+
+    // Add section label
+    if (matchingSection) {
+        breadcrumbs.push({label: translateLabel(matchingSection.label)})
+    }
+
+    // Add item label
+    if (matchingItem) {
+        // Use translated label for display (menu is for privilege check)
+        const displayLabel = translateLabel(matchingItem.label)
+        breadcrumbs.push({label: displayLabel, path: matchingItem.path, iconName: matchingItem.icon})
+    } else if (breadcrumbs.length === 1) {
+        // If no match found, show path segments
+        const segments = pathname.split('/').filter(Boolean)
+        segments.forEach(segment => {
+            breadcrumbs.push({label: translateLabel(segment)})
+        })
+    }
+
+    return breadcrumbs
 }
 
 interface TopbarProps {
-  onCollapse?: () => void
+    onCollapse?: () => void
+    isMobile?: boolean
+    isCollapsed?: boolean
 }
 
-export function Topbar({ onCollapse }: TopbarProps) {
-  const { user, logout } = useAuthStore()
-  const { currentCompany, switchCompany, fetchCompanies } = useCompanyStore()
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const location = useLocation()
-  const pageTitle = getPageTitle(location.pathname)
+export function Topbar({onCollapse, isMobile = false, isCollapsed = false}: TopbarProps) {
+    const location = useLocation()
+    const navigate = useNavigate()
+    const {locale, setLocale} = useTranslationStore()
+    const breadcrumbs = useBreadcrumbs(location.pathname)
+    const [langMenuOpen, setLangMenuOpen] = React.useState(false)
 
-  // Fetch companies on mount
-  useEffect(() => {
-    fetchCompanies()
-  }, [fetchCompanies])
-
-  const handleLogout = async () => {
-    try {
-      await logout()
-      window.location.href = '/login'
-    } catch (error) {
-      console.error('Logout failed:', error)
+    // Handle breadcrumb navigation
+    const handleBreadcrumbClick = (path?: string) => {
+        if (path) {
+            navigate({to: path})
+        }
     }
-  }
 
-  // Load companies for select
-  const loadCompanies = useCallback(async (search: string): Promise<SelectOption[]> => {
-    try {
-      const response = await companyApi.getSelectOptions({ q: search })
-      return response.map((company) => ({
-        value: company.id,
-        label: company.name,
-      }))
-    } catch {
-      return []
-    }
-  }, [])
+    return (
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card px-4">
+            {/* Collapse toggle */}
+            {!isMobile && onCollapse && (
+                <button
+                    onClick={onCollapse}
+                    className="p-1.5 hover:bg-accent rounded-md transition-colors"
+                >
+                    {isCollapsed ? (
+                        <LayoutDashboard className="h-4 w-4"/>
+                    ) : (
+                        <LayoutDashboard className="h-4 w-4 rotate-180"/>
+                    )}
+                </button>
+            )}
 
-  // Handle company change
-  const handleCompanyChange = async (value: number | string | null) => {
-    if (!value) return
-    try {
-      await switchCompany(Number(value))
-      // Reload the page to refresh all data with new company context
-      window.location.reload()
-    } catch (error) {
-      console.error('Failed to switch company:', error)
-    }
-  }
+            {/* Breadcrumbs */}
+            <nav className="flex items-center gap-1 text-sm flex-1">
+                {breadcrumbs.map((crumb, index) => {
+                    const isLast = index === breadcrumbs.length - 1
+                    const Icon = iconMap[crumb.iconName || 'layout'] || Home
 
-  return (
-    <header className="sticky top-0 z-20 h-16 bg-card/80 backdrop-blur-md border-b border-border flex items-center gap-3 px-4">
-      {/* Mobile menu toggle */}
-      <SidebarToggle />
+                    return (
+                        <div key={index} className="flex items-center gap-1">
+                            {index > 0 && (
+                                <ChevronRight className="h-4 w-4 text-muted-foreground/50"/>
+                            )}
+                            {crumb.path && !isLast ? (
+                                <button
+                                    onClick={() => handleBreadcrumbClick(crumb.path)}
+                                    className="flex items-center gap-1.5 px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                                >
+                                    <Icon className="h-4 w-4"/>
+                                    <span className="hidden sm:inline">{crumb.label}</span>
+                                </button>
+                            ) : (
+                                <span className={cn(
+                                    "flex items-center gap-1.5 px-2 py-1",
+                                    isLast ? "font-semibold text-foreground" : "text-muted-foreground"
+                                )}>
+                                    <Icon className="h-4 w-4"/>
+                                    <span className="hidden sm:inline">{crumb.label}</span>
+                                </span>
+                            )}
+                        </div>
+                    )
+                })}
+            </nav>
 
-      {/* Collapse button - desktop only */}
-      {onCollapse && (
-        <button
-          onClick={onCollapse}
-          className="hidden lg:flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-          title="Collapse sidebar"
-        >
-          <PanelLeftClose className="h-5 w-5 rotate-180" />
-        </button>
-      )}
+            {/* Right side actions */}
+            <div className="flex items-center gap-2">
+                {/* Language Switcher */}
+                <div className="relative" data-state={langMenuOpen ? 'open' : 'closed'}>
+                    <button
+                        onClick={() => setLangMenuOpen(!langMenuOpen)}
+                        className="flex items-center gap-1.5 p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                    >
+                        <Globe className="h-5 w-5"/>
+                        <span className="text-xs font-medium uppercase">{locale}</span>
+                    </button>
 
-      {/* Page title */}
-      <h1 className="font-bold text-lg text-foreground">{pageTitle}</h1>
-
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* Right side actions */}
-      <div className="flex items-center gap-2">
-        {/* Company Selector */}
-        <div className="w-[200px]">
-          <AsyncSelect
-            value={currentCompany?.id ?? null}
-            onChange={handleCompanyChange}
-            loadOptions={loadCompanies}
-            placeholder="Select Company"
-          />
-        </div>
-
-        {/* Notifications placeholder */}
-        <button className="relative p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-          <Bell className="h-5 w-5" />
-        </button>
-
-        {/* User menu */}
-        <div className="relative" data-state={userMenuOpen ? 'open' : 'closed'}>
-          <button
-            onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-md hover:bg-accent transition-colors"
-          >
-            <span className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground font-bold text-sm">
-              {(user?.name || 'U').charAt(0).toUpperCase()}
-            </span>
-            <span className="hidden sm:flex items-center gap-2">
-              <span className="text-left leading-tight">
-                <span className="block text-sm font-semibold text-foreground">
-                  {user?.name || 'User'}
-                </span>
-                <span className="block text-[11px] text-muted-foreground">
-                  Staff
-                </span>
-              </span>
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            </span>
-          </button>
-
-          {/* Dropdown */}
-          {userMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-              <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden">
-                <div className="py-1">
-                  <button
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
-                    onClick={() => setUserMenuOpen(false)}
-                  >
-                    <User className="h-4 w-4" />
-                    Profile
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-destructive hover:bg-accent transition-colors"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Logout
-                  </button>
+                    {langMenuOpen && (
+                        <>
+                            <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)}/>
+                            <div className="absolute right-0 mt-2 w-40 bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden">
+                                <div className="py-1">
+                                    <button
+                                        onClick={() => { setLocale('id'); setLangMenuOpen(false) }}
+                                        className={cn(
+                                            "w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors",
+                                            locale === 'id' ? 'bg-accent text-primary font-medium' : 'text-foreground'
+                                        )}
+                                    >
+                                        🇮🇩 Indonesia
+                                    </button>
+                                    <button
+                                        onClick={() => { setLocale('en'); setLangMenuOpen(false) }}
+                                        className={cn(
+                                            "w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors",
+                                            locale === 'en' ? 'bg-accent text-primary font-medium' : 'text-foreground'
+                                        )}
+                                    >
+                                        🇬🇧 English
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </header>
-  )
+
+                {/* Notifications */}
+                <NotificationBell/>
+
+                {/* Theme Toggle */}
+                <ThemeToggle/>
+            </div>
+        </header>
+    )
 }

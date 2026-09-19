@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useStockCardStore } from '../store/stock-card-store'
+import { MOVEMENT_TYPE_LABELS, MOVEMENT_TYPE_COLORS } from '../types/stock-card.types'
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -36,10 +37,10 @@ export function StockCardTable() {
   }, [fetchProducts, fetchWarehouses])
 
   const handleSearch = () => {
-    if (!productId || !warehouseId) return
+    if (!productId) return
     setFilters({
       product_id: Number(productId),
-      warehouse_id: Number(warehouseId),
+      warehouse_id: warehouseId ? Number(warehouseId) : undefined,
       start_date: startDate || undefined,
       end_date: endDate || undefined,
     })
@@ -58,35 +59,12 @@ export function StockCardTable() {
   const safeData = data
   const safeMovements = safeData?.movements || []
 
-  const getTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      purchase: 'Pembelian',
-      sale: 'Penjualan',
-      adjustment: 'Penyesuaian',
-      transfer_in: 'Transfer Masuk',
-      transfer_out: 'Transfer Keluar',
-      return_in: 'Retur Masuk',
-      return_out: 'Retur Keluar',
-    }
-    return labels[type] || type
-  }
-
-  const getTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-      purchase: 'bg-green-100 text-green-700',
-      sale: 'bg-red-100 text-red-700',
-      adjustment: 'bg-blue-100 text-blue-700',
-      transfer_in: 'bg-purple-100 text-purple-700',
-      transfer_out: 'bg-orange-100 text-orange-700',
-      return_in: 'bg-cyan-100 text-cyan-700',
-      return_out: 'bg-yellow-100 text-yellow-700',
-    }
-    return colors[type] || 'bg-gray-100 text-gray-700'
-  }
-
   // Calculate totals
-  const totalIn = safeMovements.filter((m: any) => m.qty > 0).reduce((s: number, m: any) => s + (m.qty || 0), 0)
-  const totalOut = Math.abs(safeMovements.filter((m: any) => m.qty < 0).reduce((s: number, m: any) => s + (m.qty || 0), 0))
+  const totalIn = safeMovements.filter((m) => m.qty > 0).reduce((s, m) => s + (m.qty || 0), 0)
+  const totalOut = Math.abs(safeMovements.filter((m) => m.qty < 0).reduce((s, m) => s + (m.qty || 0), 0))
+
+  const openingBalance = safeData?.opening_balance || { qty: 0, value: 0 }
+  const currentBalance = safeData?.current_balance || { qty: 0, value: 0 }
 
   return (
     <div className="space-y-6">
@@ -125,9 +103,10 @@ export function StockCardTable() {
           <Label>Gudang</Label>
           <Select value={warehouseId} onValueChange={v => v && handleWarehouseChange(v)}>
             <SelectTrigger>
-              <SelectValue placeholder="Pilih gudang" />
+              <SelectValue placeholder="Semua gudang" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">Semua Gudang</SelectItem>
               {safeWarehouses.map((w: any) => (
                 <SelectItem key={w.id} value={String(w.id)}>
                   {w.name}
@@ -147,7 +126,7 @@ export function StockCardTable() {
       </div>
 
       <div className="flex justify-center">
-        <Button onClick={handleSearch} disabled={!productId || !warehouseId || isLoadingData}>
+        <Button onClick={handleSearch} disabled={!productId || isLoadingData}>
           <Package className="h-4 w-4 mr-2" />
           Tampilkan Kartu Stok
         </Button>
@@ -156,7 +135,7 @@ export function StockCardTable() {
       {!safeData && !isLoadingData ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
           <Package className="h-12 w-12 mb-4" />
-          <p>Pilih produk dan gudang untuk melihat kartu stok</p>
+          <p>Pilih produk untuk melihat kartu stok</p>
         </div>
       ) : isLoadingData ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -168,8 +147,8 @@ export function StockCardTable() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="border rounded-lg p-4 bg-muted/30">
               <p className="text-sm text-muted-foreground">Saldo Awal</p>
-              <p className="text-xl font-bold">{safeData?.beginning_qty || 0} {safeData?.product?.unit || ''}</p>
-              <p className="text-sm text-muted-foreground">{formatCurrency(safeData?.beginning_value || 0)}</p>
+              <p className="text-xl font-bold">{openingBalance.qty} {safeData?.product?.unit || ''}</p>
+              <p className="text-sm text-muted-foreground">{formatCurrency(openingBalance.value)}</p>
             </div>
             <div className="border rounded-lg p-4 bg-blue-50">
               <p className="text-sm text-blue-600">Masuk</p>
@@ -181,8 +160,8 @@ export function StockCardTable() {
             </div>
             <div className="border rounded-lg p-4 bg-green-50">
               <p className="text-sm text-green-600">Saldo Akhir</p>
-              <p className="text-xl font-bold text-green-600">{safeData?.ending_qty || 0} {safeData?.product?.unit || ''}</p>
-              <p className="text-sm text-green-600">@{formatCurrency(safeData?.avg_cost || 0)}</p>
+              <p className="text-xl font-bold text-green-600">{currentBalance.qty} {safeData?.product?.unit || ''}</p>
+              <p className="text-sm text-green-600">@{formatCurrency(safeData?.average_cost || 0)}</p>
             </div>
           </div>
 
@@ -207,23 +186,23 @@ export function StockCardTable() {
                   <td className="px-4 py-2">-</td>
                   <td className="px-4 py-2">Saldo Awal</td>
                   <td className="px-4 py-2">Saldo Awal Periode</td>
-                  <td className="px-4 py-2 text-right font-mono">{safeData?.beginning_qty || 0}</td>
+                  <td className="px-4 py-2 text-right font-mono">{openingBalance.qty}</td>
                   <td className="px-4 py-2 text-right font-mono">-</td>
                   <td className="px-4 py-2 text-right font-mono">-</td>
-                  <td className="px-4 py-2 text-right font-mono">{safeData?.beginning_qty || 0}</td>
-                  <td className="px-4 py-2 text-right font-mono">{formatCurrency(safeData?.beginning_value || 0)}</td>
+                  <td className="px-4 py-2 text-right font-mono">{openingBalance.qty}</td>
+                  <td className="px-4 py-2 text-right font-mono">{formatCurrency(openingBalance.value)}</td>
                 </tr>
                 {safeMovements.map((movement: any) => (
                   <tr key={movement.id} className="border-b hover:bg-muted/50">
                     <td className="px-4 py-2">{formatDate(movement.date)}</td>
                     <td className="px-4 py-2">
-                      <span className={`text-xs px-2 py-0.5 rounded ${getTypeColor(movement.type)}`}>
-                        {getTypeLabel(movement.type)}
+                      <span className={`text-xs px-2 py-0.5 rounded ${MOVEMENT_TYPE_COLORS[movement.type] || 'bg-gray-100 text-gray-700'}`}>
+                        {MOVEMENT_TYPE_LABELS[movement.type] || movement.type}
                       </span>
                     </td>
                     <td className="px-4 py-2">
                       {movement.description}
-                      {movement.reference && <span className="text-muted-foreground ml-1">({movement.reference})</span>}
+                      {movement.reference_number && <span className="text-muted-foreground ml-1">({movement.reference_number})</span>}
                     </td>
                     <td className="px-4 py-2 text-right font-mono text-green-600">
                       {movement.qty > 0 ? movement.qty : '-'}
@@ -245,8 +224,8 @@ export function StockCardTable() {
                   <td />
                   <td />
                   <td />
-                  <td className="px-4 py-3 text-right font-mono">{safeData?.ending_qty || 0}</td>
-                  <td className="px-4 py-3 text-right font-mono">{formatCurrency(safeData?.ending_value || 0)}</td>
+                  <td className="px-4 py-3 text-right font-mono">{currentBalance.qty}</td>
+                  <td className="px-4 py-3 text-right font-mono">{formatCurrency(currentBalance.value)}</td>
                 </tr>
               </tfoot>
             </table>

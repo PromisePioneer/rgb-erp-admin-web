@@ -9,18 +9,18 @@ import { Save, Plus, Trash2, MapPin, Building2, User, Calendar, DollarSign, Chev
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { MapPicker } from '@/components/map-picker'
 import { useClientsStore } from '@/features/clients'
 import { clientTypesApi } from '@/features/client-types/api/client-types-api'
-import type { CreateAreaNested, CreatePosNested, CreateClientPayload, UpdateClientPayload } from '@/features/clients/types/clients.types'
+import type {
+  CreateAreaNested,
+  CreatePosNested,
+  CreateClientPayload,
+  UpdateClientPayload,
+  ClientDetail,
+} from '@/features/clients/types/clients.types'
 
 type FormValues = {
   client_type_id: number | undefined
@@ -109,9 +109,28 @@ export function ClientsForm() {
         service_price: selectedItem.service_price?.toString() ?? '',
         status: selectedItem.status?.toString() ?? '1',
       })
+
+      // Transform areas with poss to hierarchical structure
+      const detail = selectedItem as ClientDetail
+      if (detail.areas && detail.areas.length > 0) {
+        setNestedAreas(detail.areas.map((area) => ({
+          id: area.id.toString(),
+          name: area.name,
+          latitude: area.latitude,
+          longitude: area.longitude,
+          description: area.description,
+          poss: area.poss?.map((pos) => ({
+            name: pos.name,
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+            description: pos.description,
+          })) ?? [],
+        })))
+      }
     }
   }, [isEdit, selectedItem, form])
 
+  // Load client types for dropdown
   const loadClientTypes = useCallback(async (search: string): Promise<SelectOption[]> => {
     try {
       const response = await clientTypesApi.getSelectOptions({ q: search })
@@ -124,8 +143,21 @@ export function ClientsForm() {
     }
   }, [])
 
-  // Area handlers
-  const handleAddArea = () => {
+  // Toggle area expansion
+  const toggleArea = (areaId: string) => {
+    setExpandedAreas((prev) => {
+      const next = new Set(prev)
+      if (next.has(areaId)) {
+        next.delete(areaId)
+      } else {
+        next.add(areaId)
+      }
+      return next
+    })
+  }
+
+  // Add new area
+  const addArea = () => {
     const newArea: AreaWithPoss = {
       id: `new-${Date.now()}`,
       name: '',
@@ -134,64 +166,65 @@ export function ClientsForm() {
       description: '',
       poss: [],
     }
-    setNestedAreas([...nestedAreas, newArea])
-    setExpandedAreas(new Set([...expandedAreas, newArea.id]))
+    setNestedAreas((prev) => [...prev, newArea])
+    setExpandedAreas((prev) => new Set([...prev, newArea.id]))
   }
 
-  const handleRemoveArea = (areaId: string) => {
-    setNestedAreas(nestedAreas.filter(a => a.id !== areaId))
+  // Remove area
+  const removeArea = (areaId: string) => {
+    setNestedAreas((prev) => prev.filter((a) => a.id !== areaId))
   }
 
-  const handleUpdateArea = (areaId: string, field: keyof CreateAreaNested, value: string) => {
-    setNestedAreas(nestedAreas.map(a =>
-      a.id === areaId ? { ...a, [field]: value } : a
-    ))
+  // Update area
+  const updateArea = (areaId: string, updates: Partial<AreaWithPoss>) => {
+    setNestedAreas((prev) =>
+      prev.map((a) => (a.id === areaId ? { ...a, ...updates } : a))
+    )
   }
 
-  const toggleExpandArea = (areaId: string) => {
-    const newExpanded = new Set(expandedAreas)
-    if (newExpanded.has(areaId)) {
-      newExpanded.delete(areaId)
-    } else {
-      newExpanded.add(areaId)
-    }
-    setExpandedAreas(newExpanded)
-  }
-
-  // Pos handlers (nested under area)
-  const handleAddPos = (areaId: string) => {
+  // Add POS to area
+  const addPos = (areaId: string) => {
     const newPos: CreatePosNested = {
       name: '',
       latitude: '',
       longitude: '',
       description: '',
     }
-    setNestedAreas(nestedAreas.map(a =>
-      a.id === areaId ? { ...a, poss: [...a.poss, newPos] } : a
-    ))
+    setNestedAreas((prev) =>
+      prev.map((a) =>
+        a.id === areaId ? { ...a, poss: [...(a.poss || []), newPos] } : a
+      )
+    )
   }
 
-  const handleRemovePos = (areaId: string, posIndex: number) => {
-    setNestedAreas(nestedAreas.map(a =>
-      a.id === areaId
-        ? { ...a, poss: a.poss.filter((_, i) => i !== posIndex) }
-        : a
-    ))
+  // Remove POS from area
+  const removePos = (areaId: string, posIndex: number) => {
+    setNestedAreas((prev) =>
+      prev.map((a) =>
+        a.id === areaId
+          ? { ...a, poss: a.poss?.filter((_, i) => i !== posIndex) ?? [] }
+          : a
+      )
+    )
   }
 
-  const handleUpdatePos = (areaId: string, posIndex: number, field: keyof CreatePosNested, value: string) => {
-    setNestedAreas(nestedAreas.map(a =>
-      a.id === areaId
-        ? {
-            ...a,
-            poss: a.poss.map((p, i) =>
-              i === posIndex ? { ...p, [field]: value } : p
-            ),
-          }
-        : a
-    ))
+  // Update POS
+  const updatePos = (areaId: string, posIndex: number, updates: Partial<CreatePosNested>) => {
+    setNestedAreas((prev) =>
+      prev.map((a) =>
+        a.id === areaId
+          ? {
+              ...a,
+              poss: a.poss?.map((p, i) =>
+                i === posIndex ? { ...p, ...updates } : p
+              ) ?? [],
+            }
+          : a
+      )
+    )
   }
 
+  // Handle form submission
   const onSubmit = async (values: FormValues) => {
     if (!values.client_type_id) {
       toast.error('Tipe client wajib dipilih')
@@ -206,25 +239,25 @@ export function ClientsForm() {
       return
     }
 
-    try {
-      // Build nested areas with valid poss
-      const validAreas: CreateAreaNested[] = nestedAreas
-        .filter(a => a.name.trim())
-        .map(a => ({
-          name: a.name.trim(),
-          latitude: a.latitude?.trim() || undefined,
-          longitude: a.longitude?.trim() || undefined,
-          description: a.description?.trim() || undefined,
-          poss: a.poss
-            .filter(p => p.name.trim())
-            .map(p => ({
-              name: p.name.trim(),
-              latitude: p.latitude?.trim() || undefined,
-              longitude: p.longitude?.trim() || undefined,
-              description: p.description?.trim() || undefined,
-            })),
-        }))
+    // Validate areas
+    const validAreas: CreateAreaNested[] = nestedAreas
+      .filter((a) => a.name.trim())
+      .map((a) => ({
+        name: a.name.trim(),
+        latitude: a.latitude?.trim() || undefined,
+        longitude: a.longitude?.trim() || undefined,
+        description: a.description?.trim() || undefined,
+        poss: a.poss
+          ?.filter((p) => p.name.trim())
+          .map((p) => ({
+            name: p.name.trim(),
+            latitude: p.latitude?.trim() || undefined,
+            longitude: p.longitude?.trim() || undefined,
+            description: p.description?.trim() || undefined,
+          })),
+      }))
 
+    try {
       if (!isEdit) {
         const createPayload: CreateClientPayload = {
           client_type_id: values.client_type_id,
@@ -261,14 +294,26 @@ export function ClientsForm() {
           status: Number(values.status),
         }
         if (values.password) updatePayload.password = values.password
+        if (validAreas.length > 0) updatePayload.areas = validAreas
 
         await update(clientId, updatePayload)
         toast.success('Client berhasil diperbarui')
       }
-      navigate({ to: '/clients' })
+      navigate({ to: '/master-data' })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Terjadi kesalahan')
     }
+  }
+
+  // Loading skeleton for edit mode
+  if (isLoading && isEdit) {
+    return (
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    )
   }
 
   return (
@@ -283,7 +328,7 @@ export function ClientsForm() {
             {isEdit ? 'Perbarui informasi client' : 'Lengkapi informasi client baru'}
           </p>
         </div>
-        <Button variant="outline" onClick={() => navigate({ to: '/clients' })}>
+        <Button variant="outline" onClick={() => navigate({ to: '/master-data' })}>
           Batal
         </Button>
       </div>
@@ -327,18 +372,14 @@ export function ClientsForm() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
-              <Select
-                value={form.watch('status')}
-                onValueChange={(value) => form.setValue('status', value ?? '1')}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Aktif</SelectItem>
-                  <SelectItem value="0">Tidak Aktif</SelectItem>
-                </SelectContent>
-              </Select>
+              <AsyncSelect
+                loadOptions={async () => [
+                  { value: '1', label: 'Aktif' },
+                  { value: '0', label: 'Tidak Aktif' },
+                ]}
+                value={form.watch('status') || '1'}
+                onChange={(val) => form.setValue('status', (val as string) || '1')}
+              />
             </div>
           </div>
         </div>
@@ -368,7 +409,19 @@ export function ClientsForm() {
               />
             </div>
 
-            {!isEdit && (
+            {isEdit ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Password Baru</label>
+                <Input
+                  type="password"
+                  placeholder="Kosongkan jika tidak ingin mengubah"
+                  {...form.register('password')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Isi hanya jika ingin mengubah password
+                </p>
+              </div>
+            ) : (
               <div className="space-y-2">
                 <label className="text-sm font-medium">Password *</label>
                 <Input
@@ -378,15 +431,15 @@ export function ClientsForm() {
                 />
               </div>
             )}
+          </div>
 
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium">Alamat</label>
-              <textarea
-                placeholder="Alamat lengkap"
-                {...form.register('address')}
-                className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-transparent"
-              />
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Alamat</label>
+            <textarea
+              placeholder="Alamat lengkap"
+              {...form.register('address')}
+              className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-transparent"
+            />
           </div>
         </div>
 
@@ -453,181 +506,155 @@ export function ClientsForm() {
           </div>
         </div>
 
-        {/* Hierarchical Areas -> Poss */}
+        {/* Areas & POS - Hierarchical */}
         <div className="bg-card rounded-lg border p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Area & Pos (Opsional)
+              Areas & POS
             </h2>
-            <Button type="button" variant="outline" size="sm" onClick={handleAddArea}>
+            <Button type="button" variant="outline" size="sm" onClick={addArea}>
               <Plus className="h-4 w-4 mr-1" />
               Tambah Area
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Tambahkan area dan poss saat membuat client (opsional)
-          </p>
 
-          {nestedAreas.length > 0 && (
+          {nestedAreas.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <MapPin className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>Belum ada area ditambahkan</p>
+              <p className="text-sm">Klik tombol "Tambah Area" untuk memulai</p>
+            </div>
+          ) : (
             <div className="space-y-4">
-              {nestedAreas.map((area, areaIndex) => (
+              {nestedAreas.map((area) => (
                 <div key={area.id} className="border rounded-lg overflow-hidden">
                   {/* Area Header */}
-                  <div className="flex items-center gap-2 p-4 bg-muted/30">
-                    <button
-                      type="button"
-                      onClick={() => toggleExpandArea(area.id)}
-                      className="p-1 hover:bg-muted rounded"
-                    >
-                      {expandedAreas.has(area.id) ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </button>
-                    <span className="text-sm font-medium">Area #{areaIndex + 1}</span>
-                    <div className="flex-1" />
+                  <div
+                    className="flex items-center gap-2 p-4 bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
+                    onClick={() => toggleArea(area.id)}
+                  >
+                    {expandedAreas.has(area.id) ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                    <Input
+                      placeholder="Nama Area"
+                      value={area.name}
+                      onChange={(e) => updateArea(area.id, { name: e.target.value })}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-1 max-w-xs"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {area.poss?.length ?? 0} POS
+                    </span>
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveArea(area.id)}
-                      className="text-destructive hover:text-destructive"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeArea(area.id)
+                      }}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
 
                   {/* Area Content */}
                   {expandedAreas.has(area.id) && (
-                    <div className="p-4 space-y-4 border-t">
-                      {/* Area Fields */}
-                      <div className="space-y-3">
-                        <Input
-                          placeholder="Nama area *"
-                          value={area.name}
-                          onChange={(e) => handleUpdateArea(area.id, 'name', e.target.value)}
-                        />
-                        <Input
-                          placeholder="Deskripsi"
-                          value={area.description}
-                          onChange={(e) => handleUpdateArea(area.id, 'description', e.target.value)}
-                        />
-                      </div>
-
-                      {/* Area Coordinates */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-muted-foreground">Latitude</label>
+                    <div className="p-4 space-y-4">
+                      {/* Area Details */}
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium">Latitude</label>
                           <Input
-                            placeholder="-6.2088"
-                            value={area.latitude}
-                            onChange={(e) => handleUpdateArea(area.id, 'latitude', e.target.value)}
+                            placeholder="Latitude"
+                            value={area.latitude ?? ''}
+                            onChange={(e) => updateArea(area.id, { latitude: e.target.value })}
                           />
                         </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-muted-foreground">Longitude</label>
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium">Longitude</label>
                           <Input
-                            placeholder="106.8456"
-                            value={area.longitude}
-                            onChange={(e) => handleUpdateArea(area.id, 'longitude', e.target.value)}
+                            placeholder="Longitude"
+                            value={area.longitude ?? ''}
+                            onChange={(e) => updateArea(area.id, { longitude: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium">Description</label>
+                          <Input
+                            placeholder="Deskripsi"
+                            value={area.description ?? ''}
+                            onChange={(e) => updateArea(area.id, { description: e.target.value })}
                           />
                         </div>
                       </div>
 
-                      {/* Area MapPicker */}
-                      <div className="border rounded-lg p-3 bg-muted/20">
-                        <label className="text-xs font-medium text-muted-foreground mb-2 block">Lokasi Area (klik map atau cari lokasi)</label>
-                        <MapPicker
-                          lat={area.latitude}
-                          lng={area.longitude}
-                          onChange={(lat, lng) => {
-                            handleUpdateArea(area.id, 'latitude', lat ?? '')
-                            handleUpdateArea(area.id, 'longitude', lng ?? '')
-                          }}
-                          label=""
-                        />
-                      </div>
+                      {/* Map Picker */}
+                      <MapPicker
+                        lat={area.latitude ? Number(area.latitude) : undefined}
+                        lng={area.longitude ? Number(area.longitude) : undefined}
+                        onChange={(lat, lng) => {
+                          updateArea(area.id, {
+                            latitude: lat?.toString() ?? '',
+                            longitude: lng?.toString() ?? '',
+                          })
+                        }}
+                      />
 
-                      {/* Nested Poss under this Area */}
-                      <div className="border-t pt-4 mt-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            Pos dalam Area ini
-                          </span>
+                      {/* POS List */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium">POS (Point of Service)</label>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleAddPos(area.id)}
+                            onClick={() => addPos(area.id)}
                           >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Tambah Pos
+                            <Plus className="h-4 w-4 mr-1" />
+                            Tambah POS
                           </Button>
                         </div>
 
-                        {area.poss.length > 0 ? (
-                          <div className="space-y-3 pl-4 border-l-2 border-muted">
-                            {area.poss.map((pos, posIndex) => (
-                              <div key={posIndex} className="border rounded-lg p-3 bg-muted/10">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                  <Input
-                                    placeholder="Nama pos *"
-                                    className="flex-1"
-                                    value={pos.name}
-                                    onChange={(e) => handleUpdatePos(area.id, posIndex, 'name', e.target.value)}
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemovePos(area.id, posIndex)}
-                                    className="text-destructive hover:text-destructive p-2"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                                {/* Pos Coordinates */}
-                                <div className="grid grid-cols-2 gap-2 mb-3">
-                                  <div className="space-y-1">
-                                    <label className="text-xs font-medium text-muted-foreground">Latitude</label>
-                                    <Input
-                                      placeholder="-6.2088"
-                                      className="h-8 text-sm"
-                                      value={pos.latitude}
-                                      onChange={(e) => handleUpdatePos(area.id, posIndex, 'latitude', e.target.value)}
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <label className="text-xs font-medium text-muted-foreground">Longitude</label>
-                                    <Input
-                                      placeholder="106.8456"
-                                      className="h-8 text-sm"
-                                      value={pos.longitude}
-                                      onChange={(e) => handleUpdatePos(area.id, posIndex, 'longitude', e.target.value)}
-                                    />
-                                  </div>
-                                </div>
-                                {/* Pos MapPicker */}
-                                <MapPicker
-                                  lat={pos.latitude}
-                                  lng={pos.longitude}
-                                  onChange={(lat, lng) => {
-                                    handleUpdatePos(area.id, posIndex, 'latitude', lat ?? '')
-                                    handleUpdatePos(area.id, posIndex, 'longitude', lng ?? '')
-                                  }}
-                                  label=""
-                                />
-                              </div>
-                            ))}
+                        {(area.poss ?? []).map((pos, posIndex) => (
+                          <div key={posIndex} className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg">
+                            <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2">
+                              <Input
+                                placeholder="Nama POS"
+                                value={pos.name}
+                                onChange={(e) => updatePos(area.id, posIndex, { name: e.target.value })}
+                                className="flex-1"
+                              />
+                              <Input
+                                placeholder="Latitude"
+                                value={pos.latitude ?? ''}
+                                onChange={(e) => updatePos(area.id, posIndex, { latitude: e.target.value })}
+                              />
+                              <Input
+                                placeholder="Longitude"
+                                value={pos.longitude ?? ''}
+                                onChange={(e) => updatePos(area.id, posIndex, { longitude: e.target.value })}
+                              />
+                              <Input
+                                placeholder="Deskripsi"
+                                value={pos.description ?? ''}
+                                onChange={(e) => updatePos(area.id, posIndex, { description: e.target.value })}
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removePos(area.id, posIndex)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
                           </div>
-                        ) : (
-                          <p className="text-xs text-muted-foreground italic pl-4">
-                            Belum ada pos. Klik "Tambah Pos" untuk menambahkan.
-                          </p>
-                        )}
+                        ))}
                       </div>
                     </div>
                   )}
@@ -635,17 +662,15 @@ export function ClientsForm() {
               ))}
             </div>
           )}
-
-          {nestedAreas.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Belum ada area. Klik "Tambah Area" untuk memulai.
-            </p>
-          )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t">
-          <Button type="button" variant="outline" onClick={() => navigate({ to: '/clients' })}>
+        {/* Submit */}
+        <div className="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate({ to: '/master-data' })}
+          >
             Batal
           </Button>
           <Button type="submit" disabled={isSubmitting}>

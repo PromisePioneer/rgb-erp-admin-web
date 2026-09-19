@@ -9,6 +9,7 @@ import type {
   PayrollYearsResponse,
   GeneratePayrollPayload,
   GenerateThrPayload,
+  ApiResponse,
 } from '../types/payroll.types'
 
 export const payrollApi = {
@@ -67,6 +68,18 @@ export const payrollApi = {
     const { data } = await apiClient.post<PayrollListResponse>(
       '/admin/payroll/thr',
       payload
+    )
+    return data
+  },
+
+  /**
+   * Bulk delete payroll records
+   * POST /api/admin/payroll/bulk-delete
+   */
+  bulkDelete: async (ids: number[]) => {
+    const { data } = await apiClient.post<ApiResponse<{ deleted: number }>>(
+      '/admin/payroll/bulk-delete',
+      { ids }
     )
     return data
   },

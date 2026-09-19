@@ -107,14 +107,14 @@ export function ReportsFilters() {
             {currentDateRange.from ? (
               currentDateRange.to ? (
                 <>
-                  {format(currentDateRange.from, 'LLL dd, yyyy')} -{' '}
-                  {format(currentDateRange.to, 'LLL dd, yyyy')}
+                  {format(currentDateRange.from, 'dd MMM yyyy')} -{' '}
+                  {format(currentDateRange.to, 'dd MMM yyyy')}
                 </>
               ) : (
-                format(currentDateRange.from, 'LLL dd, yyyy')
+                format(currentDateRange.from, 'dd MMM yyyy')
               )
             ) : (
-              <span>Pick a date range</span>
+              <span>Pilih tanggal</span>
             )}
           </Button>
         </PopoverTrigger>
@@ -135,13 +135,13 @@ export function ReportsFilters() {
         onValueChange={handleClientChange}
       >
         <SelectTrigger className="w-[200px]">
-          <SelectValue placeholder="Select client" />
+          <SelectValue placeholder="Pilih client" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Clients</SelectItem>
+          <SelectItem value="all">Semua Client</SelectItem>
           {isLoadingClients ? (
             <SelectItem value="loading" disabled>
-              Loading...
+              Memuat...
             </SelectItem>
           ) : (
             clients.map((client) => (
@@ -154,9 +154,9 @@ export function ReportsFilters() {
       </Select>
 
       {/* Search Form */}
-      <form onSubmit={handleSearchSubmit} className="flex gap-1">
+      <form onSubmit={handleSearchSubmit} className="flex gap-2">
         <Input
-          placeholder="Search reports..."
+          placeholder="Cari laporan..."
           value={filters.search ?? ''}
           onChange={handleSearchChange}
           className="w-[200px]"

@@ -15,6 +15,7 @@ import { rolesApi } from '../api/roles-api'
 interface RolesState {
   // State
   items: Role[]
+  allRoles: Role[] // All roles for dropdown/parent selection
   selectedItem: Role | null
   isLoading: boolean
   isSubmitting: boolean
@@ -24,6 +25,7 @@ interface RolesState {
 
   // Actions
   fetchRoles: (params?: RolesFilters) => Promise<void>
+  fetchAllRoles: () => Promise<void> // Fetch all roles without pagination
   fetchById: (id: number) => Promise<void>
   create: (payload: CreateRolePayload) => Promise<void>
   update: (id: number, payload: UpdateRolePayload) => Promise<void>
@@ -50,6 +52,7 @@ const initialPagination: RolesPagination = {
 export const useRolesStore = create<RolesState>((set, get) => ({
   // Initial state
   items: [],
+  allRoles: [],
   selectedItem: null,
   isLoading: false,
   isSubmitting: false,
@@ -77,15 +80,25 @@ export const useRolesStore = create<RolesState>((set, get) => ({
     }
   },
 
+  fetchAllRoles: async () => {
+    set({ isLoading: true, error: null })
+
+    try {
+      const response = await rolesApi.getAll()
+      set({ allRoles: response.data, isLoading: false })
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to fetch roles'
+      set({ error: message, isLoading: false })
+    }
+  },
+
   fetchById: async (id: number) => {
     set({ isLoading: true, error: null, selectedItem: null })
 
     try {
       const response = await rolesApi.getById(id)
-      set({
-        selectedItem: response.data,
-        isLoading: false,
-      })
+      set({ selectedItem: response.data, isLoading: false })
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to fetch role'
@@ -99,8 +112,9 @@ export const useRolesStore = create<RolesState>((set, get) => ({
     try {
       await rolesApi.create(payload)
       set({ isSubmitting: false })
-      // Refresh the list
+      // Refresh lists
       await get().fetchRoles()
+      await get().fetchAllRoles()
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to create role'
@@ -115,8 +129,9 @@ export const useRolesStore = create<RolesState>((set, get) => ({
     try {
       await rolesApi.update(id, payload)
       set({ isSubmitting: false })
-      // Refresh the list
+      // Refresh lists
       await get().fetchRoles()
+      await get().fetchAllRoles()
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to update role'
@@ -131,8 +146,9 @@ export const useRolesStore = create<RolesState>((set, get) => ({
     try {
       await rolesApi.delete(id)
       set({ isSubmitting: false })
-      // Refresh the list
+      // Refresh lists
       await get().fetchRoles()
+      await get().fetchAllRoles()
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to delete role'
@@ -147,8 +163,9 @@ export const useRolesStore = create<RolesState>((set, get) => ({
     try {
       await rolesApi.bulkDelete(ids)
       set({ isSubmitting: false })
-      // Refresh the list
+      // Refresh lists
       await get().fetchRoles()
+      await get().fetchAllRoles()
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to delete roles'
@@ -176,7 +193,6 @@ export const useRolesStore = create<RolesState>((set, get) => ({
       error: null,
     })
   },
-
 
   clearError: () => {
     set({ error: null })

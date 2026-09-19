@@ -1,13 +1,41 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend-temp</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8"/>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" id="favicon-link"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title id="app-title">RGB ERP</title>
+    <script>
+        // Load favicon and title from public branding endpoint (no auth required)
+        (async function () {
+            try {
+                const baseURL = (window.VITE_API_URL) + '/api';
+                const response = await fetch(baseURL + '/branding');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const branding = data.data;
+
+                    // Update title
+                    if (branding.app_title) {
+                        document.getElementById('app-title').textContent = branding.app_title;
+                    }
+
+                    // Update favicon
+                    if (branding.favicon) {
+                        const faviconLink = document.getElementById('favicon-link');
+                        faviconLink.href = branding.favicon;
+                    }
+                }
+            } catch (e) {
+                // Network error - keep default favicon
+                console.log('Using default branding');
+            }
+        })();
+    </script>
+</head>
+<body>
+<div id="root"></div>
+<script type="module" src="/src/main.tsx"></script>
+</body>
 </html>

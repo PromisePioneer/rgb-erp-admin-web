@@ -8,8 +8,7 @@ import {Save, Calendar, MapPin} from 'lucide-react'
 import {toast} from 'sonner'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
-import {
-    Dialog,
+import Dialog, {
     DialogContent,
     DialogHeader,
     DialogTitle,
@@ -25,6 +24,7 @@ interface SchedulesFormModalProps {
     mode: 'create' | 'edit'
     scheduleId?: number
     defaultEmployeeId?: number
+    defaultAreaId?: number
     defaultDate?: string
 }
 
@@ -33,7 +33,6 @@ type ScheduleFormValues = {
     date: string
     shift_id: number | undefined
     area_id: number | undefined
-    pos_id: number | undefined
 }
 
 export function SchedulesFormModal({
@@ -42,6 +41,7 @@ export function SchedulesFormModal({
                                        mode,
                                        scheduleId,
                                        defaultEmployeeId,
+                                       defaultAreaId,
                                        defaultDate,
                                    }: SchedulesFormModalProps) {
     const {
@@ -59,6 +59,7 @@ export function SchedulesFormModal({
     const hasShownValidationToast = useRef(false)
     const [defaultShiftOption, setDefaultShiftOption] = useState<SelectOption | null>(null)
     const [defaultEmployeeOption, setDefaultEmployeeOption] = useState<SelectOption | null>(null)
+    const [defaultAreaOption, setDefaultAreaOption] = useState<SelectOption | null>(null)
 
     const form = useForm<ScheduleFormValues>({
         defaultValues: {
@@ -66,7 +67,6 @@ export function SchedulesFormModal({
             date: defaultDate ?? new Date().toISOString().split('T')[0],
             shift_id: undefined,
             area_id: undefined,
-            pos_id: undefined,
         },
     })
 
@@ -78,19 +78,39 @@ export function SchedulesFormModal({
                 date: new Date().toISOString().split('T')[0],
                 shift_id: undefined,
                 area_id: undefined,
-                pos_id: undefined,
             })
             hasShownValidationToast.current = false
+            setDefaultEmployeeOption(null)
+            setDefaultAreaOption(null)
+            setDefaultShiftOption(null)
         } else {
             // Set defaults from calendar click
             if (defaultEmployeeId && mode === 'create') {
                 form.setValue('employee_id', defaultEmployeeId)
+                // Fetch employee name for display
+                schedulesApi.getEmployeesSelectOptions({q: ''}).then(response => {
+                    const found = response.data.find((e: {id: number}) => e.id === defaultEmployeeId)
+                    if (found) {
+                        setDefaultEmployeeOption({
+                            value: found.id,
+                            label: `${found.name} (${found.code})`,
+                        })
+                    }
+                }).catch(() => {})
+            }
+            if (defaultAreaId && mode === 'create') {
+                form.setValue('area_id', defaultAreaId)
+                // Set area option for display
+                setDefaultAreaOption({
+                    value: defaultAreaId,
+                    label: 'Area Terpilih',
+                })
             }
             if (defaultDate && mode === 'create') {
                 form.setValue('date', defaultDate)
             }
         }
-    }, [open, defaultEmployeeId, defaultDate, mode, form])
+    }, [open, defaultEmployeeId, defaultAreaId, defaultDate, mode, form])
 
     // Show validation errors as toast
     useEffect(() => {
@@ -118,9 +138,7 @@ export function SchedulesFormModal({
 
     // Effect 1: Fetch data when scheduleId changes
     useEffect(() => {
-        console.log('Effect 1 - mode:', mode, 'scheduleId:', scheduleId, 'open:', open)
         if (mode === 'edit' && scheduleId && open) {
-            console.log('Calling fetchById with:', scheduleId)
             fetchById(scheduleId)
         }
         if (mode === 'create' && open) {
@@ -169,18 +187,7 @@ export function SchedulesFormModal({
             } else {
                 setDefaultShiftOption(null)
             }
-        } else if (mode === 'create' && defaultEmployeeId) {
-            // Pre-load employee for create mode
-            schedulesApi.getEmployeesSelectOptions({q: ''}).then(response => {
-                const found = response.data.find((e: {id: number}) => e.id === defaultEmployeeId)
-                if (found) {
-                    setDefaultEmployeeOption({
-                        value: found.id,
-                        label: `${found.name} (${found.code})`,
-                    })
-                }
-            }).catch(() => {})
-        } else if (mode === 'create') {
+        } else if (mode === 'create' && !defaultEmployeeId) {
             setDefaultEmployeeOption(null)
             setDefaultShiftOption(null)
         }
@@ -194,23 +201,30 @@ export function SchedulesFormModal({
                 date: selectedItem.date,
                 shift_id: selectedItem.shift_id ?? undefined,
                 area_id: selectedItem.area_id ?? undefined,
-                pos_id: selectedItem.pos_id ?? undefined,
             })
         }
     }, [mode, selectedItem, open, form])
 
-    // Load shifts options with cache
+    // Load shifts options with cache (filtered by area)
     const loadShifts = useCallback(async (search: string): Promise<SelectOption[]> => {
+        const areaId = form.getValues('area_id')
+
+        // Cache key includes area
+        const cacheKey = areaId ? `shifts:area:${areaId}` : `shifts:global`
+
         // Only cache initial load (search == '')
         if (search === '') {
-            const cached = getCache('shifts')
+            const cached = getCache(cacheKey)
             if (cached) {
                 return cached
             }
         }
 
         try {
-            const response = await schedulesApi.getShiftsSelectOptions({q: search})
+            const response = await schedulesApi.getShiftsSelectOptions({
+                area_id: areaId,
+                q: search
+            })
             const options = response.data.map((s) => ({
                 value: s.id,
                 label: `${s.name} (${s.start_time} - ${s.end_time})`,
@@ -223,7 +237,7 @@ export function SchedulesFormModal({
 
             // Cache initial load
             if (search === '') {
-                setCache('shifts', uniqueOptions)
+                setCache(cacheKey, uniqueOptions)
             }
 
             return uniqueOptions
@@ -271,15 +285,16 @@ export function SchedulesFormModal({
         form.setValue('employee_id', employeeId)
         // Reset area and pos when employee changes
         form.setValue('area_id', undefined)
-        form.setValue('pos_id', undefined)
+        // Reset shift when employee changes (will reload based on new area)
+        form.setValue('shift_id', undefined)
     }
 
     // Handle area change
     const handleAreaChange = (value: number | string | null) => {
         const areaId = value as number | undefined
         form.setValue('area_id', areaId)
-        // Reset pos when area changes
-        form.setValue('pos_id', undefined)
+        // Reset shift when area changes (will reload based on new area)
+        form.setValue('shift_id', undefined)
     }
 
     const handleClose = () => {
@@ -303,7 +318,6 @@ export function SchedulesFormModal({
                     date: values.date,
                     shift_id: values.shift_id,
                     area_id: values.area_id,
-                    pos_id: values.pos_id,
                 })
                 toast.success('Jadwal berhasil ditambahkan')
                 handleClose()
@@ -313,7 +327,6 @@ export function SchedulesFormModal({
                     date: values.date,
                     shift_id: values.shift_id,
                     area_id: values.area_id,
-                    pos_id: values.pos_id,
                 })
                 toast.success('Jadwal berhasil diperbarui')
                 handleClose()
@@ -341,6 +354,7 @@ export function SchedulesFormModal({
                             Karyawan *
                         </label>
                         <AsyncSelect
+                            key={`employee-${defaultEmployeeOption?.value ?? 'empty'}`}
                             value={form.watch('employee_id') ?? null}
                             onChange={handleEmployeeChange}
                             loadOptions={loadEmployees}
@@ -364,24 +378,11 @@ export function SchedulesFormModal({
                         )}
                     </div>
 
-                    {/* Shift */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Shift</label>
-                        <AsyncSelect
-                            value={form.watch('shift_id') ?? null}
-                            onChange={(value) => form.setValue('shift_id', value as number | undefined)}
-                            loadOptions={loadShifts}
-                            placeholder="Pilih shift (opsional)..."
-                            isDisabled={isLoading}
-                            defaultOption={defaultShiftOption}
-                            className="w-full"
-                        />
-                    </div>
-
                     {/* Area */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Area (untuk rolling area)</label>
+                        <label className="text-sm font-medium">Area</label>
                         <AsyncSelect
+                            key={`area-${defaultAreaOption?.value ?? 'empty'}`}
                             value={form.watch('area_id') ?? null}
                             onChange={handleAreaChange}
                             loadOptions={async (search) => {
@@ -417,54 +418,29 @@ export function SchedulesFormModal({
 
                                 return uniqueOptions
                             }}
-                            placeholder={form.watch('employee_id') ? "Pilih area (opsional)..." : "Pilih karyawan terlebih dahulu..."}
+                            placeholder={form.watch('employee_id') && !defaultAreaId ? "Pilih area..." : ""}
                             isDisabled={isLoading || !form.watch('employee_id')}
+                            readOnly={mode === 'edit' || (mode === 'create' && !!defaultAreaId)}
+                            defaultOption={defaultAreaOption}
                             className="w-full"
                         />
                     </div>
 
-                    {/* POS */}
+                    {/* Shift */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">POS (lokasi absensi)</label>
+                        <label className="text-sm font-medium">Shift</label>
                         <AsyncSelect
-                            value={form.watch('pos_id') ?? null}
-                            onChange={(value) => form.setValue('pos_id', value as number | undefined)}
-                            loadOptions={async (search) => {
-                                const areaId = form.getValues('area_id')
-                                if (!areaId) return []
-
-                                // Cache key per area
-                                const cacheKey = `poss:${areaId}`
-
-                                // Only cache initial load
-                                if (search === '') {
-                                    const cached = getCache(cacheKey)
-                                    if (cached) {
-                                        return cached
-                                    }
-                                }
-
-                                const response = await schedulesApi.getPossSelectOptions({area_id: areaId, q: search})
-                                const options = response.data.map((p) => ({value: p.id, label: p.name}))
-
-                                // Deduplicate by value
-                                const uniqueOptions = options.filter((option, index, self) =>
-                                    index === self.findIndex((o) => o.value === option.value)
-                                )
-
-                                // Cache initial load
-                                if (search === '') {
-                                    setCache(cacheKey, uniqueOptions)
-                                }
-
-                                return uniqueOptions
-                            }}
-                            placeholder={form.watch('area_id') ? "Pilih POS (opsional)..." : "Pilih area terlebih dahulu..."}
+                            key={`shift-${form.watch('area_id') ?? 'no-area'}`}
+                            value={form.watch('shift_id') ?? null}
+                            onChange={(value) => form.setValue('shift_id', value as number | undefined)}
+                            loadOptions={loadShifts}
+                            placeholder={form.watch('area_id') ? "Pilih shift..." : "Pilih area terlebih dahulu..."}
                             isDisabled={isLoading || !form.watch('area_id')}
+                            defaultOption={defaultShiftOption}
                             className="w-full"
                         />
                         <p className="text-xs text-muted-foreground">
-                            POS menentukan lokasi absensi karyawan. Koordinat diambil dari data POS.
+                            Shift ditampilkan berdasarkan area yang dipilih.
                         </p>
                     </div>
 

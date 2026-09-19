@@ -97,7 +97,12 @@ export function AttendancesTable() {
     ? recapItems.find((r) => r.employee_id === filters.employee_id)?.employee_name ?? 'Loading...'
     : null
 
-  // Raw Attendance Columns
+  // Action column helper
+  const handleEdit = useCallback((row: AttendanceRecap) => {
+    // TODO: Implement edit functionality
+    console.log('Edit record:', row)
+  }, [])
+
   const rawColumns = [
     {
       accessorKey: 'recorded_at' as const,
@@ -369,6 +374,7 @@ export function AttendancesTable() {
         </div>
       </div>
 
+
       {/* Raw Data Table */}
       {viewMode === 'raw' && (
         <DataTable
@@ -378,6 +384,7 @@ export function AttendancesTable() {
           isLoading={isLoading}
           onPageChange={handlePageChange}
           emptyMessage="Tidak ada data attendance"
+          onRowClick={(row) => console.log('Edit raw attendance:', row)}
         />
       )}
 
@@ -390,6 +397,7 @@ export function AttendancesTable() {
           isLoading={isLoading}
           onPageChange={handlePageChange}
           emptyMessage="Tidak ada data rekap attendance"
+          onRowClick={handleEdit}
         />
       )}
 

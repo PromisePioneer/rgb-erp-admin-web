@@ -5,37 +5,37 @@
 import { useState } from 'react'
 import { RefreshCw, Gift, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { AsyncSelect } from '@/components/async-select'
 import { toast } from 'sonner'
 import { usePayrollStore } from '../store/payroll-store'
 
 const MONTHS = [
-  { value: 1, label: 'January' },
-  { value: 2, label: 'February' },
-  { value: 3, label: 'March' },
+  { value: 1, label: 'Januari' },
+  { value: 2, label: 'Februari' },
+  { value: 3, label: 'Maret' },
   { value: 4, label: 'April' },
-  { value: 5, label: 'May' },
-  { value: 6, label: 'June' },
-  { value: 7, label: 'July' },
-  { value: 8, label: 'August' },
+  { value: 5, label: 'Mei' },
+  { value: 6, label: 'Juni' },
+  { value: 7, label: 'Juli' },
+  { value: 8, label: 'Agustus' },
   { value: 9, label: 'September' },
-  { value: 10, label: 'October' },
+  { value: 10, label: 'Oktober' },
   { value: 11, label: 'November' },
-  { value: 12, label: 'December' },
+  { value: 12, label: 'Desember' },
+]
+
+const YEARS = [
+  new Date().getFullYear() - 2,
+  new Date().getFullYear() - 1,
+  new Date().getFullYear(),
+  new Date().getFullYear() + 1,
 ]
 
 interface PayrollGenerateDialogProps {
@@ -68,17 +68,17 @@ export function PayrollGenerateDialog({
       if (isMonthly) {
         await generatePayroll(month, year)
         const monthName = MONTHS.find((m) => m.value === month)?.label
-        toast.success(`Generated payroll for ${monthName} ${year}`)
+        toast.success(`Berhasil generate payroll ${monthName} ${year}`)
       } else {
         await generateThr(year)
-        toast.success(`Generated THR for ${year}`)
+        toast.success(`Berhasil generate THR ${year}`)
       }
       setOpen(false)
       if (onGenerated) {
         onGenerated()
       }
     } catch {
-      toast.error(isMonthly ? 'Failed to generate payroll' : 'Failed to generate THR')
+      toast.error(isMonthly ? 'Gagal generate payroll' : 'Gagal generate THR')
     }
   }
 
@@ -105,62 +105,42 @@ export function PayrollGenerateDialog({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {isMonthly ? 'Generate Monthly Payroll' : 'Generate THR'}
+              {isMonthly ? 'Generate Gaji Bulanan' : 'Generate THR'}
             </DialogTitle>
             <DialogDescription>
               {isMonthly
-                ? 'Generate payroll for all active employees. Re-running will overwrite existing payslips for the selected period.'
-                : 'Generate THR (Tunjangan Hari Raya) for all active employees. Tenure-based: 1× monthly wage for ≥12 months, pro-rated below that.'}
+                ? 'Generate payroll untuk semua karyawan aktif. Menggabungkan data yang sudah ada untuk periode yang dipilih.'
+                : 'Generate THR (Tunjangan Hari Raya) untuk semua karyawan aktif. Berdasarkan masa kerja: 1× upah bulanan untuk ≥12 bulan, proporsional di bawahnya.'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             {isMonthly && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Month</label>
-                <Select
-                  value={month.toString()}
-                  onValueChange={(v) => { if (v) setMonth(parseInt(v, 10)) }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MONTHS.map((m) => (
-                      <SelectItem key={m.value} value={m.value.toString()}>
-                        {m.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <label className="text-sm font-medium">Bulan</label>
+                <AsyncSelect
+                  placeholder="Pilih bulan..."
+                  loadOptions={async () => MONTHS.map(m => ({ value: String(m.value), label: m.label }))}
+                  value={month}
+                  onChange={(val) => { if (val) setMonth(Number(val)) }}
+                />
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Year</label>
-              <Select
-                value={year.toString()}
-                onValueChange={(v) => { if (v) setYear(parseInt(v, 10)) }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[new Date().getFullYear() - 2, new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(
-                    (y) => (
-                      <SelectItem key={y} value={y.toString()}>
-                        {y}
-                      </SelectItem>
-                    )
-                  )}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium">Tahun</label>
+              <AsyncSelect
+                placeholder="Pilih tahun..."
+                loadOptions={async () => YEARS.map(y => ({ value: String(y), label: String(y) }))}
+                value={year}
+                onChange={(val) => { if (val) setYear(Number(val)) }}
+              />
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              Batal
             </Button>
             <Button
               onClick={handleGenerate}

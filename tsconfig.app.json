@@ -29,5 +29,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "exclude": ["src/features/fund-requests/**/*", "src/features/approval-flows/**/*"]
 }

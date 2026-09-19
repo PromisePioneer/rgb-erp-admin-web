@@ -5,41 +5,24 @@ import {
     Outlet,
 } from '@tanstack/react-router'
 import {Toaster} from 'sonner'
-import {useState} from 'react'
+import {useState, useEffect} from 'react'
 import {useForm} from 'react-hook-form'
 import {zodResolver} from '@hookform/resolvers/zod'
 import {z} from 'zod'
 import {useAuthStore} from '@/stores/auth-store'
+import {useTranslationStore} from '@/stores/translation-store'
 import {requirePrivilegeInBeforeLoad} from '@/lib/privilege-guard'
 import {useNavigate} from '@tanstack/react-router'
-import {ArrowLeft, ShieldCheck, Eye, EyeOff} from 'lucide-react'
+import {ArrowLeft, Eye, EyeOff} from 'lucide-react'
 import {ReportsTable} from '@/features/reports/components/reports-table'
-import {ClientsTable} from '@/features/clients/components/clients-table'
-import {ClientsForm} from '@/features/clients/components/clients-form'
-import {DepartmentsTable} from '@/features/departments/components/departments-table'
-import {RolesTable} from '@/features/roles/components/roles-table'
-import {RolesPrivilegesForm} from '@/features/roles/components/roles-privileges-form'
 import {Placeholder} from '@/components/placeholder'
 import {MainLayout} from '@/components/layout'
 import {SettingsForm} from '@/features/settings'
 import {UsersTable} from '@/features/users'
-import {ClientTypesTable} from '@/features/client-types'
-import {PositionsTable} from '@/features/positions'
-import {PositionPrivilegesForm} from '@/features/position-privileges'
-import {BanksTable} from '@/features/banks'
-import {DocumentsTable} from '@/features/documents'
-import {ShiftsTable} from '@/features/shifts'
-import {WarehousesTable} from '@/features/warehouses'
-import {ProductCategoriesTable} from '@/features/product-categories'
-import {SalaryComponentsTable} from '@/features/salary-components'
-import {EmployeesTable, EmployeesForm} from '@/features/employees'
 import {AreasTable} from '@/features/areas'
 import {PossTable} from '@/features/poss'
-import {ProvincesTable} from '@/features/provinces'
 import {AttendancesTable} from '@/features/attendances'
 import {SchedulesTable} from '@/features/schedules'
-import {BankAccountsTable} from '@/features/bank-accounts'
-import {PettyCashTable} from '@/features/petty-cash'
 import {InvoicesTable} from '@/features/invoices'
 import {
     JournalTable,
@@ -59,18 +42,79 @@ import {BalanceSheetReport} from '@/features/financial-reports/components/balanc
 import {CashFlowReport} from '@/features/financial-reports/components/cash-flow'
 import {EquityStatementReport} from '@/features/financial-reports/components/equity-statement'
 import {AccountingPeriodsTable} from '@/features/accounting-periods/components/accounting-periods-table'
+import {OpeningBalancePage} from '@/features/opening-balance/components/OpeningBalancePage'
 import {FixedAssetsTable} from '@/features/fixed-assets/components/fixed-assets-table'
 import {TangibleAssetClassesTable} from '@/features/tangible-asset-classes/components/tangible-asset-classes-table'
 import {Button} from "@/components/ui";
+import {ClientsForm} from '@/features/clients'
+import {PanicAlertsTable} from '@/features/panic-alerts'
+import {ApprovalsTable} from '@/features/approvals'
+import {ApprovalFlowsTable} from '@/features/approval-flows'
+import {ApprovalTypesTable} from '@/features/approval-types'
+import {PatrolReportsTable, PatrolRoundsTable} from '@/features/patrol-reports'
+import {CheckpointsTable} from '@/features/checkpoints'
+import {DailyTaskReportsList} from '@/features/daily-task-reports'
+import {InventoryPage} from '@/features/inventory-items'
+import {FaceEnrollmentsTable} from '@/features/face-enrollments'
+import {EmployeesTable, EmployeesForm} from '@/features/employees'
+import {PurchaseRequestsTable, PurchaseRequestsForm} from '@/features/purchase-requests'
+import {PurchaseOrdersTable, PurchaseOrdersForm} from '@/features/purchase-orders'
+import {ReceptionsTable, ReceptionsForm} from '@/features/receptions'
+import {FundRequestsTable, FundRequestsForm} from '@/features/fund-requests'
+import {
+    DistributionRequestsTable,
+    DistributionRequestsForm,
+    DistributionRequestsDetail,
+} from '@/features/distribution-requests'
+import {ProductAreasTable} from '@/features/product-areas/components/product-areas-table'
+import {StockOpnameForm} from '@/features/stock-opnames'
+import {MasterDataHub} from '@/features/master-data'
+import {ProcurementHub} from '@/features/procurement'
+import {FinancialReportsHub} from '@/features/financial-reports'
+import {ForcePasswordChangeModal} from '@/components/force-password-change-modal'
+import {RolesPrivilegesForm} from '@/features/roles'
 
 // Root route
 const rootRoute = createRootRoute({
-    component: () => (
-        <>
-            <Outlet/>
-            <Toaster position="top-right" richColors/>
-        </>
-    ),
+    component: () => {
+        const {preloadTranslations} = useTranslationStore()
+
+        useEffect(() => {
+            preloadTranslations()
+        }, [preloadTranslations])
+
+        return (
+            <>
+                <Outlet/>
+                <Toaster
+                    position="top-right"
+                    expand={false}
+                    richColors
+                    closeButton
+                    toastOptions={{
+                        style: {
+                            background: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            color: 'hsl(var(--card-foreground))',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        },
+                        classNames: {
+                            toast: 'group',
+                            title: 'text-sm font-medium',
+                            description: 'text-xs text-muted-foreground mt-1',
+                            success: 'border-l-4 border-l-green-500',
+                            error: 'border-l-4 border-l-red-500',
+                            warning: 'border-l-4 border-l-amber-500',
+                            info: 'border-l-4 border-l-blue-500',
+                            actionButton: 'bg-primary text-primary-foreground text-xs px-3 py-1 rounded',
+                            cancelButton: 'bg-muted text-muted-foreground text-xs px-3 py-1 rounded',
+                            closeButton: 'bg-transparent hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors',
+                        },
+                    }}
+                />
+            </>
+        )
+    },
 })
 
 // Auth layout wrapper
@@ -82,7 +126,12 @@ function AuthLayout({children}: { children: React.ReactNode }) {
         return null
     }
 
-    return <MainLayout>{children}</MainLayout>
+    return (
+        <>
+            <MainLayout>{children}</MainLayout>
+            <ForcePasswordChangeModal />
+        </>
+    )
 }
 
 // Index route
@@ -102,18 +151,59 @@ const loginSchema = z.object({
 })
 type LoginFormValues = z.infer<typeof loginSchema>
 
-const opsModules = [
-    {label: 'Absensi & Jadwal Kerja', status: 'Aktif'},
-    {label: 'Patroli & Checkpoint', status: 'Aktif'},
-    {label: 'Panic Button', status: 'Siaga'},
-    {label: 'Enrollment Wajah', status: 'Aktif'},
-]
+// OPS Module Status options from settings
+function getOpsModules(settings: any) {
+    if (!settings) {
+        return [
+            {label: 'Absensi & Jadwal Kerja', status: 'Aktif'},
+            {label: 'Patroli & Checkpoint', status: 'Aktif'},
+            {label: 'Panic Button', status: 'Siaga'},
+            {label: 'Enrollment Wajah', status: 'Aktif'},
+        ]
+    }
+    return [
+        {label: 'Absensi & Jadwal Kerja', status: settings.ops_absensi_status || 'Aktif'},
+        {label: 'Patroli & Checkpoint', status: settings.ops_patroli_status || 'Aktif'},
+        {label: 'Panic Button', status: settings.ops_panic_status || 'Siaga'},
+        {label: 'Enrollment Wajah', status: settings.ops_enrollment_status || 'Aktif'},
+    ]
+}
 
 function LoginPage() {
     const {login} = useAuthStore()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showPassword, setShowPassword] = useState(false)
+    const [settings, setSettings] = useState<any>(null)
+
+    // Fetch settings on mount
+    useEffect(() => {
+        const fetchSettings = async () => {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 10000)
+
+            try {
+                const baseURL = import.meta.env.VITE_API_URL
+                const response = await fetch(`${baseURL}/api/admin/settings`, {
+                    credentials: 'include',
+                    signal: controller.signal,
+                })
+                clearTimeout(timeoutId)
+
+                if (response.ok) {
+                    const data = await response.json()
+                    setSettings(data.data)
+                }
+            } catch (err) {
+                if (err instanceof Error && err.name === 'AbortError') {
+                    console.warn('Settings fetch timed out')
+                } else {
+                    console.error('Failed to fetch settings:', err)
+                }
+            }
+        }
+        fetchSettings()
+    }, [])
 
     const form = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
@@ -133,18 +223,26 @@ function LoginPage() {
         }
     }
 
+    // Get values from settings with defaults
+    const appTitle = settings?.app_title || '';
+    const companyName = settings?.company_name || '';
+    const companyTagline = settings?.company_tagline || '';
+    const companyDescription = settings?.company_description || ''
+    const loginImage = settings?.login_image
+    const opsModules = getOpsModules(settings)
+
     return (
         <div className="min-h-screen w-full bg-background lg:grid lg:grid-cols-5">
             {/* Panel operasional (kiri, hanya desktop) */}
             <div
                 className="relative hidden overflow-hidden bg-slate-950 lg:col-span-3 lg:flex lg:flex-col lg:justify-between"
                 style={{
-                    backgroundImage: `url('/assets/images/login-background.webp')`,
+                    backgroundImage: `url('${loginImage}')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}>
                 {/* Backdrop overlay */}
-                <div className="absolute inset-0 bg-slate-950/70" />
+                <div className="absolute inset-0 bg-slate-950/70"/>
                 {/* Grid pattern */}
                 <div
                     className="pointer-events-none absolute inset-0 opacity-[0.15]"
@@ -162,22 +260,22 @@ function LoginPage() {
 
                 <div className="relative z-10 flex flex-1 flex-col justify-center px-16 py-12">
                     <div className="mb-10 flex items-center gap-3">
-                        <div
-                            className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/15 ring-1 ring-sky-400/30">
-                            <ShieldCheck className="h-5 w-5 text-sky-400"/>
+                        <div className="flex h-12 w-12 items-center justify-center">
+                            <img src="/logo-3d.svg" alt="Logo" className="h-full w-full object-contain"/>
                         </div>
                         <span className="font-mono text-xs uppercase tracking-[0.25em] text-slate-400">
-              RGB ERP
+              {appTitle}
             </span>
                     </div>
 
                     <h1 className="max-w-md text-3xl font-bold leading-tight text-white">
-                        Bermitra Bersama Kami dan Raih Sukses Bersama.
+                        {companyTagline}
                     </h1>
                     <div className="mt-4 space-y-2 text-base text-slate-300">
-                        <p className="font-semibold text-white">PT. Rajawali Buana 86 (RGB 86)</p>
-                        <p>Perusahaan outsourcing sejak 2009.</p>
-                        <p>Melayani: Security, Cleaning, Catering, Parking, Gardener, Driver & lainnya.</p>
+                        <p className="font-semibold text-white">{companyName}</p>
+                        {companyDescription.split('\n').map((line: string, i: number) => (
+                            <p key={i}>{line}</p>
+                        ))}
                     </div>
 
                     <div className="mt-12 space-y-3">
@@ -213,11 +311,11 @@ function LoginPage() {
             <div className="flex min-h-screen items-center justify-center px-6 py-12 lg:col-span-2">
                 <div className="w-full max-w-sm">
                     <div className="mb-8 flex items-center gap-2 lg:hidden">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                            <ShieldCheck className="h-5 w-5 text-primary"/>
+                        <div className="flex h-10 w-10 items-center justify-center">
+                            <img src="/logo-compact.svg" alt="Logo" className="h-full w-full object-contain"/>
                         </div>
                         <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
-              RGB ERP
+              {appTitle}
             </span>
                     </div>
 
@@ -324,8 +422,8 @@ function ReportsPage() {
     return (
         <AuthLayout>
             <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Field Reports</h2>
-                <p className="text-muted-foreground">View and manage field reports from employees</p>
+                <h2 className="text-2xl font-bold mb-2">Laporan Lapangan</h2>
+                <p className="text-muted-foreground">Lihat dan kelola laporan lapangan dari karyawan</p>
             </div>
             <ReportsTable/>
         </AuthLayout>
@@ -346,349 +444,44 @@ const reportsRoute = createRoute({
     component: ReportsPage,
 })
 
-// Clients
-function ClientsPage() {
+// Financial Reports Hub
+function FinancialReportsPage() {
     return (
         <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Clients</h2>
-                <p className="text-muted-foreground">Manage client information and settings</p>
-            </div>
-            <ClientsTable/>
+            <FinancialReportsHub/>
         </AuthLayout>
     )
 }
 
-const clientsRoute = createRoute({
+const financialReportsRoute = createRoute({
     getParentRoute: () => rootRoute,
-    path: '/clients',
+    path: '/financial-reports',
     beforeLoad: () => {
         const {isAuthenticated} = useAuthStore.getState()
         if (!isAuthenticated) {
             window.location.href = '/login';
             return
         }
-        requirePrivilegeInBeforeLoad('Client', 'View')
+        requirePrivilegeInBeforeLoad('Financial Report', 'View')
     },
-    component: ClientsPage,
+    component: FinancialReportsPage,
 })
 
-function ClientsNewPage() {
-    return (
-        <AuthLayout>
-            <ClientsForm/>
-        </AuthLayout>
-    )
-}
+// ===== MASTER DATA HUB =====
+// All master data modules are now centralized in /master-data route
+// Modules: Provinces, Client Types, Banks, Bank Accounts, Departments, Roles,
+// Employees, Shifts, Documents, Warehouses, Product Categories, Products,
+// Areas, Poss, Salary Components, Tangible Asset Classes, Chart of Accounts,
+// Daily Task Items, Review Criteria
 
-const clientsNewRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/clients/new',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Client', 'Add')
-    },
-    component: ClientsNewPage,
-})
-
-function ClientsEditPage() {
-    return (
-        <AuthLayout>
-            <ClientsForm/>
-        </AuthLayout>
-    )
-}
-
-const clientsEditRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/clients/$id/edit',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Client', 'Edit')
-    },
-    component: ClientsEditPage,
-})
-
-// Departments
-function DepartmentsPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Departments</h2>
-                <p className="text-muted-foreground">Manage department information</p>
-            </div>
-            <DepartmentsTable/>
-        </AuthLayout>
-    )
-}
-
-const departmentsRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/departments',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Department', 'View')
-    },
-    component: DepartmentsPage,
-})
-
-// Roles
-function RolesPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Roles</h2>
-                <p className="text-muted-foreground">Manage role information</p>
-            </div>
-            <RolesTable/>
-        </AuthLayout>
-    )
-}
-
-const rolesRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/roles',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Role', 'View')
-    },
-    component: RolesPage,
-})
-
-// Role Privileges
-function RolePrivilegesPage() {
-    // Get role ID from route params
-    const routeParams = rolePrivilegesRoute.useParams()
-    const roleId = Number.parseInt(routeParams.id, 10)
-
-    return (
-        <AuthLayout>
-            <RolesPrivilegesForm roleId={roleId}/>
-        </AuthLayout>
-    )
-}
-
-const rolePrivilegesRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/roles/$id/privileges',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Privilege', 'View')
-    },
-    component: RolePrivilegesPage,
-})
-
-// ===== PLACEHOLDER ROUTES (Waiting for migration) =====
-
-// Helper to create placeholder route
-function createPlaceholderRoute(path: string, title: string, menuName?: string) {
-    const Component = () => {
-        const {isAuthenticated} = useAuthStore()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return null
-        }
-        if (menuName) requirePrivilegeInBeforeLoad(menuName, 'View')
-        return (
-            <AuthLayout>
-                <div className="mb-6">
-                    <h2 className="text-2xl font-bold mb-2">{title}</h2>
-                    <p className="text-muted-foreground">Manage {title.toLowerCase()}</p>
-                </div>
-                <Placeholder title={title}/>
-            </AuthLayout>
-        )
-    }
-    return createRoute({getParentRoute: () => rootRoute, path, component: Component})
-}
-
-// Users
-function UsersPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Users</h2>
-                <p className="text-muted-foreground">Manage user accounts</p>
-            </div>
-            <UsersTable/>
-        </AuthLayout>
-    )
-}
-
-const usersRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/users',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('User', 'View')
-    },
-    component: UsersPage,
-})
-
-// Positions
-function PositionsPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Positions</h2>
-                <p className="text-muted-foreground">Manage position information</p>
-            </div>
-            <PositionsTable/>
-        </AuthLayout>
-    )
-}
-
-const positionsRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/positions',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Position', 'View')
-    },
-    component: PositionsPage,
-})
-
-// Position Privileges
-function PositionPrivilegesPage() {
-    return (
-        <AuthLayout>
-            <PositionPrivilegesForm/>
-        </AuthLayout>
-    )
-}
-
-const positionPrivilegesRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/positions/$id/privileges',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Position', 'Edit')
-    },
-    component: PositionPrivilegesPage,
-})
-
-// Banks
-function BanksPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Banks</h2>
-                <p className="text-muted-foreground">Manage bank information</p>
-            </div>
-            <BanksTable/>
-        </AuthLayout>
-    )
-}
-
-const banksRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/banks',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Bank', 'View')
-    },
-    component: BanksPage,
-})
-
-// Client Types
-function ClientTypesPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Client Types</h2>
-                <p className="text-muted-foreground">Manage client type information</p>
-            </div>
-            <ClientTypesTable/>
-        </AuthLayout>
-    )
-}
-
-const clientTypesRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/client-types',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Client Type', 'View')
-    },
-    component: ClientTypesPage,
-})
-
-// Positions placeholder replaced above
-
-// Documents
-function DocumentsPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Documents</h2>
-                <p className="text-muted-foreground">Manage document information</p>
-            </div>
-            <DocumentsTable/>
-        </AuthLayout>
-    )
-}
-
-const documentsRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/documents',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Document', 'View')
-    },
-    component: DocumentsPage,
-})
-
-// Employees - Full page form (complex module)
+// ===== EMPLOYEES FORMS =====
+// Employees list is in Master Data Hub, but forms need separate routes
 function EmployeesPage() {
     return (
         <AuthLayout>
             <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Employees</h2>
-                <p className="text-muted-foreground">Manage employee information</p>
+                <h2 className="text-2xl font-bold mb-2">Karyawan</h2>
+                <p className="text-muted-foreground">Kelola data karyawan</p>
             </div>
             <EmployeesTable/>
         </AuthLayout>
@@ -753,7 +546,58 @@ const employeesEditRoute = createRoute({
     component: EmployeesEditPage,
 })
 
-// Areas - can be filtered by client_id from query params
+// ===== PLACEHOLDER ROUTES (Waiting for migration) =====
+
+// Helper to create placeholder route
+function createPlaceholderRoute(path: string, title: string, menuName?: string) {
+    const Component = () => {
+        const {isAuthenticated} = useAuthStore()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return null
+        }
+        if (menuName) requirePrivilegeInBeforeLoad(menuName, 'View')
+        return (
+            <AuthLayout>
+                <div className="mb-6">
+                    <h2 className="text-2xl font-bold mb-2">{title}</h2>
+                    <p className="text-muted-foreground">Manage {title.toLowerCase()}</p>
+                </div>
+                <Placeholder title={title}/>
+            </AuthLayout>
+        )
+    }
+    return createRoute({getParentRoute: () => rootRoute, path, component: Component})
+}
+
+// Users
+function UsersPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Users</h2>
+                <p className="text-muted-foreground">Manage user accounts</p>
+            </div>
+            <UsersTable/>
+        </AuthLayout>
+    )
+}
+
+const usersRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/users',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('User', 'View')
+    },
+    component: UsersPage,
+})
+
+// Areas - can be filtered by client_id from query params (KEPT - special filtering)
 function AreasPage() {
     const navigate = useNavigate()
     const search = useAreasRoute.useSearch()
@@ -761,7 +605,7 @@ function AreasPage() {
     const client_name = (search as { client_name?: string }).client_name
 
     const handleBack = () => {
-        navigate({to: '/clients'})
+        navigate({to: '/master-data'})
     }
 
     return (
@@ -896,8 +740,8 @@ function AttendancePage() {
     return (
         <AuthLayout>
             <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Attendance</h2>
-                <p className="text-muted-foreground">View and manage employee attendance records</p>
+                <h2 className="text-2xl font-bold mb-2">Kehadiran</h2>
+                <p className="text-muted-foreground">Lihat dan kelola catatan kehadiran karyawan</p>
             </div>
             <AttendancesTable/>
         </AuthLayout>
@@ -945,115 +789,7 @@ const schedulesRoute = createRoute({
     component: SchedulesPage,
 })
 
-// Shifts
-function ShiftsPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Shifts</h2>
-                <p className="text-muted-foreground">Manage shift schedules and working hours</p>
-            </div>
-            <ShiftsTable/>
-        </AuthLayout>
-    )
-}
-
-const shiftsRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/shifts',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Shift', 'View')
-    },
-    component: ShiftsPage,
-})
-
-// Bank Accounts
-function BankAccountsPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Bank Accounts</h2>
-                <p className="text-muted-foreground">Manage bank account information</p>
-            </div>
-            <BankAccountsTable/>
-        </AuthLayout>
-    )
-}
-
-const bankAccountsRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/bank-accounts',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Bank Account', 'View')
-    },
-    component: BankAccountsPage,
-})
-
-// Salary Components
-function SalaryComponentsPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Salary Components</h2>
-                <p className="text-muted-foreground">Manage salary component information</p>
-            </div>
-            <SalaryComponentsTable/>
-        </AuthLayout>
-    )
-}
-
-const salaryComponentsRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/salary-components',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Salary Component', 'View')
-    },
-    component: SalaryComponentsPage,
-})
-
-// Petty Cash
-function PettyCashPage() {
-    return (
-        <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Petty Cash</h2>
-                <p className="text-muted-foreground">Manage petty cash records</p>
-            </div>
-            <PettyCashTable/>
-        </AuthLayout>
-    )
-}
-
-const pettyCashRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/petty-cash',
-    beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Petty Cash', 'View')
-    },
-    component: PettyCashPage,
-})
-
-// Invoices
+// Poss - can be filtered by area_id/client_id from query params (KEPT - special filtering)
 function InvoicesPage() {
     return (
         <AuthLayout>
@@ -1107,112 +843,184 @@ const payrollRoute = createRoute({
     component: PayrollPage,
 })
 
-// Warehouses
-function WarehousesPage() {
+// Master Data Hub
+function MasterDataPage() {
     return (
         <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Warehouses</h2>
-                <p className="text-muted-foreground">Manage warehouse information</p>
-            </div>
-            <WarehousesTable/>
+            <MasterDataHub/>
         </AuthLayout>
     )
 }
 
-const warehousesRoute = createRoute({
+const masterDataRoute = createRoute({
     getParentRoute: () => rootRoute,
-    path: '/warehouses',
+    path: '/master-data',
     beforeLoad: () => {
         const {isAuthenticated} = useAuthStore.getState()
         if (!isAuthenticated) {
             window.location.href = '/login';
             return
         }
-        requirePrivilegeInBeforeLoad('Warehouse', 'View')
     },
-    component: WarehousesPage,
+    component: MasterDataPage,
 })
 
-// Provinces (modal form - no separate pages)
-function ProvincesPage() {
+// Role Privileges Page
+function RolePrivilegesPageInner({roleId}: { roleId: number }) {
     return (
         <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Provinces</h2>
-                <p className="text-muted-foreground">Manage provinces</p>
-            </div>
-            <ProvincesTable/>
+            <RolesPrivilegesForm roleId={roleId}/>
         </AuthLayout>
     )
 }
 
-const provincesRoute = createRoute({
+const rolePrivilegesRoute = createRoute({
     getParentRoute: () => rootRoute,
-    path: '/provinces',
+    path: '/roles/$id/privileges',
     beforeLoad: () => {
         const {isAuthenticated} = useAuthStore.getState()
         if (!isAuthenticated) {
             window.location.href = '/login';
             return
         }
-        requirePrivilegeInBeforeLoad('Province', 'View')
+        requirePrivilegeInBeforeLoad('Role', 'Edit')
     },
-    component: ProvincesPage,
+    component: function RolePrivilegesPage() {
+        const params = rolePrivilegesRoute.useParams()
+        return <RolePrivilegesPageInner roleId={parseInt(params.id)}/>
+    },
 })
 
-// Product Categories
-function ProductCategoriesPage() {
+// Clients - New
+function ClientNewPage() {
     return (
         <AuthLayout>
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Product Categories</h2>
-                <p className="text-muted-foreground">Manage product category information</p>
-            </div>
-            <ProductCategoriesTable/>
+            <ClientsForm/>
         </AuthLayout>
     )
 }
 
-const productCategoriesRoute = createRoute({
+const clientNewRoute = createRoute({
     getParentRoute: () => rootRoute,
-    path: '/product-categories',
+    path: '/clients/new',
     beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState()
-        if (!isAuthenticated) {
-            window.location.href = '/login';
-            return
-        }
-        requirePrivilegeInBeforeLoad('Product Category', 'View')
+        requirePrivilegeInBeforeLoad('Client', 'Add')
     },
-    component: ProductCategoriesPage,
+    component: ClientNewPage,
 })
 
-// Products
-const productsRoute = createPlaceholderRoute('/products', 'Products', 'Product')
-const productsNewRoute = createRoute({
-    getParentRoute: () => rootRoute, path: '/products/new',
+// Clients - Edit
+function ClientEditPage() {
+    return (
+        <AuthLayout>
+            <ClientsForm/>
+        </AuthLayout>
+    )
+}
+
+const clientEditRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/clients/$id',
+    beforeLoad: () => {
+        requirePrivilegeInBeforeLoad('Client', 'Edit')
+    },
+    component: ClientEditPage,
+})
+
+// Product Areas
+function ProductAreasPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Product Areas</h2>
+                <p className="text-muted-foreground">Kelola stok produk per Area/Client</p>
+            </div>
+            <ProductAreasTable/>
+        </AuthLayout>
+    )
+}
+
+const productAreasRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/product-areas',
     beforeLoad: () => {
         const {isAuthenticated} = useAuthStore.getState();
         if (!isAuthenticated) {
             window.location.href = '/login';
             return
         }
-        requirePrivilegeInBeforeLoad('Product', 'Add')
+        requirePrivilegeInBeforeLoad('Product', 'View')
     },
-    component: () => <AuthLayout><Placeholder title="Add Product"/></AuthLayout>,
+    component: ProductAreasPage,
 })
-const productsEditRoute = createRoute({
-    getParentRoute: () => rootRoute, path: '/products/$id/edit',
+
+// Unified Inventory (Warehouse + Area tracking)
+function InventoryPageWrapper() {
+    return (
+        <AuthLayout>
+            <InventoryPage/>
+        </AuthLayout>
+    )
+}
+
+const inventoryRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/inventory',
     beforeLoad: () => {
         const {isAuthenticated} = useAuthStore.getState();
         if (!isAuthenticated) {
             window.location.href = '/login';
             return
         }
-        requirePrivilegeInBeforeLoad('Product', 'Edit')
+        requirePrivilegeInBeforeLoad('Product', 'View')
     },
-    component: () => <AuthLayout><Placeholder title="Edit Product"/></AuthLayout>,
+    component: InventoryPageWrapper,
+})
+
+// Procurement Hub (PR, PO, Reception, Distribution, Fund Request)
+function ProcurementPage() {
+    return (
+        <AuthLayout>
+            <ProcurementHub/>
+        </AuthLayout>
+    )
+}
+
+const procurementRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/procurement',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        // Allow access if user has any procurement privilege
+    },
+    component: ProcurementPage,
+})
+
+// Inventory Tracking (Legacy - redirects to /inventory)
+function InventoryTrackingPage() {
+    return (
+        <AuthLayout>
+            <InventoryPage/>
+        </AuthLayout>
+    )
+}
+
+const inventoryTrackingRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/inventory-tracking',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Inventory Item', 'View')
+    },
+    component: InventoryTrackingPage,
 })
 
 // Assets
@@ -1243,7 +1051,40 @@ const assetsEditRoute = createRoute({
 })
 
 // Purchase Requests
-const purchaseRequestsRoute = createPlaceholderRoute('/purchase-requests', 'Purchase Requests', 'Purchase Request')
+function PurchaseRequestsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Purchase Requests</h2>
+                <p className="text-muted-foreground">Manage purchase request information</p>
+            </div>
+            <PurchaseRequestsTable/>
+        </AuthLayout>
+    )
+}
+
+const purchaseRequestsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/purchase-requests',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Purchase Request', 'View')
+    },
+    component: PurchaseRequestsPage,
+})
+
+function PurchaseRequestsNewPage() {
+    return (
+        <AuthLayout>
+            <PurchaseRequestsForm/>
+        </AuthLayout>
+    )
+}
+
 const purchaseRequestsNewRoute = createRoute({
     getParentRoute: () => rootRoute, path: '/purchase-requests/new',
     beforeLoad: () => {
@@ -1254,8 +1095,17 @@ const purchaseRequestsNewRoute = createRoute({
         }
         requirePrivilegeInBeforeLoad('Purchase Request', 'Add')
     },
-    component: () => <AuthLayout><Placeholder title="Add Purchase Request"/></AuthLayout>,
+    component: PurchaseRequestsNewPage,
 })
+
+function PurchaseRequestsEditPage() {
+    return (
+        <AuthLayout>
+            <PurchaseRequestsForm/>
+        </AuthLayout>
+    )
+}
+
 const purchaseRequestsEditRoute = createRoute({
     getParentRoute: () => rootRoute, path: '/purchase-requests/$id/edit',
     beforeLoad: () => {
@@ -1266,11 +1116,44 @@ const purchaseRequestsEditRoute = createRoute({
         }
         requirePrivilegeInBeforeLoad('Purchase Request', 'Edit')
     },
-    component: () => <AuthLayout><Placeholder title="Edit Purchase Request"/></AuthLayout>,
+    component: PurchaseRequestsEditPage,
 })
 
 // Purchase Orders
-const purchaseOrdersRoute = createPlaceholderRoute('/purchase-orders', 'Purchase Orders', 'Purchase Order')
+function PurchaseOrdersPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Purchase Orders</h2>
+                <p className="text-muted-foreground">Manage purchase order information</p>
+            </div>
+            <PurchaseOrdersTable/>
+        </AuthLayout>
+    )
+}
+
+const purchaseOrdersRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/purchase-orders',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Purchase Order', 'View')
+    },
+    component: PurchaseOrdersPage,
+})
+
+function PurchaseOrdersNewPage() {
+    return (
+        <AuthLayout>
+            <PurchaseOrdersForm/>
+        </AuthLayout>
+    )
+}
+
 const purchaseOrdersNewRoute = createRoute({
     getParentRoute: () => rootRoute, path: '/purchase-orders/new',
     beforeLoad: () => {
@@ -1281,8 +1164,17 @@ const purchaseOrdersNewRoute = createRoute({
         }
         requirePrivilegeInBeforeLoad('Purchase Order', 'Add')
     },
-    component: () => <AuthLayout><Placeholder title="Add Purchase Order"/></AuthLayout>,
+    component: PurchaseOrdersNewPage,
 })
+
+function PurchaseOrdersEditPage() {
+    return (
+        <AuthLayout>
+            <PurchaseOrdersForm/>
+        </AuthLayout>
+    )
+}
+
 const purchaseOrdersEditRoute = createRoute({
     getParentRoute: () => rootRoute, path: '/purchase-orders/$id/edit',
     beforeLoad: () => {
@@ -1293,11 +1185,199 @@ const purchaseOrdersEditRoute = createRoute({
         }
         requirePrivilegeInBeforeLoad('Purchase Order', 'Edit')
     },
-    component: () => <AuthLayout><Placeholder title="Edit Purchase Order"/></AuthLayout>,
+    component: PurchaseOrdersEditPage,
+})
+
+// Fund Requests
+function FundRequestsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Fund Request</h2>
+                <p className="text-muted-foreground">Kelola pengajuan dana untuk purchase order</p>
+            </div>
+            <FundRequestsTable/>
+        </AuthLayout>
+    )
+}
+
+const fundRequestsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/fund-requests',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Fund Request', 'View')
+    },
+    component: FundRequestsPage,
+})
+
+function FundRequestsNewPage() {
+    return (
+        <AuthLayout>
+            <FundRequestsForm/>
+        </AuthLayout>
+    )
+}
+
+const fundRequestsNewRoute = createRoute({
+    getParentRoute: () => rootRoute, path: '/fund-requests/new',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Fund Request', 'Add')
+    },
+    component: FundRequestsNewPage,
+})
+
+function FundRequestsEditPage() {
+    return (
+        <AuthLayout>
+            <FundRequestsForm/>
+        </AuthLayout>
+    )
+}
+
+const fundRequestsEditRoute = createRoute({
+    getParentRoute: () => rootRoute, path: '/fund-requests/$id/edit',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Fund Request', 'Edit')
+    },
+    component: FundRequestsEditPage,
+})
+
+// Distribution Requests
+function DistributionRequestsPage() {
+    return (
+        <AuthLayout>
+            <DistributionRequestsTable/>
+        </AuthLayout>
+    )
+}
+
+const distributionRequestsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/distribution-requests',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Distribution Request', 'View')
+    },
+    component: DistributionRequestsPage,
+})
+
+function DistributionRequestsNewPage() {
+    return (
+        <AuthLayout>
+            <DistributionRequestsForm/>
+        </AuthLayout>
+    )
+}
+
+const distributionRequestsNewRoute = createRoute({
+    getParentRoute: () => rootRoute, path: '/distribution-requests/new',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Distribution Request', 'Add')
+    },
+    component: DistributionRequestsNewPage,
+})
+
+function DistributionRequestsDetailPage() {
+    return (
+        <AuthLayout>
+            <DistributionRequestsDetail/>
+        </AuthLayout>
+    )
+}
+
+const distributionRequestsDetailRoute = createRoute({
+    getParentRoute: () => rootRoute, path: '/distribution-requests/$id',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Distribution Request', 'View')
+    },
+    component: DistributionRequestsDetailPage,
+})
+
+function DistributionRequestsEditPage() {
+    return (
+        <AuthLayout>
+            <DistributionRequestsForm/>
+        </AuthLayout>
+    )
+}
+
+const distributionRequestsEditRoute = createRoute({
+    getParentRoute: () => rootRoute, path: '/distribution-requests/$id/edit',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Distribution Request', 'Edit')
+    },
+    component: DistributionRequestsEditPage,
 })
 
 // Receptions
-const receptionsRoute = createPlaceholderRoute('/receptions', 'Receptions', 'Reception')
+function ReceptionsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Penerimaan Barang</h2>
+                <p className="text-muted-foreground">Kelola data penerimaan barang dari supplier</p>
+            </div>
+            <ReceptionsTable/>
+        </AuthLayout>
+    )
+}
+
+const receptionsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/receptions',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Reception', 'View')
+    },
+    component: ReceptionsPage,
+})
+
+function ReceptionsNewPage() {
+    return (
+        <AuthLayout>
+            <ReceptionsForm/>
+        </AuthLayout>
+    )
+}
+
 const receptionsNewRoute = createRoute({
     getParentRoute: () => rootRoute, path: '/receptions/new',
     beforeLoad: () => {
@@ -1308,8 +1388,17 @@ const receptionsNewRoute = createRoute({
         }
         requirePrivilegeInBeforeLoad('Reception', 'Add')
     },
-    component: () => <AuthLayout><Placeholder title="Add Reception"/></AuthLayout>,
+    component: ReceptionsNewPage,
 })
+
+function ReceptionsEditPage() {
+    return (
+        <AuthLayout>
+            <ReceptionsForm/>
+        </AuthLayout>
+    )
+}
+
 const receptionsEditRoute = createRoute({
     getParentRoute: () => rootRoute, path: '/receptions/$id/edit',
     beforeLoad: () => {
@@ -1320,11 +1409,35 @@ const receptionsEditRoute = createRoute({
         }
         requirePrivilegeInBeforeLoad('Reception', 'Edit')
     },
-    component: () => <AuthLayout><Placeholder title="Edit Reception"/></AuthLayout>,
+    component: ReceptionsEditPage,
 })
 
 // Stock Opnames
-const stockOpnamesRoute = createPlaceholderRoute('/stock-opnames', 'Stock Opnames', 'Stock Opname')
+function StockOpnamesPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Stock Opname</h2>
+                <p className="text-muted-foreground">Kelola data stock opname gudang</p>
+            </div>
+            <StockOpnameForm/>
+        </AuthLayout>
+    )
+}
+
+const stockOpnamesRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/stock-opnames',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState();
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Stock Opname', 'View')
+    },
+    component: StockOpnamesPage,
+})
 
 // Projects
 const projectsRoute = createPlaceholderRoute('/projects', 'Projects', 'Project')
@@ -1354,48 +1467,247 @@ const projectsEditRoute = createRoute({
 })
 
 // Face Enrollments
-const faceEnrollmentsRoute = createPlaceholderRoute('/face-enrollments', 'Face Enrollments', 'Face Enrollment')
+function FaceEnrollmentsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Face Enrollments</h2>
+                <p className="text-muted-foreground">Manage employee face enrollment data</p>
+            </div>
+            <FaceEnrollmentsTable/>
+        </AuthLayout>
+    )
+}
+
+const faceEnrollmentsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/face-enrollments',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Face Enrollment', 'View')
+    },
+    component: FaceEnrollmentsPage,
+})
 
 // Panic Alerts
-const panicAlertsRoute = createPlaceholderRoute('/panic-alerts', 'Panic Alerts', 'Panic Alert')
+function PanicAlertsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Panic Alerts</h2>
+                <p className="text-muted-foreground">View panic button alerts from employees</p>
+            </div>
+            <PanicAlertsTable/>
+        </AuthLayout>
+    )
+}
+
+const panicAlertsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/panic-alerts',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Panic Alert', 'View')
+    },
+    component: PanicAlertsPage,
+})
 
 // News
 const newsRoute = createPlaceholderRoute('/news', 'News', 'News')
 
 // Approvals
-const approvalsRoute = createPlaceholderRoute('/approvals', 'Approvals', 'Approval')
+function ApprovalsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Approvals</h2>
+                <p className="text-muted-foreground">Review and approve pending requests</p>
+            </div>
+            <ApprovalsTable/>
+        </AuthLayout>
+    )
+}
+
+const approvalsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/approvals',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Approval', 'View')
+    },
+    component: ApprovalsPage,
+})
 
 // Approval Flows
-const approvalFlowsRoute = createPlaceholderRoute('/approval-flows', 'Approval Flows', 'Approval Flow')
+function ApprovalFlowsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Approval Flows</h2>
+                <p className="text-muted-foreground">Configure approval workflows for different request types</p>
+            </div>
+            <ApprovalFlowsTable/>
+        </AuthLayout>
+    )
+}
+
+const approvalFlowsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/approval-flows',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Approval Flow', 'View')
+    },
+    component: ApprovalFlowsPage,
+})
+
+// Approval Types (Dynamic)
+function ApprovalTypesPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Approval Types</h2>
+                <p className="text-muted-foreground">Manage request types and approval flows dynamically</p>
+            </div>
+            <ApprovalTypesTable/>
+        </AuthLayout>
+    )
+}
+
+const approvalTypesRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/approval-types',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Approval Flow', 'View')
+    },
+    component: ApprovalTypesPage,
+})
 
 // Patrol Report
-const patrolReportRoute = createPlaceholderRoute('/patrol-report', 'Patrol Reports', 'Patrol Report')
+function PatrolReportPage() {
+    const [view, setView] = useState<'rounds' | 'sessions'>('rounds')
+
+    return (
+        <AuthLayout>
+            <div className="mb-6 flex items-start justify-between">
+                <div>
+                    <h2 className="text-2xl font-bold mb-1">Patrol Reports</h2>
+                    <p className="text-muted-foreground">View patrol reports and statistics</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button
+                        variant={view === 'rounds' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setView('rounds')}
+                    >
+                        Ronde + Skip
+                    </Button>
+                    <Button
+                        variant={view === 'sessions' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setView('sessions')}
+                    >
+                        Sessions
+                    </Button>
+                </div>
+            </div>
+
+            {view === 'rounds' ? (
+                <PatrolRoundsTable />
+            ) : (
+                <PatrolReportsTable />
+            )}
+        </AuthLayout>
+    )
+}
+
+const patrolReportRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/patrol-report',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Patrol Report', 'View')
+    },
+    component: PatrolReportPage,
+})
 
 // Checkpoints
-const checkpointsRoute = createPlaceholderRoute('/checkpoints', 'Checkpoints', 'Checkpoint')
-const checkpointsNewRoute = createRoute({
-    getParentRoute: () => rootRoute, path: '/checkpoints/new',
+function CheckpointsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Checkpoints</h2>
+                <p className="text-muted-foreground">Kelola titik checkpoint patroli per area</p>
+            </div>
+            <CheckpointsTable/>
+        </AuthLayout>
+    )
+}
+
+const checkpointsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/checkpoints',
     beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState();
+        const {isAuthenticated} = useAuthStore.getState()
         if (!isAuthenticated) {
             window.location.href = '/login';
             return
         }
-        requirePrivilegeInBeforeLoad('Checkpoint', 'Add')
+        requirePrivilegeInBeforeLoad('Checkpoint', 'View')
     },
-    component: () => <AuthLayout><Placeholder title="Add Checkpoint"/></AuthLayout>,
+    component: CheckpointsPage,
 })
-const checkpointsEditRoute = createRoute({
-    getParentRoute: () => rootRoute, path: '/checkpoints/$id/edit',
+
+// Daily Task Reports
+function DailyTaskReportsPage() {
+    return (
+        <AuthLayout>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">Daily Task Reports</h2>
+                <p className="text-muted-foreground">View completed tasks and submit reviews</p>
+            </div>
+            <DailyTaskReportsList/>
+        </AuthLayout>
+    )
+}
+
+const dailyTaskReportsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/daily-task-reports',
     beforeLoad: () => {
-        const {isAuthenticated} = useAuthStore.getState();
+        const {isAuthenticated} = useAuthStore.getState()
         if (!isAuthenticated) {
             window.location.href = '/login';
             return
         }
-        requirePrivilegeInBeforeLoad('Checkpoint', 'Edit')
+        requirePrivilegeInBeforeLoad('Daily Task', 'View')
     },
-    component: () => <AuthLayout><Placeholder title="Edit Checkpoint"/></AuthLayout>,
+    component: DailyTaskReportsPage,
 })
 
 // Settings (no privilege check)
@@ -1426,8 +1738,8 @@ function FinanceJournalPage() {
     return (
         <AuthLayout>
             <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">General Journal</h2>
-                <p className="text-muted-foreground">All posted journal entries</p>
+                <h2 className="text-2xl font-bold mb-2">Jurnal Umum</h2>
+                <p className="text-muted-foreground">Semua entri jurnal yang diposting</p>
             </div>
             <JournalTable/>
         </AuthLayout>
@@ -1453,8 +1765,8 @@ function FinanceLedgerPage() {
     return (
         <AuthLayout>
             <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Ledger</h2>
-                <p className="text-muted-foreground">Account ledger with transactions</p>
+                <h2 className="text-2xl font-bold mb-2">Buku Besar</h2>
+                <p className="text-muted-foreground">Buku besar dengan transaksi</p>
             </div>
             <LedgerView/>
         </AuthLayout>
@@ -1480,8 +1792,8 @@ function FinanceBalanceSheetPage() {
     return (
         <AuthLayout>
             <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Balance Sheet</h2>
-                <p className="text-muted-foreground">Financial position as of a date</p>
+                <h2 className="text-2xl font-bold mb-2">Neraca</h2>
+                <p className="text-muted-foreground">Posisi keuangan pada tanggal tertentu</p>
             </div>
             <BalanceSheetView/>
         </AuthLayout>
@@ -1507,8 +1819,8 @@ function FinanceProfitLossPage() {
     return (
         <AuthLayout>
             <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">Profit & Loss</h2>
-                <p className="text-muted-foreground">Income and expenses over a period</p>
+                <h2 className="text-2xl font-bold mb-2">Laba Rugi</h2>
+                <p className="text-muted-foreground">Pendapatan dan beban dalam periode tertentu</p>
             </div>
             <ProfitLossView/>
         </AuthLayout>
@@ -1675,6 +1987,28 @@ const accountingPeriodsRoute = createRoute({
     component: AccountingPeriodsRoute,
 })
 
+function OpeningBalanceRoute() {
+    return (
+        <AuthLayout>
+            <OpeningBalancePage/>
+        </AuthLayout>
+    )
+}
+
+const openingBalanceRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/opening-balance',
+    beforeLoad: () => {
+        const {isAuthenticated} = useAuthStore.getState()
+        if (!isAuthenticated) {
+            window.location.href = '/login';
+            return
+        }
+        requirePrivilegeInBeforeLoad('Opening Balance', 'View')
+    },
+    component: OpeningBalanceRoute,
+})
+
 // ===== FINANCIAL REPORTS =====
 function TrialBalanceRoute() {
     return (
@@ -1814,38 +2148,43 @@ const routeTree = rootRoute.addChildren([
     indexRoute,
     loginRoute,
     dashboardRoute,
-    // Fully migrated
+    // Reports
     reportsRoute,
-    clientsRoute, clientsNewRoute, clientsEditRoute,
-    departmentsRoute,
-    rolesRoute,
+    // Financial Reports Hub
+    financialReportsRoute,
+    // Master Data Hub
+    masterDataRoute,
+    // Role Privileges
     rolePrivilegesRoute,
-    clientTypesRoute,
-    positionsRoute,
-    positionPrivilegesRoute,
-    banksRoute,
-    documentsRoute,
-    shiftsRoute,
-    warehousesRoute,
-    productCategoriesRoute,
-    provincesRoute,
-    salaryComponentsRoute,
+    // Employees - separate routes for forms
+    employeesRoute, employeesNewRoute, employeesEditRoute,
+    // Clients - separate routes for forms
+    clientNewRoute, clientEditRoute,
     // Placeholder routes
     usersRoute,
-    employeesRoute, employeesNewRoute, employeesEditRoute,
+    // Areas & Poss - special filtering by client/area
     useAreasRoute,
     usePossRoute,
+    // Attendance & Schedules
     attendanceRoute,
     schedulesRoute,
-    bankAccountsRoute,
-    pettyCashRoute,
+    // Finance
     invoicesRoute,
     payrollRoute,
-    productsRoute, productsNewRoute, productsEditRoute,
-    assetsRoute, assetsNewRoute, assetsEditRoute,
+    // Unified Inventory
+    inventoryRoute,
+    // Product Areas
+    productAreasRoute,
+    inventoryTrackingRoute,
+    // Procurement Hub
+    procurementRoute,
+    // Old routes (keep for backward compatibility)
     purchaseRequestsRoute, purchaseRequestsNewRoute, purchaseRequestsEditRoute,
     purchaseOrdersRoute, purchaseOrdersNewRoute, purchaseOrdersEditRoute,
+    fundRequestsRoute, fundRequestsNewRoute, fundRequestsEditRoute,
+    distributionRequestsRoute, distributionRequestsNewRoute, distributionRequestsDetailRoute, distributionRequestsEditRoute,
     receptionsRoute, receptionsNewRoute, receptionsEditRoute,
+    assetsRoute, assetsNewRoute, assetsEditRoute,
     stockOpnamesRoute,
     projectsRoute, projectsNewRoute, projectsEditRoute,
     faceEnrollmentsRoute,
@@ -1853,9 +2192,12 @@ const routeTree = rootRoute.addChildren([
     newsRoute,
     approvalsRoute,
     approvalFlowsRoute,
+    approvalTypesRoute,
     patrolReportRoute,
-    checkpointsRoute, checkpointsNewRoute, checkpointsEditRoute,
+    checkpointsRoute,
+    dailyTaskReportsRoute,
     settingsRoute,
+    // Finance Reports
     financeJournalRoute,
     financeLedgerRoute,
     financeBalanceSheetRoute,
@@ -1866,6 +2208,7 @@ const routeTree = rootRoute.addChildren([
     fixedAssetsRoute,
     tangibleAssetClassesRoute,
     accountingPeriodsRoute,
+    openingBalanceRoute,
     trialBalanceRoute,
     incomeStatementRoute,
     balanceSheetReportRoute,

@@ -19,12 +19,31 @@ export interface Client {
   client_type_id: number
   client_type_name: string | null
   area_count: number
+  company_id: number | null
   created_at: string
   updated_at: string
 }
 
 export interface ClientDetail extends Client {
-  areas: { id: number; name: string }[]
+  areas: ClientArea[]
+}
+
+// Nested types for client detail
+export interface ClientArea {
+  id: number
+  name: string
+  latitude?: string
+  longitude?: string
+  description?: string
+  poss?: ClientPos[]
+}
+
+export interface ClientPos {
+  id: number
+  name: string
+  latitude?: string
+  longitude?: string
+  description?: string
 }
 
 export interface ClientsFilters {
@@ -81,6 +100,8 @@ export interface UpdateClientPayload {
   discount?: number
   service_price?: number
   status?: number
+  // Nested areas with poss (hierarchical: Area contains Pos)
+  areas?: CreateAreaNested[]
 }
 
 // Nested types (hierarchical: Area contains Pos)

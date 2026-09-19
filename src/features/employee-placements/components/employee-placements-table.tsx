@@ -113,18 +113,7 @@ export function EmployeePlacementsTable() {
     {
       accessorKey: 'employee_name',
       header: 'Karyawan',
-      cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-          className="font-medium text-primary hover:underline text-left cursor-pointer"
-        >
-          {row.employee_name}
-        </button>
-      ),
+      cell: (row) => <span className="font-medium">{row.employee_name}</span>,
     },
     {
       accessorKey: 'client_name',
@@ -167,11 +156,6 @@ export function EmployeePlacementsTable() {
         </Button>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama karyawan untuk mengedit data
-      </p>
-
       <DataTable
         columns={columns}
         data={items}
@@ -183,6 +167,7 @@ export function EmployeePlacementsTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

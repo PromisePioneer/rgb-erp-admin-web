@@ -1,15 +1,15 @@
-/**
- * Skeleton Component
- */
-interface SkeletonProps {
-  className?: string
-}
+import { cn } from "@/lib/utils"
 
-export function Skeleton({ className = '' }: SkeletonProps) {
+function Skeleton({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`animate-pulse rounded-md bg-muted ${className}`}
-      aria-hidden="true"
+      className={cn("animate-pulse rounded-md bg-muted", className)}
+      {...props}
     />
   )
 }
+
+export { Skeleton }

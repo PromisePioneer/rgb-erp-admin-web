@@ -6,8 +6,7 @@ import { useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Save } from 'lucide-react'
-import {
-  Dialog,
+import Dialog, {
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -16,13 +15,6 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { useBankAccountsStore } from '../store/bank-accounts-store'
 import { bankAccountsApi } from '../api/bank-accounts-api'
@@ -205,18 +197,14 @@ export function BankAccountsFormModal({ open, onOpenChange, editItem }: BankAcco
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Status</label>
-            <Select
-              value={form.watch('status')}
-              onValueChange={(value) => form.setValue('status', value ?? '1')}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Active</SelectItem>
-                <SelectItem value="0">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
+            <AsyncSelect
+              loadOptions={async () => [
+                { value: '1', label: 'Active' },
+                { value: '0', label: 'Inactive' },
+              ]}
+              value={form.watch('status') || '1'}
+              onChange={(val) => form.setValue('status', val as string)}
+            />
           </div>
 
           <DialogFooter>

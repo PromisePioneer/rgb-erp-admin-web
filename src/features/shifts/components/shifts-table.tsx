@@ -96,35 +96,51 @@ export function ShiftsTable() {
   // Define columns
   const columns: DataTableColumn<Shift>[] = [
     {
+      accessorKey: 'code',
+      header: 'Code',
+      cell: (row) => (
+        <span className="font-mono font-medium bg-muted px-2 py-0.5 rounded text-sm">
+          {row.code ?? '-'}
+        </span>
+      ),
+    },
+    {
       accessorKey: 'name',
       header: 'Shift Name',
+      cell: (row) => <span className="font-medium">{row.name}</span>,
+    },
+    {
+      accessorKey: 'client_name',
+      header: 'Client',
       cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-          className="font-medium text-primary hover:underline text-left cursor-pointer"
-        >
-          {row.name}
-        </button>
+        <span className="text-sm">
+          {row.client_name ?? <span className="text-muted-foreground">-</span>}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'area_name',
+      header: 'Area',
+      cell: (row) => (
+        <span className="text-sm">
+          {row.area_name ?? <span className="text-muted-foreground">-</span>}
+        </span>
       ),
     },
     {
       accessorKey: 'start_time',
-      header: 'Start Time',
+      header: 'Start',
       cell: (row) => (
-        <span className="font-mono">
+        <span className="font-mono text-sm">
           {row.start_time ?? '-'}
         </span>
       ),
     },
     {
       accessorKey: 'end_time',
-      header: 'End Time',
+      header: 'End',
       cell: (row) => (
-        <span className="font-mono">
+        <span className="font-mono text-sm">
           {row.end_time ?? '-'}
         </span>
       ),
@@ -146,7 +162,6 @@ export function ShiftsTable() {
     },
   ]
 
-  // Bulk actions
   const bulkActions = (
     <div className="flex gap-2">
       <Button
@@ -171,11 +186,6 @@ export function ShiftsTable() {
         </Button>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama untuk mengedit data
-      </p>
-
       <DataTable
         columns={columns}
         data={items}
@@ -187,6 +197,7 @@ export function ShiftsTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

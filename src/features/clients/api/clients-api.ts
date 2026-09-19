@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api-client'
 import type {
   ApiResponse,
   Client,
+  ClientDetail,
   ClientsFilters,
   CreateClientPayload,
   UpdateClientPayload,
@@ -28,7 +29,7 @@ export const clientsApi = {
    * GET /api/admin/clients/:id
    */
   getById: async (id: number) => {
-    const { data } = await apiClient.get<ApiResponse<Client>>(`/admin/clients/${id}`)
+    const { data } = await apiClient.get<ApiResponse<ClientDetail>>(`/admin/clients/${id}`)
     return data
   },
 
@@ -67,6 +68,17 @@ export const clientsApi = {
       '/admin/clients/bulk-delete',
       { ids }
     )
+    return data
+  },
+
+  /**
+   * Get select options for clients dropdown
+   * GET /api/admin/clients/select-options
+   */
+  getSelectOptions: async (params?: { q?: string; selected?: number }) => {
+    const { data } = await apiClient.get<
+      ApiResponse<{ id: number; name: string; text: string }[]>
+    >('/admin/clients/select-options', { params })
     return data
   },
 }

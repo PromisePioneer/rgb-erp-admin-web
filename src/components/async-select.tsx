@@ -26,6 +26,7 @@ interface AsyncSelectProps {
   error?: string
   debounceMs?: number
   defaultOption?: SelectOption | null
+  defaultOptions?: boolean // If true, load options on mount
 }
 
 export function AsyncSelect({
@@ -40,6 +41,7 @@ export function AsyncSelect({
   error,
   debounceMs = 300,
   defaultOption,
+  defaultOptions = false,
 }: AsyncSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -62,6 +64,14 @@ export function AsyncSelect({
       setSelectedOption(defaultOption)
     }
   }, [defaultOption])
+
+  // Load options on mount if defaultOptions is true
+  useEffect(() => {
+    if (defaultOptions && !hasLoadedInitialRef.current) {
+      hasLoadedInitialRef.current = true
+      fetchOptions('')
+    }
+  }, [defaultOptions])
 
   /**
    * Fetch options with request-id to handle race conditions
@@ -254,12 +264,11 @@ export function AsyncSelect({
         className={cn(
           'flex items-center justify-between w-full h-10 px-3 py-2 text-sm rounded-md border bg-background',
           'hover:bg-accent hover:text-accent-foreground',
-          'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted',
           readOnly && !isDisabled && 'cursor-pointer',
-          isOpen && 'ring-2 ring-ring ring-offset-2',
           !selectedOption && 'text-muted-foreground',
-          error && 'border-destructive border-2'
+          error && 'border-destructive'
         )}
       >
         <span className={cn('truncate', !selectedOption && 'text-muted-foreground')}>

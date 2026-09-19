@@ -5,10 +5,15 @@
 
 export interface Shift {
   id: number
+  code: string | null
   name: string
   start_time: string | null
   end_time: string | null
   status: number
+  area_id: number
+  area_name: string | null
+  client_id: number
+  client_name: string | null
   created_at: string
   updated_at: string
 }
@@ -16,6 +21,8 @@ export interface Shift {
 export interface ShiftsFilters {
   search?: string
   status?: number
+  area_id?: number
+  client_id?: number
   page?: number
   per_page?: number
 }
@@ -36,9 +43,12 @@ export interface ApiResponse<T> {
 
 export interface CreateShiftPayload {
   name: string
+  code?: string
   start_time?: string | null
   end_time?: string | null
   status: number
+  client_id: number
+  area_id: number
 }
 
 export interface UpdateShiftPayload extends CreateShiftPayload {}

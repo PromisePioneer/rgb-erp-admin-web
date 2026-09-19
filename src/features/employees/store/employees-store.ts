@@ -26,7 +26,7 @@ interface EmployeesState {
   // Actions
   fetchEmployees: (params?: EmployeesFilters) => Promise<void>
   fetchById: (id: number) => Promise<void>
-  create: (payload: CreateEmployeePayload) => Promise<void>
+  create: (payload: CreateEmployeePayload) => Promise<any>
   update: (id: number, payload: UpdateEmployeePayload) => Promise<void>
   remove: (id: number) => Promise<void>
   bulkDelete: (ids: number[]) => Promise<void>
@@ -98,8 +98,10 @@ export const useEmployeesStore = create<EmployeesState>((set, get) => ({
     set({ isSubmitting: true, error: null })
 
     try {
-      await employeesApi.create(payload)
+      const response = await employeesApi.create(payload)
       set({ isSubmitting: false })
+      // Return response data so we can access user info
+      return response
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to create employee'

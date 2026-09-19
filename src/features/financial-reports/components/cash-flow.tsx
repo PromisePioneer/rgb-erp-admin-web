@@ -1,9 +1,8 @@
 "use client"
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { RefreshCw, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { AsyncSelect, type SelectOption } from '@/components/async-select'
 import { apiClient } from '@/lib/api-client'
 
 function formatCurrency(v: number) {
@@ -39,36 +38,98 @@ interface CashFlowData {
   }
 }
 
+// Load periods for AsyncSelect
+const loadPeriods = async (search: string): Promise<SelectOption[]> => {
+  const { data } = await apiClient.get('/admin/accounting-periods')
+  const periods = data.data || []
+
+  // Filter by search term (match label or year)
+  const filtered = periods.filter((p: any) =>
+    p.label?.toLowerCase().includes(search.toLowerCase()) ||
+    String(p.year).includes(search)
+  )
+
+  // Sort by year desc, month desc
+  filtered.sort((a: any, b: any) => {
+    if (a.year !== b.year) return b.year - a.year
+    return b.month - a.month
+  })
+
+  return filtered.map((p: any) => ({
+    value: p.id,
+    label: p.label,
+    description: `${p.year}-${String(p.month).padStart(2, '0')}`,
+  }))
+}
+
 export function CashFlowReport() {
   const [data, setData] = useState<CashFlowData | null>(null)
   const [loading, setLoading] = useState(false)
-  const [periodId, setPeriodId] = useState<string>('')
-  const [periods, setPeriods] = useState<any[]>([])
+  const [periodId, setPeriodId] = useState<number | null>(null)
+  const [defaultPeriod, setDefaultPeriod] = useState<SelectOption | null>(null)
 
+  // Initialize: find current month period and set as default
   useEffect(() => {
-    apiClient.get('/admin/accounting-periods').then(res => {
-      setPeriods(res.data.data || [])
-      const active = res.data.data?.find((p: any) => p.status === 'open')
-      if (active) setPeriodId(String(active.id))
-    }).catch(console.error)
+    const init = async () => {
+      try {
+        const { data: res } = await apiClient.get('/admin/accounting-periods')
+        const periods = res.data || []
+
+        const now = new Date()
+        const currentYear = now.getFullYear()
+        const currentMonth = now.getMonth() + 1
+
+        // Find current month period
+        const currentPeriod = periods.find((p: any) =>
+          p.year === currentYear && p.month === currentMonth
+        )
+
+        // Fallback: first open period
+        const firstOpenPeriod = periods.find((p: any) => p.status === 'open')
+
+        const selectedPeriod = currentPeriod || firstOpenPeriod || periods[0]
+
+        if (selectedPeriod) {
+          const option: SelectOption = {
+            value: selectedPeriod.id,
+            label: selectedPeriod.label,
+            description: `${selectedPeriod.year}-${String(selectedPeriod.month).padStart(2, '0')}`,
+          }
+          setDefaultPeriod(option)
+          setPeriodId(selectedPeriod.id)
+          fetchReport(selectedPeriod.id)
+        }
+      } catch (error) {
+        console.error('Failed to initialize periods:', error)
+      }
+    }
+    init()
   }, [])
 
-  const fetchReport = async () => {
-    if (!periodId) return
+  const fetchReport = useCallback(async (id: number) => {
     setLoading(true)
     try {
-      const { data: res } = await apiClient.get(`/admin/financial-reports/cash-flow?period_id=${periodId}`)
+      const { data: res } = await apiClient.get(`/admin/financial-reports/cash-flow?period_id=${id}`)
       setData(res.data)
     } catch (e) {
       console.error('Failed to fetch report:', e)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  useEffect(() => {
-    if (periodId) fetchReport()
-  }, [periodId])
+  const handlePeriodChange = useCallback((value: number | string | null) => {
+    if (!value) return
+    const id = Number(value)
+    setPeriodId(id)
+    fetchReport(id)
+  }, [fetchReport])
+
+  const handleRefresh = () => {
+    if (periodId) {
+      fetchReport(periodId)
+    }
+  }
 
   if (!data) {
     return (
@@ -87,7 +148,7 @@ export function CashFlowReport() {
           <h2 className="text-xl font-bold">Laporan Arus Kas</h2>
           <p className="text-sm text-muted-foreground">{data.period_label}</p>
         </div>
-        <Button variant="outline" onClick={fetchReport} disabled={loading}>
+        <Button variant="outline" onClick={handleRefresh} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
@@ -95,21 +156,14 @@ export function CashFlowReport() {
 
       {/* Filters */}
       <div className="flex gap-4 items-end">
-        <div className="space-y-2">
-          <Label>Periode</Label>
-          <Select value={periodId} onValueChange={v => v && setPeriodId(v)}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Pilih periode" />
-            </SelectTrigger>
-            <SelectContent>
-              {periods.map((p: any) => (
-                <SelectItem key={p.id} value={String(p.id)}>
-                  {p.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <AsyncSelect
+          value={periodId}
+          onChange={handlePeriodChange}
+          loadOptions={loadPeriods}
+          placeholder="Pilih periode..."
+          defaultOption={defaultPeriod}
+          className="w-48"
+        />
       </div>
 
       <div className="space-y-4">

@@ -44,10 +44,16 @@ export function SalaryComponentsTable() {
   // Single source of truth for fetch - debounced, primitive dependencies
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchSalaryComponents({ search: filters.search, type: filters.type, page: 1, per_page: 15 })
+      fetchSalaryComponents({
+        search: filters.search,
+        type: filters.type,
+        client_id: filters.client_id,
+        page: 1,
+        per_page: 15
+      })
     }, 300)
     return () => clearTimeout(timer)
-  }, [filters.search, filters.type])
+  }, [filters.search, filters.type, filters.client_id])
 
   // Reset selection when data changes
   useEffect(() => {
@@ -64,8 +70,14 @@ export function SalaryComponentsTable() {
 
   const handlePageChange = useCallback((newPage: number) => {
     if (newPage < 1 || newPage > pagination.last_page) return
-    fetchSalaryComponents({ search: filters.search, type: filters.type, page: newPage, per_page: 15 })
-  }, [fetchSalaryComponents, filters.search, filters.type, pagination.last_page])
+    fetchSalaryComponents({
+      search: filters.search,
+      type: filters.type,
+      client_id: filters.client_id,
+      page: newPage,
+      per_page: 15
+    })
+  }, [fetchSalaryComponents, filters.search, filters.type, filters.client_id, pagination.last_page])
 
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return
@@ -94,7 +106,8 @@ export function SalaryComponentsTable() {
   }
 
   // Format currency
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | null) => {
+    if (value === null) return <span className="text-muted-foreground italic">-</span>
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
@@ -105,19 +118,21 @@ export function SalaryComponentsTable() {
   // Define columns
   const columns: DataTableColumn<SalaryComponent>[] = [
     {
+      accessorKey: 'client',
+      header: 'Client',
+      cell: (row) => (
+        <span className="text-sm">
+          {row.client ? row.client.name : <span className="text-muted-foreground italic">Global</span>}
+        </span>
+      ),
+    },
+    {
       accessorKey: 'name',
       header: 'Component Name',
       cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-          className="font-medium text-primary hover:underline text-left cursor-pointer"
-        >
+        <span className="font-medium text-left">
           {row.name}
-        </button>
+        </span>
       ),
     },
     {
@@ -132,6 +147,21 @@ export function SalaryComponentsTable() {
           }`}
         >
           {row.type === 'earning' ? 'Earning' : 'Deduction'}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'role',
+      header: 'Role',
+      cell: (row) => (
+        <span className="text-sm">
+          {row.role ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-xs">
+              {row.role.name}
+            </span>
+          ) : (
+            <span className="text-muted-foreground italic">All Roles</span>
+          )}
         </span>
       ),
     },
@@ -186,11 +216,6 @@ export function SalaryComponentsTable() {
         </Button>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama untuk mengedit data
-      </p>
-
       <DataTable
         columns={columns}
         data={items}
@@ -202,6 +227,7 @@ export function SalaryComponentsTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

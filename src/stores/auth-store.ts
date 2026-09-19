@@ -2,11 +2,29 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { apiClient } from '@/lib/api-client'
 
+export interface Role {
+  id: number
+  name: string
+}
+
+export interface Employee {
+  id: number
+  code: string
+  name: string
+  photo: string | null
+  position: string | null
+}
+
 export interface User {
   id: number
   name: string
   email: string
-  role_id: number
+  status: number
+  force_password_change: boolean
+  role: Role | null
+  department: { id: number; name: string } | null
+  company: { id: number; name: string } | null
+  employee: Employee | null
 }
 
 export interface Company {
@@ -16,7 +34,8 @@ export interface Company {
 
 interface AuthState {
   user: User | null
-  privileges: string[]
+  privileges: string[]       // Web privileges (MenuName,Action format)
+  mobilePrivileges: string[] // Mobile privileges (key format)
   currentCompany: Company | null
   isAuthenticated: boolean
 
@@ -24,19 +43,22 @@ interface AuthState {
   logout: () => Promise<void>
   fetchUser: () => Promise<void>
   setCurrentCompany: (company: Company | null) => void
+  hasMobilePrivilege: (key: string) => boolean
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       privileges: [],
+      mobilePrivileges: [],
       currentCompany: null,
       isAuthenticated: false,
 
       login: async (email, password) => {
-        // Get CSRF cookie first (Sanctum requirement)
-        await apiClient.get('/admin/sanctum/csrf-cookie')
+        // Get CSRF cookie first (Sanctum requirement) - use fetch directly since it's outside /api
+        await fetch('/sanctum/csrf-cookie', { credentials: 'include' })
 
         // Login
         const { data } = await apiClient.post('/admin/login', {
@@ -50,7 +72,8 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: userData,
           privileges: userData.privileges || [],
-          currentCompany: userData.current_company || null,
+          mobilePrivileges: userData.mobile_privileges || [],
+          currentCompany: userData.company || null,
           isAuthenticated: true,
         })
       },
@@ -59,7 +82,13 @@ export const useAuthStore = create<AuthState>()(
         try {
           await apiClient.post('/admin/logout')
         } finally {
-          set({ user: null, privileges: [], currentCompany: null, isAuthenticated: false })
+          set({
+            user: null,
+            privileges: [],
+            mobilePrivileges: [],
+            currentCompany: null,
+            isAuthenticated: false
+          })
         }
       },
 
@@ -68,18 +97,58 @@ export const useAuthStore = create<AuthState>()(
           const { data } = await apiClient.get('/admin/me')
 
           set({
-            user: data.user,
-            privileges: data.privileges || [],
-            currentCompany: data.current_company || null,
+            user: data.data.user,
+            privileges: data.data.user.privileges || [],
+            mobilePrivileges: data.data.user.mobile_privileges || [],
+            currentCompany: data.data.user.company || null,
             isAuthenticated: true,
           })
         } catch {
-          set({ user: null, privileges: [], currentCompany: null, isAuthenticated: false })
+          set({
+            user: null,
+            privileges: [],
+            mobilePrivileges: [],
+            currentCompany: null,
+            isAuthenticated: false
+          })
         }
       },
 
       setCurrentCompany: (company: Company | null) => {
         set({ currentCompany: company })
+      },
+
+      /**
+       * Check if user has a specific mobile privilege.
+       * @param key - The mobile privilege key (e.g., 'patrol', 'leave')
+       */
+      hasMobilePrivilege: (key: string) => {
+        return get().mobilePrivileges.includes(key)
+      },
+
+      /**
+       * Change password for the current user.
+       * After successful change, updates the user state to clear force_password_change flag.
+       */
+      changePassword: async (currentPassword: string, newPassword: string) => {
+        const { data } = await apiClient.post('/admin/change-password', {
+          current_password: currentPassword,
+          new_password: newPassword,
+          new_password_confirmation: newPassword, // Laravel requires confirmation field
+        })
+
+        // Update local user state to reflect password change
+        const currentUser = get().user
+        if (currentUser) {
+          set({
+            user: {
+              ...currentUser,
+              force_password_change: false,
+            },
+          })
+        }
+
+        return data
       },
     }),
     {
@@ -87,6 +156,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         privileges: state.privileges,
+        mobilePrivileges: state.mobilePrivileges,
         currentCompany: state.currentCompany,
         isAuthenticated: state.isAuthenticated,
       }),

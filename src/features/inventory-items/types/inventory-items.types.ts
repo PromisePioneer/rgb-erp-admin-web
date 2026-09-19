@@ -1,0 +1,160 @@
+/**
+ * Inventory Item Type Definitions
+ * API endpoint: /api/admin/inventory-items
+ * Unified tracking for warehouse and area inventory with movement history
+ */
+import type { Condition, NonChemicalCondition, ChemicalCondition } from '@/types/condition'
+
+export type InventoryCondition = Condition
+export type InventoryNonChemicalCondition = NonChemicalCondition
+export type InventoryChemicalCondition = ChemicalCondition
+
+export interface InventoryItemInUseBy {
+  task_id: number
+  task_name: string
+  status: string
+  area_name: string | null
+  client_name: string | null
+}
+
+export interface InventoryItem {
+  id: number
+  qr_code: string
+  product_id: number
+  product_name: string
+  category_name: string | null
+  warehouse_id: number | null
+  warehouse_name: string | null
+  area_id: number | null
+  area_name: string | null
+  employee_id: number | null
+  employee_name: string | null
+  status: 'available' | 'assigned' | 'damaged' | 'lost'
+  status_label: string
+  status_color: string
+  condition: InventoryCondition | null
+  condition_label: string
+  condition_color: string
+  initial_stock: number
+  current_stock: number
+  current_location_type: 'warehouse' | 'area' | 'employee' | null
+  current_location_id: number | null
+  current_location_name: string | null
+  location_name: string | null
+  purchase_date: string | null
+  purchase_price: number
+  purchase_order_code: string | null
+  reception_date: string | null
+  notes: string | null
+  created_at: string
+  in_use_by: InventoryItemInUseBy | null
+}
+
+export interface InventoryItemSummary {
+  total: number
+  available: number
+  assigned: number
+  damaged: number
+  lost: number
+  category_breakdown: CategoryBreakdown[]
+}
+
+export interface CategoryBreakdown {
+  category_name: string
+  total_items: number
+  total_stock: number
+  initial_stock: number
+  percentage: number
+  condition: string
+  condition_color: string
+  condition_label: string
+}
+
+export interface ItemMovement {
+  id: number
+  action: 'received' | 'transfer' | 'adjustment' | 'damage' | 'repair' | 'disposal' | 'return'
+  action_label: string
+  action_color: string
+  from_type: string | null
+  from_id: number | null
+  from_name: string | null
+  to_type: string | null
+  to_id: number | null
+  to_name: string | null
+  condition: InventoryCondition | null
+  notes: string | null
+  reference_type: string | null
+  reference_id: string | null
+  moved_by: string | null
+  created_at: string
+  created_at_human: string
+}
+
+export interface InventoryFilters {
+  product_id?: number
+  warehouse_id?: number
+  area_id?: number
+  status?: string
+  location_type?: 'warehouse' | 'area' | 'employee'
+  search?: string
+  page?: number
+  per_page?: number
+}
+
+export interface InventoryPagination {
+  current_page: number
+  per_page: number
+  total: number
+  last_page: number
+}
+
+export interface ApiResponse<T> {
+  success: boolean
+  data: T
+  meta?: InventoryPagination
+  message?: string
+}
+
+// Form payloads
+export interface MoveItemPayload {
+  qr_code: string
+  location_type: 'warehouse' | 'area' | 'employee'
+  location_id: number
+  notes?: string
+}
+
+// Return item - accepts standardized condition values (non-chemical)
+export interface ReturnItemPayload {
+  qr_code: string
+  warehouse_id: number
+  condition?: NonChemicalCondition
+  notes?: string
+}
+
+export interface UpdateStatusPayload {
+  qr_code: string
+  status: 'available' | 'assigned' | 'damaged' | 'lost'
+  condition?: InventoryCondition
+  notes?: string
+}
+
+/**
+ * Daily Task Usage History
+ * Shows how an inventory item was used in daily tasks
+ */
+export interface DailyTaskUsage {
+  task_id: number
+  task_name: string
+  area_name: string | null
+  status: 'assigned' | 'in_progress' | 'completed' | 'cancelled' | 'reviewed'
+  start_at: string | null
+  end_at: string | null
+  worker_name: string | null
+  assigner_name: string | null
+  item_type: 'tools' | 'chemicals' | 'ppes' | 'machines'
+  initial_condition: InventoryCondition | null
+  initial_condition_label: string
+  final_condition: InventoryCondition | null
+  final_condition_label: string
+  used_at: string
+}

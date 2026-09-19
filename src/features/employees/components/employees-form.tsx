@@ -9,8 +9,9 @@ import {useForm} from 'react-hook-form'
 import {toast} from 'sonner'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
+import {Skeleton} from '@/components/ui/skeleton'
 import {AsyncSelect, type SelectOption} from '@/components/async-select'
-import {positionsApi} from '@/features/positions/api/positions-api'
+import {rolesApi} from '@/features/roles'
 import {provincesApi} from '@/features/provinces/api/provinces-api'
 import {employeesApi} from '../api/employees-api'
 import {areasApi} from '@/features/areas/api/areas-api'
@@ -19,15 +20,19 @@ import {useEmployeesStore} from '@/features/employees'
 import {useEmployeeCode} from '@/features/employees'
 import {EmployeeCodeField} from '@/features/employees'
 import type {CreateEmployeePayload} from '@/features/employees'
+import {MasterDataTopBar} from '@/features/master-data/components/MasterDataTopBar'
 
-// Position names that REQUIRE client_id, area_id, pos_id
-const REQUIRED_PLACEMENT_POSITIONS = [
+// Role names that REQUIRE client_id, area_id, pos_id
+const REQUIRED_PLACEMENT_ROLES = [
     'Security Guard',
     'Chief',
-    'Danru',
+    'Komandan Regu',
     'Valet',
-    'Cleaning Service',
+    'Cleaning Crew',
+    'Team Leader'
 ]
+
+const LAST_SELECTED_TAB_KEY = 'master-data-last-tab'
 
 export function EmployeesForm() {
     const {id} = useParams({strict: false}) as { id?: string }
@@ -45,6 +50,24 @@ export function EmployeesForm() {
     } = useEmployeesStore()
 
     const hasShownValidationToast = useRef(false)
+
+    // Track selected item for topbar
+    const [selectedItemId, setSelectedItemId] = useState('employees')
+
+    // Load last selected tab from localStorage on mount
+    useEffect(() => {
+        const lastTab = localStorage.getItem(LAST_SELECTED_TAB_KEY)
+        if (lastTab) {
+            setSelectedItemId(lastTab)
+        }
+    }, [])
+
+    // User account info state (for showing after creation) - kept for potential future use
+    // const [createdUserInfo, setCreatedUserInfo] = useState<{
+    //     user_id: number
+    //     user_email: string
+    //     user_password: string
+    // } | null>(null)
 
     // Form sections state
     const [children, setChildren] = useState<Array<{
@@ -80,11 +103,11 @@ export function EmployeesForm() {
         position: string;
         notes: string;
     }>>([])
-    const [selectedPositionName, setSelectedPositionName] = useState<string | null>(null)
+    const [selectedRoleName, setSelectedRoleName] = useState<string | null>(null)
     const [photoPreview, setPhotoPreview] = useState<string | null>(null)
 
-    // Check if selected position requires placement fields
-    const isPlacementRequired = REQUIRED_PLACEMENT_POSITIONS.includes(selectedPositionName || '')
+    // Check if selected role requires placement fields
+    const isPlacementRequired = REQUIRED_PLACEMENT_ROLES.includes(selectedRoleName || '')
 
     // Employee code generation
     const {
@@ -104,7 +127,7 @@ export function EmployeesForm() {
     const form = useForm<CreateEmployeePayload>({
         defaultValues: {
             company_id: undefined,
-            position_id: undefined,
+            role_id: undefined,
             province_id: undefined,
             client_id: undefined,
             area_id: undefined,
@@ -161,7 +184,7 @@ export function EmployeesForm() {
         if (isEdit && selectedItem) {
             form.reset({
                 company_id: selectedItem.company_id ?? undefined,
-                position_id: selectedItem.position_id ?? undefined,
+                role_id: selectedItem.role_id ?? undefined,
                 province_id: selectedItem.province_id ?? undefined,
                 client_id: selectedItem.client_id ?? undefined,
                 area_id: selectedItem.area_id ?? undefined,
@@ -203,8 +226,8 @@ export function EmployeesForm() {
                 status: selectedItem.status ?? 1,
             })
 
-            // Set selected position name for conditional validation
-            setSelectedPositionName(selectedItem.position_name || null)
+            // Set selected role name for conditional validation
+            setSelectedRoleName(selectedItem.role_name || null)
 
             // Set photo preview if exists
             if (selectedItem.photo) {
@@ -279,14 +302,107 @@ export function EmployeesForm() {
         }
     }, [form, form.formState.errors, form.formState.submitCount])
 
+    // Skeleton loading state - AFTER all hooks
+    if (isLoading) {
+        return (
+            <div className="max-w-6xl mx-auto">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="h-10 w-10"/>
+                        <div className="space-y-2">
+                            <Skeleton className="h-8 w-48"/>
+                            <Skeleton className="h-4 w-32"/>
+                        </div>
+                    </div>
+                    <Skeleton className="h-10 w-24"/>
+                </div>
+
+                {/* Private Information */}
+                <section className="bg-card rounded-lg border p-6 mb-6">
+                    <Skeleton className="h-6 w-40 mb-4"/>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                    </div>
+                    <Skeleton className="h-20 w-full mt-4"/>
+                    <Skeleton className="h-20 w-full mt-4"/>
+                </section>
+
+                {/* Basic Information */}
+                <section className="bg-card rounded-lg border p-6 mb-6">
+                    <Skeleton className="h-6 w-40 mb-4"/>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                    </div>
+                </section>
+
+                {/* Family Information */}
+                <section className="bg-card rounded-lg border p-6 mb-6">
+                    <Skeleton className="h-6 w-40 mb-4"/>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                    </div>
+                </section>
+
+                {/* Work Information */}
+                <section className="bg-card rounded-lg border p-6 mb-6">
+                    <Skeleton className="h-6 w-40 mb-4"/>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                        <Skeleton className="h-10 w-full"/>
+                    </div>
+                </section>
+
+                {/* Actions */}
+                <div className="flex justify-end gap-3 pb-8">
+                    <Skeleton className="h-10 w-24"/>
+                    <Skeleton className="h-10 w-32"/>
+                </div>
+            </div>
+        )
+    }
+
     const handleClose = () => {
-        navigate({to: '/employees'})
+        // Save current item to localStorage before navigating back
+        localStorage.setItem(LAST_SELECTED_TAB_KEY, 'employees')
+        navigate({to: '/master-data'})
+    }
+
+    // Handle topbar item selection
+    const handleTopBarSelect = (itemId: string) => {
+        // Save to localStorage
+        localStorage.setItem(LAST_SELECTED_TAB_KEY, itemId)
+        setSelectedItemId(itemId)
+        // Navigate to master data with the selected tab
+        navigate({to: '/master-data'})
     }
 
     const onSubmit = async (values: CreateEmployeePayload) => {
+        // Convert numeric fields that might be NaN to undefined
+        const cleanNumeric = (val: unknown): number | undefined => {
+            if (val === '' || val === null || val === undefined || Number.isNaN(val)) {
+                return undefined
+            }
+            return Number(val)
+        }
+
         // Prepare payload with dynamic arrays
         const payload: CreateEmployeePayload = {
             ...values,
+            // Exclude code field when editing (code should not be updated)
+            ...(isEdit ? {code: undefined} : {}),
+            height: cleanNumeric(values.height),
+            weight: cleanNumeric(values.weight),
+            base_salary: cleanNumeric(values.base_salary),
             children_name: children.map((c) => c.name).filter(Boolean),
             children_birth_date: children.map((c) => c.birth_date).filter(Boolean),
             children_birth_place: children.map((c) => c.birth_place).filter(Boolean),
@@ -321,8 +437,24 @@ export function EmployeesForm() {
                 toast.success('Employee updated successfully')
                 handleClose()
             } else {
-                await create(payload)
-                toast.success('Employee created successfully')
+                const response = await create(payload)
+                // Show user account info from response
+                const responseData = (response as any)?.data
+                if (responseData?.user_id && responseData?.user_email) {
+                    toast.success(
+                        <div>
+                            <p>Employee & User Account created successfully!</p>
+                            <div className="text-sm mt-1 space-y-0.5">
+                                <p><strong>Email:</strong> {responseData.user_email}</p>
+                                <p><strong>Password:</strong> {responseData.user_password || 'password'}</p>
+                                <p className="text-xs text-yellow-200 mt-1">⚠️ Default password: "password" - harus diubah saat login pertama</p>
+                            </div>
+                        </div>,
+                        { duration: 8000 }
+                    )
+                } else {
+                    toast.success('Employee created successfully')
+                }
                 handleClose()
             }
         } catch (err) {
@@ -330,9 +462,9 @@ export function EmployeesForm() {
         }
     }
 
-    // Load positions for dropdown
-    const loadPositions = async (search: string): Promise<SelectOption[]> => {
-        const response = await positionsApi.getSelectOptions({q: search})
+    // Load roles for dropdown
+    const loadRoles = async (search: string): Promise<SelectOption[]> => {
+        const response = await rolesApi.getSelectOptions({q: search})
         return response.data.map((item) => ({
             value: item.id,
             label: item.name,
@@ -522,23 +654,31 @@ export function EmployeesForm() {
     const removeSocialActivity = (index: number) => setSocialActivities(socialActivities.filter((_, i) => i !== index))
 
     return (
-        <div className="max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={handleClose}>
-                        <ArrowLeft className="h-5 w-5"/>
-                    </Button>
-                    <div>
-                        <h1 className="text-2xl font-bold">{isEdit ? 'Edit Employee' : 'Add New Employee'}</h1>
-                        <p className="text-muted-foreground">Fill in the employee details below</p>
+        <div className="flex flex-col h-full">
+            {/* Master Data TopBar */}
+            <MasterDataTopBar
+                selectedItemId={selectedItemId}
+                onItemSelect={handleTopBarSelect}
+            />
+
+            <div className="flex-1 overflow-auto p-6">
+                <div className="max-w-6xl mx-auto">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                            <Button variant="ghost" size="icon" onClick={handleClose}>
+                                <ArrowLeft className="h-5 w-5"/>
+                            </Button>
+                            <div>
+                                <h1 className="text-2xl font-bold">{isEdit ? 'Edit Employee' : 'Add New Employee'}</h1>
+                                <p className="text-muted-foreground">Fill in the employee details below</p>
+                            </div>
+                        </div>
+                        <Button type="submit" form="employee-form" disabled={isSubmitting || isLoading}>
+                            <Save className="h-4 w-4 mr-2"/>
+                            {isSubmitting ? 'Saving...' : 'Save'}
+                        </Button>
                     </div>
-                </div>
-                <Button type="submit" form="employee-form" disabled={isSubmitting || isLoading}>
-                    <Save className="h-4 w-4 mr-2"/>
-                    {isSubmitting ? 'Saving...' : 'Save'}
-                </Button>
-            </div>
 
             <form id="employee-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 
@@ -698,32 +838,32 @@ export function EmployeesForm() {
                     <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Position</label>
+                            <label className="text-sm font-medium">Role</label>
                             <AsyncSelect
-                                value={form.watch('position_id') ?? null}
+                                value={form.watch('role_id') ?? null}
                                 onChange={async (value) => {
-                                    const positionId = value as number | null
-                                    form.setValue('position_id', positionId as number | null | undefined, {shouldValidate: true})
+                                    const roleId = value as number | null
+                                    form.setValue('role_id', roleId as number | null | undefined, {shouldValidate: true})
 
-                                    // Get position name from selected item or API
-                                    if (positionId) {
-                                        const positions = await loadPositions('')
-                                        const selectedPosition = positions.find(p => p.value === positionId)
-                                        const positionName = selectedPosition?.label || null
-                                        setSelectedPositionName(positionName)
+                                    // Get role name from selected item or API
+                                    if (roleId) {
+                                        const roles = await loadRoles('')
+                                        const selectedRole = roles.find(r => r.value === roleId)
+                                        const roleName = selectedRole?.label || null
+                                        setSelectedRoleName(roleName)
 
                                         // Reset placement fields if not required
-                                        if (!REQUIRED_PLACEMENT_POSITIONS.includes(positionName || '')) {
+                                        if (!REQUIRED_PLACEMENT_ROLES.includes(roleName || '')) {
                                             form.setValue('client_id', undefined)
                                             form.setValue('area_id', undefined)
                                             form.setValue('pos_id', undefined)
                                         }
                                     } else {
-                                        setSelectedPositionName(null)
+                                        setSelectedRoleName(null)
                                     }
                                 }}
-                                loadOptions={loadPositions}
-                                placeholder="Select position..."
+                                loadOptions={loadRoles}
+                                placeholder="Select role..."
                                 className="w-full"
                             />
                         </div>
@@ -732,7 +872,7 @@ export function EmployeesForm() {
                         <div className="space-y-2">
                             <label className="text-sm font-medium">
                                 Client (Placement) {isPlacementRequired && <span className="text-red-500">*</span>}
-                                {!isPlacementRequired && selectedPositionName && (
+                                {!isPlacementRequired && selectedRoleName && (
                                     <span
                                         className="text-muted-foreground font-normal ml-1">(Optional for Back Office)</span>
                                 )}
@@ -743,7 +883,7 @@ export function EmployeesForm() {
                                 loadOptions={loadClients}
                                 placeholder="Select client..."
                                 className="w-full"
-                                isDisabled={!isPlacementRequired}
+                                isDisabled={!isPlacementRequired && !form.watch('client_id')}
                             />
                         </div>
 
@@ -757,7 +897,7 @@ export function EmployeesForm() {
                                 loadOptions={(search) => loadAreas(search, form.getValues('client_id') as number | undefined)}
                                 placeholder="Select area..."
                                 className="w-full"
-                                isDisabled={!form.watch('client_id') || !isPlacementRequired}
+                                isDisabled={!form.watch('client_id') || (!isPlacementRequired && !form.watch('area_id'))}
                             />
                         </div>
 
@@ -802,13 +942,13 @@ export function EmployeesForm() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Height (cm)</label>
-                            <Input type="number" {...form.register('height', {valueAsNumber: true})}
+                            <Input type="number" {...form.register('height')}
                                    placeholder="170"/>
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Weight (kg)</label>
-                            <Input type="number" {...form.register('weight', {valueAsNumber: true})}
+                            <Input type="number" {...form.register('weight')}
                                    placeholder="65"/>
                         </div>
                     </div>
@@ -877,7 +1017,7 @@ export function EmployeesForm() {
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Base Salary</label>
-                            <Input type="number" {...form.register('base_salary', {valueAsNumber: true})}
+                            <Input type="number" {...form.register('base_salary')}
                                    placeholder="5000000"/>
                         </div>
 
@@ -1144,6 +1284,8 @@ export function EmployeesForm() {
                     </Button>
                 </div>
             </form>
+                </div>
+            </div>
         </div>
     )
 }

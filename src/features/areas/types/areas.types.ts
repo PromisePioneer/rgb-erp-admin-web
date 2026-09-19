@@ -15,6 +15,8 @@ export interface Area {
   status: number
   created_at: string | null
   updated_at: string | null
+  coordinator_id: number | null
+  coordinator_name: string | null
 }
 
 export interface AreaDetail {
@@ -26,6 +28,8 @@ export interface AreaDetail {
   longitude: string | null
   description: string | null
   status: number
+  coordinator_id: number | null
+  coordinator_name: string | null
 }
 
 export interface AreasFilters {
@@ -57,6 +61,14 @@ export interface CreateAreaPayload {
   longitude?: string
   description?: string
   status: 'Aktif' | 'Tidak Aktif'
+  coordinator_id?: number | null
 }
 
 export interface UpdateAreaPayload extends CreateAreaPayload {}
+
+export interface CoordinatorOption {
+  id: number
+  name: string
+  code: string
+  text: string
+}

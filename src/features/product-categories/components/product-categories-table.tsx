@@ -99,16 +99,9 @@ export function ProductCategoriesTable() {
       accessorKey: 'name',
       header: 'Category Name',
       cell: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEdit(row)
-          }}
-          className="font-medium text-primary hover:underline text-left cursor-pointer"
-        >
+        <span className="font-medium">
           {row.name}
-        </button>
+        </span>
       ),
     },
     {
@@ -127,6 +120,8 @@ export function ProductCategoriesTable() {
       ),
     },
   ]
+
+  const columnsWithActions = columns
 
   // Bulk actions
   const bulkActions = (
@@ -153,13 +148,8 @@ export function ProductCategoriesTable() {
         </Button>
       </div>
 
-      {/* Click to edit hint */}
-      <p className="text-xs text-muted-foreground">
-        Klik pada nama untuk mengedit data
-      </p>
-
       <DataTable
-        columns={columns}
+        columns={columnsWithActions}
         data={items}
         pagination={pagination}
         isLoading={isLoading}
@@ -169,6 +159,7 @@ export function ProductCategoriesTable() {
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActions={bulkActions}
+        onRowClick={handleEdit}
       />
 
       {/* Delete Confirmation Dialog */}

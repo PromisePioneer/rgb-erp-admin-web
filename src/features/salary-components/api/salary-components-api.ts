@@ -74,7 +74,13 @@ export const salaryComponentsApi = {
    * Get select options for dropdown
    * GET /api/admin/salary-components/select-options
    */
-  getSelectOptions: async (params?: { q?: string; type?: 'earning' | 'deduction'; selected?: number }) => {
+  getSelectOptions: async (params?: {
+    q?: string
+    type?: 'earning' | 'deduction'
+    client_id?: number
+    role_id?: number
+    selected?: number
+  }) => {
     const { data } = await apiClient.get<ApiResponse<{ id: number; name: string; text: string }[]>>(
       '/admin/salary-components/select-options',
       { params }

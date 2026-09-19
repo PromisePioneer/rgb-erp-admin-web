@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table'
 import { DataTablePagination, type PaginationMetadata } from './data-table-pagination'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 // Column definition type
@@ -20,7 +21,7 @@ export interface DataTableColumn<T> {
   accessorKey?: keyof T
   id?: string
   header: string
-  cell?: (row: T) => ReactNode
+  cell?: (row: T, meta?: { rowIndex: number }) => ReactNode
   className?: string
 }
 
@@ -33,6 +34,8 @@ interface DataTableProps<T> {
   emptyMessage?: string
   className?: string
   rowKey?: keyof T
+  // Row click handler
+  onRowClick?: (row: T) => void
   // Row selection props
   enableRowSelection?: boolean
   selectedIds?: Set<number | string>
@@ -43,13 +46,14 @@ interface DataTableProps<T> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function DataTable<T extends { [key: string]: any }>({
   columns,
-  data,
+  data = [],
   pagination,
   isLoading = false,
   onPageChange,
   emptyMessage = 'No data found',
   className,
   rowKey = 'id' as keyof T,
+  onRowClick,
   enableRowSelection = false,
   selectedIds = new Set(),
   onSelectionChange,
@@ -90,14 +94,14 @@ export function DataTable<T extends { [key: string]: any }>({
     }
   }
 
-  // Check if all rows are selected
-  const isAllSelected = data.length > 0 && data.every((row) => selectedIds.has(String(row[rowKey])))
+  // Check if all rows are selected (defensive: ensure data is array)
+  const isAllSelected = Array.isArray(data) && data.length > 0 && data.every((row) => selectedIds.has(String(row[rowKey])))
 
   // Calculate total columns including selection column
   const totalColumns = columns.length + (enableRowSelection ? 1 : 0)
 
   return (
-    <div className={className}>
+    <div className={cn('w-full min-w-0 space-y-4', className)}>
       {/* Bulk Actions Bar */}
       {enableRowSelection && selectedIds.size > 0 && bulkActions && (
         <div className="flex items-center gap-3 mb-3 px-3 py-2 bg-muted/50 rounded-md border">
@@ -107,8 +111,8 @@ export function DataTable<T extends { [key: string]: any }>({
         </div>
       )}
 
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-x-auto w-full">
+        <Table className="min-w-[800px] max-w-full">
           <TableHeader>
             <TableRow>
               {enableRowSelection && (
@@ -121,23 +125,30 @@ export function DataTable<T extends { [key: string]: any }>({
                 </TableHead>
               )}
               {columns.map((column, index) => (
-                <TableHead key={index} className={column.className}>
+                <TableHead key={index} className={cn('whitespace-nowrap', column.className)}>
                   {column.header}
                 </TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {/* Loading state */}
+            {/* Loading state - skeleton rows */}
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={totalColumns} className="text-center py-12">
-                  <div className="flex items-center justify-center">
-                    <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : data.length === 0 ? (
+              Array.from({ length: 8 }).map((_, index) => (
+                <TableRow key={index}>
+                  {enableRowSelection && (
+                    <TableCell className="w-[40px]">
+                      <Skeleton className="h-4 w-4" />
+                    </TableCell>
+                  )}
+                  {columns.map((_, colIndex) => (
+                    <TableCell key={colIndex}>
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : !Array.isArray(data) || data.length === 0 ? (
               /* Empty state */
               <TableRow>
                 <TableCell colSpan={totalColumns} className="text-center py-12">
@@ -154,8 +165,9 @@ export function DataTable<T extends { [key: string]: any }>({
                 return (
                   <TableRow
                     key={rowId}
-                    className={cn(isSelected && 'bg-muted/50')}
+                    className={cn(isSelected && 'bg-muted/50', onRowClick && 'cursor-pointer')}
                     data-selected={isSelected}
+                    onClick={() => onRowClick?.(row)}
                   >
                     {enableRowSelection && (
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -170,7 +182,7 @@ export function DataTable<T extends { [key: string]: any }>({
                       </TableCell>
                     )}
                     {columns.map((column, colIndex) => (
-                      <TableCell key={colIndex} className={column.className}>
+                      <TableCell key={colIndex} className={cn('whitespace-nowrap', column.className)}>
                         {renderCell(row, column)}
                       </TableCell>
                     ))}
@@ -183,11 +195,10 @@ export function DataTable<T extends { [key: string]: any }>({
       </div>
 
       {/* Pagination */}
-      {pagination.total > 0 && (
+      {pagination && pagination.total > 0 && (
         <DataTablePagination
           pagination={pagination}
           onPageChange={onPageChange}
-          className="mt-4"
         />
       )}
     </div>
